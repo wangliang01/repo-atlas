@@ -16,7 +16,7 @@ pnpm install          # 首次或依赖变更后
 ## 1. 静态检查
 
 ```bash
-pnpm tsc --noEmit
+pnpm typecheck
 pnpm lint --file <本次改动的文件>      # 只查本次改的文件
 ```
 

@@ -16,6 +16,8 @@
 - 做：56px sticky header（左 logo、中导航、右 ⌘K 占位 + 暗色切换）；滚动后加 1px 下边线 + 背景变化；`prefers-color-scheme` 跟随 + `localStorage` 覆盖；`<html>` 上内联脚本在首次绘制前写入 `class="dark"`；页脚（版权 + 一句主张）。
 - 不做：真正的搜索面板（P2）、移动端抽屉菜单以外的交互（汉堡菜单只做展开收起）。
 
+> 裁判在 T-001 留下的两条待办，归本 Ticket 处理：`<html>` 需加 `suppressHydrationWarning`（否则主题脚本改 class 会触发 hydration 警告）；`.dark` 里要补 `color-scheme: dark`（否则原生滚动条、表单控件仍是亮色）。
+
 ## 验收标准（必须可执行）
 
 - [ ] AC-1：`pnpm tsc --noEmit` 与 `pnpm build` 均退出码 0

@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+/* 字号刻度：只有这六行，禁止新增第七档 */
+@theme {
+  --text-display: 40px;
+  --text-display--line-height: 1.2;
+  --text-h1: 32px;
+  --text-h1--line-height: 1.25;
+  --text-h2: 24px;
+  --text-h2--line-height: 1.35;
+  --text-body: 16px;
+  --text-body--line-height: 1.75;
+  --text-small: 13px;
+  --text-small--line-height: 1.5;
+  --text-micro: 12px;
+  --text-micro--line-height: 1.4;
+  --text-micro--letter-spacing: 0.08em;
+}
+
+/* 颜色 token 唯一来源：改这里就要重验对比度 */
+:root {
+  --bg: #FAF9F6;
+  --surface: #FFFFFF;
+  --ink: #1A1917;
+  --muted: #6E6A63;
+  --line: #E6E2D9;
+  --accent: #C4442C;
+  --accent-soft: #F6E7E2;
+
+  --container: 1200px;
+  --measure: 720px;
+  --radius: 4px;
+}
+
+.dark {
+  --bg: #121211;
+  --surface: #1A1A18;
+  --ink: #EDEAE3;
+  --muted: #9A958B;
+  --line: #2A2A27;
+  --accent: #E4694F;
+  --accent-soft: #2B1D19;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+
+  --font-sans: var(--font-inter), var(--font-noto-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-noto-serif), ui-serif, Georgia, serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  html {
+    background-color: var(--bg);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: var(--accent-soft);
+    color: var(--ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* 页面容器：1200px，移动端 20px 侧边距 */
+  .wrap {
+    max-width: var(--container);
+    margin-inline: auto;
+    padding-inline: 20px;
+  }
+
+  @media (min-width: 768px) {
+    .wrap {
+      padding-inline: 24px;
+    }
+  }
+}
+
+@custom-variant dark (&:where(.dark, .dark *));

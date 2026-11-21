@@ -15,10 +15,10 @@
 |---|---|
 | 装依赖 | `pnpm install` |
 | 启动开发 | `pnpm dev` |
-| 类型检查 | `pnpm tsc --noEmit` |
+| 类型检查 | `pnpm typecheck` |
 | 单文件测试 | `node --test lib/schema.test.ts` |
 | 全量测试 | `node --test` |
-| Lint 单文件 | `pnpm lint --file <path>` |
+| Lint 单文件 | `pnpm lint <path>` |
 | 构建 | `pnpm build` |
 
 ## 工作流
@@ -32,7 +32,7 @@
 - NEVER 新增依赖，除非 Ticket 写明并获同意。
 - NEVER 用 `any` / `@ts-ignore` 绕过类型错误，去修根因。
 - NEVER 让 `app/` 下出现动态渲染（`force-dynamic` / `revalidate = 0`）；动态只允许在 `/api/ask`。
-- NEVER 改动 `globals.css` 的 token 数值或新增第六档字号，除非 Ticket 明确要求并附对比度验证。
+- NEVER 改动 `globals.css` 的 token 数值或新增字号档位，除非 Ticket 明确要求并附对比度验证。
 - 注释只写「为什么」，不写「做什么」。
 
 ## 验收
