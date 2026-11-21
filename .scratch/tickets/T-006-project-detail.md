@@ -6,6 +6,7 @@
 - **Target Files**:
   - `app/projects/[slug]/page.tsx`
   - `components/prose.tsx`（项目正文复用）
+  - `components/meta-bar.tsx`、`components/topic-chip.tsx`（从 T-005 移入，此处才有渲染点）
   - `lib/content.ts`（补 `getAdjacentProjects`）
 
 ## 要解决的问题
@@ -26,6 +27,11 @@
 - [ ] AC-5：`<title>` 含项目名，`<meta name="description">` 非空
 - [ ] AC-6：上一篇/下一篇链接至少有一个非空（单条目时允许两者都指向列表页）
 - [ ] AC-7：375px 无横向滚动，正文列宽 ≤ 720px（1440px 下实测）
+
+> 从 T-005 移交过来两条，本 Ticket 必须补上：
+> - **AC-8**：`MetaBar` 渲染在详情页，六项齐全，计算样式 `font-variant-numeric` = `tabular-nums`。必须在浏览器里量，不接受源码字符串断言。
+> - **AC-9**：`screenshot` 字段要么真的被渲染（`<img>`/`Image` + 非空 `alt`），要么在 schema 里改成可选并在 Ticket 写明原因。当前状态是：schema 强制必填、三条内容都填了 `/shots/*.webp`、`public/` 目录不存在、没有任何组件读它——这是假字段，不能带进 P1。
+> - 首页 6 个 `/projects/<slug>` 锚点目前全 404，本 Ticket 落地后应全部 200。
 
 ## 验证方式
 
