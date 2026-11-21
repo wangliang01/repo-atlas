@@ -30,7 +30,7 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 | T-002 | SiteHeader + 页脚 + 暗色切换 | `164e707` | `node --test` 10/10；build 静态；CDP 实测暗色 `rgb(18,18,17)`、刷新保留、首帧即暗色（无白闪）、375px 无横向溢出、1440px header 56px sticky |
 | T-003 | 首页主张区与空状态 | `3ef768b` | `node --test` 14/14；build 静态；h1 `40px/48px` 且为 Noto Serif SC；`time` bottom 338 ≤ 900 无需滚动；空状态块 138/157px，最大间隙 96px |
 | T-004 | 内容层：Zod schema + 读取 + 样例 MDX | `ec672ea` | `node --test` 21/21；三处破坏性验证均 exit 1（缺字段 / 枚举错 / 互链悬空）并已恢复 md5；首页日期由构建日变为 `2026.11.20` |
-| T-005 | 项目卡片/行/结论标签 + 首页两块列表 | 本 Ticket 提交 | 裁判 5/7：`node --test` 27/27；3 个 `/projects/` 链接；行高 72；`推荐` 底色 `rgb(196,68,44)`、`别碰` `line-through`；375px 无溢出。AC-5（MetaBar）/AC-7（alt）未达成，已移交 T-006 |
+| T-005 | 项目卡片/行/结论标签 + 首页两块列表 | `88c8444` | 裁判 5/7：`node --test` 27/27；3 个 `/projects/` 链接；行高 72；`推荐` 底色 `rgb(196,68,44)`、`别碰` `line-through`；375px 无溢出。AC-5（MetaBar）/AC-7（alt）未达成，已移交 T-006 |
 
 ## 阻塞 / 待决策
 
