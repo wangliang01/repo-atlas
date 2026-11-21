@@ -19,6 +19,8 @@
 
 /* 颜色 token 唯一来源：改这里就要重验对比度 */
 :root {
+  color-scheme: light;
+
   --bg: #FAF9F6;
   --surface: #FFFFFF;
   --ink: #1A1917;
@@ -33,6 +35,8 @@
 }
 
 .dark {
+  color-scheme: dark;
+
   --bg: #121211;
   --surface: #1A1A18;
   --ink: #EDEAE3;
@@ -63,6 +67,7 @@
   }
 
   body {
+    background-color: var(--bg);
     font-family: var(--font-sans);
     font-size: var(--text-body);
     line-height: 1.75;

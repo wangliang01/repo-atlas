@@ -27,6 +27,7 @@
 3. 不许为了让测试通过而修改测试；要改必须先说明理由并获得同意。
 4. 提交前跑 Lint；一个 Ticket 一个提交，单次改动 < 200 行。
 5. 完成的标准是跑过并贴出输出，不是 diff 看起来对。
+6. 跑 `pnpm build` 前先停掉 `pnpm dev`：两者共用 `.next`，同时跑会写坏产物（`next start` 报 `Cannot find module './xxx.js'`，页面 500）。
 
 ## 红线
 - NEVER 新增依赖，除非 Ticket 写明并获同意。

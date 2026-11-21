@@ -56,7 +56,7 @@ test("globals.css 声明了 light 与 dark 两套颜色 token", () => {
   }
 });
 
-test("字号只有五档刻度（六行 token），且容器宽度 1200px", () => {
+test("字号只有六档刻度，且容器宽度 1200px", () => {
   const css = read("app/globals.css");
   for (const [name, value] of Object.entries(SIZES)) {
     assert.ok(css.includes(`${name}: ${value}`), `缺少字号 token ${name}: ${value}`);
