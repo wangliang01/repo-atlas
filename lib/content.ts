@@ -1,0 +1,88 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import matter from "gray-matter";
+import {
+  assertAlternativesExist,
+  noteFrontmatter,
+  projectFrontmatter,
+  type NoteFrontmatter,
+  type ProjectFrontmatter,
+} from "./schema.ts";
+
+export type Project = {
+  slug: string;
+  data: ProjectFrontmatter;
+  body: string;
+};
+
+export type Note = {
+  slug: string;
+  data: NoteFrontmatter;
+  body: string;
+};
+
+const CONTENT_DIR = join(process.cwd(), "content");
+
+function listMdx(kind: "projects" | "notes"): string[] {
+  try {
+    return readdirSync(join(CONTENT_DIR, kind)).filter((file) => file.endsWith(".mdx"));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+}
+
+function formatIssues(where: string, issues: { path: (string | number)[]; message: string }[]): string {
+  const lines = issues.map((i) => `  - ${i.path.join(".") || "(root)"}: ${i.message}`);
+  return `${where} 校验失败：\n${lines.join("\n")}`;
+}
+
+function parseProject(file: string): Project {
+  const where = `content/projects/${file}`;
+  const raw = readFileSync(join(CONTENT_DIR, "projects", file), "utf8");
+  const { data, content } = matter(raw);
+  const parsed = projectFrontmatter.safeParse(data);
+  if (!parsed.success) throw new Error(formatIssues(where, parsed.error.issues));
+  return { slug: file.replace(/\.mdx$/, ""), data: parsed.data, body: content };
+}
+
+function parseNote(file: string): Note {
+  const where = `content/notes/${file}`;
+  const raw = readFileSync(join(CONTENT_DIR, "notes", file), "utf8");
+  const { data, content } = matter(raw);
+  const parsed = noteFrontmatter.safeParse(data);
+  if (!parsed.success) throw new Error(formatIssues(where, parsed.error.issues));
+  return { slug: file.replace(/\.mdx$/, ""), data: parsed.data, body: content };
+}
+
+const byNewest = (a: { data: { publishedAt: Date } }, b: { data: { publishedAt: Date } }) =>
+  b.data.publishedAt.getTime() - a.data.publishedAt.getTime();
+
+export function getAllProjects(): Project[] {
+  const projects = listMdx("projects").map(parseProject).sort(byNewest);
+  assertAlternativesExist(projects);
+  return projects;
+}
+
+export function getProject(slug: string): Project | undefined {
+  return getAllProjects().find((project) => project.slug === slug);
+}
+
+export function getAllNotes(): Note[] {
+  return listMdx("notes").map(parseNote).sort(byNewest);
+}
+
+export function getNote(slug: string): Note | undefined {
+  return getAllNotes().find((note) => note.slug === slug);
+}
+
+// 首页"最近更新"：内容里最新的那一天；还没内容才退回构建日
+export function getLatestUpdate(): Date {
+  const dates = [...getAllProjects(), ...getAllNotes()].map((item) => item.data.publishedAt.getTime());
+  return dates.length > 0 ? new Date(Math.max(...dates)) : new Date();
+}
+
+// 一期 3 个，期号从 1 开始
+export function getIssueNumber(): number {
+  return Math.max(1, Math.ceil(getAllProjects().length / 3));
+}

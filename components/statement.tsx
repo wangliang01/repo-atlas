@@ -17,7 +17,7 @@ export function Statement({ issue, updatedAt }: StatementProps) {
       <div className="mt-8 border-t border-line" />
       <div className="mt-3 flex items-baseline justify-between font-mono text-micro text-muted">
         <span>本期 · No.{issue}</span>
-        <time dateTime={updatedAt.toISOString()} className="tabular-nums">
+        <time dateTime={formatDate(updatedAt).replace(/\./g, "-")} className="tabular-nums">
           {formatDate(updatedAt)}
         </time>
       </div>
