@@ -17,6 +17,11 @@
 - 做：`schema.ts` 用 Zod 定义 SPEC 2.3 全部字段与枚举；`content.ts` 导出 `getAllProjects()` / `getProject(slug)` / `getAllNotes()` / `getNote(slug)`，构建时读文件、`matter` 解析、`schema.parse` 失败即抛错；`alternatives` 校验指向的 slug 必须存在；1 个项目 + 1 篇笔记样例（可用 Cal.com 真实数据，正文各 200 字以上）；`node --test` 跑通 3 条单测。
 - 不做：页面渲染（T-005 起）、搜索索引、`projects.json` 生成。
 
+> 裁判在 T-003 留下的三条，归本 Ticket 处理：
+> 1. 首页 `updatedAt` 现在是 `new Date()`（构建时间），只能证明"刚部署过"。改成 `max(publishedAt)`，无内容时才退回构建日。
+> 2. `new Date("2026-11-20")` 按 UTC 解析，而 `lib/date.ts` 用本地 `getDate()`，跨时区会差一天。解析纯日期字符串要按本地时区构造（`new Date(y, m-1, d)`）。
+> 3. `No.001` 与空状态目前硬编码在 `app/page.tsx`，期号应由条目数推导（如 `Math.ceil(count / 3)`）。
+
 ## 验收标准（必须可执行）
 
 - [ ] AC-1：`node --test lib/schema.test.ts` 输出 `pass 3` 且 `fail 0`
