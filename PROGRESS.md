@@ -28,7 +28,7 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 | ID | 任务 | 提交 | 验证证据 |
 |---|---|---|---|
 | T-001 | 脚手架 + 设计 token + 字体 | `60d6f96` | `node --test` 4/4 绿；`tsc --noEmit` 0；`next build` `/` 为 `○ Static`；HTTP 200；样式表含 `--text-display: 40px` / `--container: 1200px` / `FAF9F6` |
-| T-002 | SiteHeader + 页脚 + 暗色切换 | 本 Ticket 提交 | `node --test` 10/10；build 静态；CDP 实测暗色 `rgb(18,18,17)`、刷新保留、首帧即暗色（无白闪）、375px 无横向溢出、1440px header 56px sticky |
+| T-002 | SiteHeader + 页脚 + 暗色切换 | `164e707` | `node --test` 10/10；build 静态；CDP 实测暗色 `rgb(18,18,17)`、刷新保留、首帧即暗色（无白闪）、375px 无横向溢出、1440px header 56px sticky |
 
 ## 阻塞 / 待决策
 
