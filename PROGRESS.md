@@ -28,7 +28,7 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 
 | ID | 任务 | 提交 | 验证证据 |
 |---|---|---|---|
-| T-001 | 脚手架 + 设计 token + 字体 | 本 Ticket 提交 | `node --test` 4/4 绿；`tsc --noEmit` 0；`next build` `/` 为 `○ Static`；HTTP 200；样式表含 `--text-display: 40px` / `--container: 1200px` / `FAF9F6` |
+| T-001 | 脚手架 + 设计 token + 字体 | `60d6f96` | `node --test` 4/4 绿；`tsc --noEmit` 0；`next build` `/` 为 `○ Static`；HTTP 200；样式表含 `--text-display: 40px` / `--container: 1200px` / `FAF9F6` |
 
 ## 阻塞 / 待决策
 
