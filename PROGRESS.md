@@ -41,6 +41,7 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 | T-015 | 精选自动化：一天 4 次同步 + 首次上榜台账 + 分页滚动 | `0a4302a` | `node --test` 77/77；typecheck 0；lint 0 error；build 7 页全 `○`/`●`；台账 5 条测试（首次/二次/同日重复/120 天剪枝/键序稳定）；快照 26 条全有 `firstSeen`，`history.json` 全覆盖；CDP 实测首屏 12 条 → 滚到底 26 条、按钮消失；「新上榜」徽章实测渲染 1 个（临时挪日期验证后恢复），首日全为新时守卫不显示；`picks-cron.mjs` 端到端跑通并生成 `08be5f8`，只提交 `content/picks` + `public/avatars`，工作区其他改动没被带走；375/1440 零溢出 |
 | T-016 | 正文插图：`img` 渲染 + `Figure` 图注 + `juejin-illustration` skill | `34dffd2` / `de6e08b` | `node --test` 78/78（新增一条插图守卫：懒加载 / 宽度约束 / 图注组件 / 注册）；typecheck 0；lint 0 error 0 warning；build 9 页全 `○`/`●`；`pnpm check:alt` 17 张全有 alt（此前一直是「0 张图，空集不算通过」）；示意图 1440 → 420×304、375 → 293×219，暗色下 `var(--accent-soft)` 等 token 正常切换；`llmops-token-context` 正文 6 个 h2、1 张表、1 张内联 SVG | 
 | T-017 | 正文排版对齐掘金实测值：正文改近黑色、h2 22px 带下边框、行内代码红底、表格蓝表头 | `dde53b1` | `node --test` 79/79（新增正文配色 AA 断言）；typecheck 0；lint 0 error；build 9 页全 `○`/`●`；CDP 实测 p `16/28` `rgb(37,41,51)` mt22、h2 `22/34.1` 700 下边框 pb12、行内代码 `rgb(207,60,26)` on `rgb(255,245,245)` 13.92px、表头 `rgb(0,91,183)` on `rgb(223,240,255)`、引用 4px `rgb(203,203,203)`、标题 28/600；掘金原值 `#ff502c` 只有 3.05:1，压深到 `#cf3c1a` 4.55:1；375 下表格容器内横滚 145px，页面零溢出 |
+| T-018 | 代码块重做：圆角 + 灰头部 + 蓝点标签 + 可点复制按钮；高亮换 github 主题 | `187f36b` | `node --test` 79/79；typecheck 0；lint 0 error；build 9 页全 `○`/`●`；`pnpm check:alt` 17/17；浅/深两版 × json / ts / 带文件名三种块都截了图，1440 与 375 零溢出；换主题的理由：`lib/highlight.ts` 原注释还是「压不住 --bg 的米色」，底色早换成掘金灰白，vitesse 的黄绿调跟蓝主色打架 |
 
 ### P0 验收（SPEC「验收标准」9 条，2026-11-22 跑）
 
