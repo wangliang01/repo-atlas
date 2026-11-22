@@ -6,7 +6,7 @@
 
 P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能拿出手。
 
-> 首页、项目详情、笔记列表、笔记详情、精选都能点开，404 有正经页面。P0 完成；P1 先做了「精选」——不再是 HelloGitHub 搬运，改成从 GitHub 抓的 AI 项目（T-010）；T-011 把导航收成 首页 / 精选 / 笔记 三项，三页统一成掘金式三栏。
+> 首页、项目详情、笔记列表、笔记详情、精选都能点开，404 有正经页面。P0 完成；P1 先做了「精选」——不再是 HelloGitHub 搬运，改成从 GitHub 抓的 AI 项目（T-010）；T-011 把导航收成 首页 / 精选 / 笔记 三项，三页统一成掘金式三栏；T-012 把视觉语言整体换成掘金那套（灰底白卡 + 蓝主色 + 无衬线）。
 
 ## 进行中
 
@@ -35,6 +35,7 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 | T-009 | HelloGitHub 精选：分类 tab + 单列卡片 + 导入脚本 | `052fa4b` | 7/7：导入 41 条草稿与源文件一致；`○ /picks`；点「Go 项目」剩 2 张、点「全部」回 7 张；链接全 github + noopener；375/1440 无溢出；删 `why` 构建报 `entries.6.why: rubik/radon：Required` 后 md5 还原；`node --test` 46/46 |
 | T-010 | 精选改 AI 雷达：GitHub 同步脚本 + 掘金式列表 + 换文案与高亮 | `c6fcb7c` | `node --test` 51/51；typecheck 0；lint 0 error；build 11 页全 `○`/`●`；`pnpm sync:picks` 拉到 26 条 + 26 张头像；`/picks` 1440 高 3416（首屏 6 行）、375 `scrollWidth=375`（修掉 315px 项目名撑出的 14px 溢出）；点 tab 实测 全部 26 / 涨得快 10 / Agent 13 / MCP 3 / 其它 7，与 tab 上的数字一致；`aria-selected` 跟随、链接全 `noopener`；`pnpm check:alt` 26/26；代码块换 vitesse 双主题、行内代码加 `--line` 底 |
 | T-011 | 信息架构重构：导航收成三项，三页统一三栏；精选拆成「分类 × 涨得快」两轴；首页去掉占位截图卡 | `217e616` | `node --test` 73/73；typecheck 0；lint 0 error；build 10 页全 `○`/`●`；三栏实测 1440/1280 → 200/592/280、1024 → 160/784、768 → 160/528、375 → 335，3 路由 × 5 档 `scrollWidth - clientWidth = 0`；滚 600px 后左右栏 `top = 72`（sticky 生效）；`/projects` 308 → `/`；导航 3 项且 `aria-current` 跟随路径（`#1a1917` vs `#6e6a63`）；筛选实测 26 → 涨得快 10 → Agent 6 → MCP 1 → 只 MCP 3，`aria-pressed` 跟随、`aria-live` 报「6 个」、`[role=tab]` 数为 0；`pnpm check:alt` 26/26 |
+| T-012 | 视觉语言换成掘金式：灰底白卡 + 蓝主色 + 无衬线，masthead 压成一条 | `2de73d6` | `node --test` 76/76；typecheck 0；lint 0 error；build 10 页全 `○`/`●`；先量 juejin.cn 拿到画布 `#f2f3f5`、卡片白 4px、行高 99、主色 `#1e80ff`；三栏 1440/1280 → 180/672/260、1024 → 180/776、768 → 180/520、375 → 335，15 组零溢出；h1 实测 28px/600/无衬线，`grep font-serif` 无结果；滚 600px 左右栏 `top = 76`；修掉 `overflow-hidden` 让筛选行压住第一行（barTop 248 → 188）；对比度四条断言全过（正文 7+、次要 4.5+、蓝字 4.5+、白字压 fill 4.5+）；暗色 `rgb(23,24,26)` / 卡片 `rgb(35,35,36)`；`pnpm check:alt` 26/26 |
 
 ### P0 验收（SPEC「验收标准」9 条，2026-11-22 跑）
 
