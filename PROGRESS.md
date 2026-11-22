@@ -30,7 +30,7 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 | T-003 | 首页主张区与空状态 | `3ef768b` | `node --test` 14/14；build 静态；h1 `40px/48px` 且为 Noto Serif SC；`time` bottom 338 ≤ 900 无需滚动；空状态块 138/157px，最大间隙 96px |
 | T-004 | 内容层：Zod schema + 读取 + 样例 MDX | `ec672ea` | `node --test` 21/21；三处破坏性验证均 exit 1（缺字段 / 枚举错 / 互链悬空）并已恢复 md5；首页日期由构建日变为 `2026.11.20` |
 | T-005 | 项目卡片/行/结论标签 + 首页两块列表 | `88c8444` | 裁判 5/7：`node --test` 27/27；3 个 `/projects/` 链接；行高 72；`推荐` 底色 `rgb(196,68,44)`、`别碰` `line-through`；375px 无溢出。AC-5（MetaBar）/AC-7（alt）未达成，已移交 T-006 |
-| T-006 | 项目详情页六段式 + MetaBar + 相邻导航 | `PENDING` | 裁判 9/9：`node --test` 31/31；build 三条 slug 全 `●`；`/projects/nope` 404；六段 h2 各 2 次；375px `scrollWidth=375`、1440px 正文 720；MetaBar 六项 `tabular-nums`。返工两次（移动端 grid 隐式列按 max-content 撑到 400.6px；16:10 占位在 1200 容器里变成 1150×719 空白块） |
+| T-006 | 项目详情页六段式 + MetaBar + 相邻导航 | `71ca74f` | 裁判 9/9：`node --test` 31/31；build 三条 slug 全 `●`；`/projects/nope` 404；六段 h2 各 2 次；375px `scrollWidth=375`、1440px 正文 720；MetaBar 六项 `tabular-nums`。返工两次（移动端 grid 隐式列按 max-content 撑到 400.6px；16:10 占位在 1200 容器里变成 1150×719 空白块） |
 
 ## 阻塞 / 待决策
 
