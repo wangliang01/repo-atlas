@@ -68,3 +68,10 @@ export function formatPerDay(value: number): string {
   return value >= 10 ? `+${Math.round(value)}/天` : `+${value.toFixed(1)}/天`;
 }
 
+/** 同一天（按本地时区）。快照日期与 firstSeen 都是 Date，比较到日 */
+export function sameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+  );
+}
+

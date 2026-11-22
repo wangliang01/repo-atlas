@@ -42,6 +42,8 @@ export const pickEntry = z.object({
   starsPerDay: z.number().nonnegative().default(0),
   createdAt: dateOnly,
   pushedAt: dateOnly,
+  // 第一次出现在榜单上的日期，由 content/picks/history.json 决定；当天上榜的标「新上榜」
+  firstSeen: dateOnly,
   // 有话说才写；没有就不显示，不拿占位文案凑
   why: z.string().min(1).optional(),
 });

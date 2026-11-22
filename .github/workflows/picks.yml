@@ -1,0 +1,43 @@
+name: picks
+
+# 一天 4 次（UTC 01/07/13/19 = 北京时间 09/15/21/03）。
+# 推送到 GitHub 之后自动生效；本地没有 remote 时用 scripts/install-picks-task.ps1。
+on:
+  schedule:
+    - cron: "0 1,7,13,19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: picks
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 配置提交身份
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: 同步并提交
+        env:
+          # 带上 token 后搜索额度从 60 次/小时提到 5000
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/picks-cron.mjs

@@ -46,7 +46,12 @@ export default function PicksPage() {
       </header>
 
       <div className="mt-4">
-        <PicksView entries={entries} profile={PROFILE} updatedAt={updatedAt} />
+        <PicksView
+          entries={entries}
+          profile={PROFILE}
+          updatedAt={updatedAt}
+          syncedAt={snapshot.syncedAt}
+        />
       </div>
     </div>
   );

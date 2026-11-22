@@ -2,8 +2,10 @@
 // 用 curl 而不是 fetch：Node 的 fetch 不走系统代理。
 // 星数、fork、语言、topics、创建/推送时间全是 API 原值；starsPerDay 由 stars ÷ 建仓天数算。
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import matter from "gray-matter";
+import { emptyHistory, mergeHistory } from "../lib/picks-history.ts";
 
 const STAR_QUERY = "topic:ai stars:>8000";
 // GitHub 的 created: 只认日期，不认 6months 这种相对写法
@@ -15,7 +17,10 @@ const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
 
 function api(url) {
-  const raw = execFileSync("curl", ["-sS", "-L", "--max-time", "30", "-H", "Accept: application/vnd.github+json", url], {
+  const headers = ["-H", "Accept: application/vnd.github+json"];
+  // 匿名额度只有 60 次/小时，一天跑 4 次会撞上限；CI 里带上 token 提到 5000
+  if (process.env.GITHUB_TOKEN) headers.push("-H", `Authorization: Bearer ${process.env.GITHUB_TOKEN}`);
+  const raw = execFileSync("curl", ["-sS", "-L", "--max-time", "30", ...headers, url], {
     encoding: "utf8",
     maxBuffer: 32 * 1024 * 1024,
   });
@@ -63,6 +68,19 @@ function downloadAvatar(owner, url) {
 const iso = (date) => date.toISOString().slice(0, 10);
 const quote = (value) => JSON.stringify(value);
 
+// why 是手写的判断，API 给不出来。同步会整份重写快照，不先捞出来就会丢
+function previousWhys() {
+  const file = join(process.cwd(), "content", "picks", "ai.mdx");
+  if (!existsSync(file)) return new Map();
+  try {
+    const { data } = matter(readFileSync(file, "utf8"));
+    const pairs = (data.entries ?? []).filter((entry) => entry.why).map((entry) => [entry.repo, entry.why]);
+    return new Map(pairs);
+  } catch {
+    return new Map();
+  }
+}
+
 console.log(`搜索：${STAR_QUERY} / ${RISING_QUERY}`);
 const byStars = search(STAR_QUERY, "stars");
 const rising = search(RISING_QUERY, "stars");
@@ -89,6 +107,24 @@ if (entries.length === 0) {
   }
 
   const today = new Date();
+  const todayIso = iso(today);
+
+  // 首次上榜台账：快照会被整份重写，不单独记就永远不知道谁是新面孔
+  const historyFile = join(process.cwd(), "content", "picks", "history.json");
+  const history = existsSync(historyFile) ? JSON.parse(readFileSync(historyFile, "utf8")) : emptyHistory();
+  const { history: nextHistory, firstSeen, added } = mergeHistory(
+    history,
+    entries.map((entry) => entry.repo),
+    todayIso,
+  );
+  for (const entry of entries) entry.firstSeen = firstSeen[entry.repo];
+
+  const whys = previousWhys();
+  for (const entry of entries) {
+    const why = whys.get(entry.repo);
+    if (why) entry.why = why;
+  }
+
   const yaml = [
     "---",
     `syncedAt: ${iso(today)}`,
@@ -107,6 +143,8 @@ if (entries.length === 0) {
       `    starsPerDay: ${entry.starsPerDay}`,
       `    createdAt: ${iso(entry.createdAt)}`,
       `    pushedAt: ${iso(entry.pushedAt)}`,
+      `    firstSeen: ${entry.firstSeen}`,
+      ...(entry.why ? [`    why: ${quote(entry.why)}`] : []),
     ]),
     "---",
     "",
@@ -120,7 +158,9 @@ if (entries.length === 0) {
   } else {
     const file = join(process.cwd(), "content", "picks", "ai.mdx");
     writeFileSync(file, yaml, "utf8");
+    writeFileSync(historyFile, `${JSON.stringify(nextHistory, null, 2)}\n`, "utf8");
     console.log(`写入 ${file}：${entries.length} 条（高星 ${topStars.length} + 涨得快 ${topRising.length}，去重后）`);
+    console.log(`新上榜 ${added.length} 个${added.length > 0 ? `：${added.join("、")}` : ""}`);
     console.log(`涨得最快：${[...entries].sort((a, b) => b.starsPerDay - a.starsPerDay).slice(0, 3).map((e) => `${e.repo} +${e.starsPerDay}/天`).join(" · ")}`);
   }
 }

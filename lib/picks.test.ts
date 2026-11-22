@@ -124,6 +124,51 @@ test("互链：站内已经没有评测页，精选行只走 GitHub", () => {
   assert.equal(read("components/pick-row.tsx").includes("/projects/"), false, "精选行还在链评测页");
 });
 
+test("首次上榜台账：每条都有 firstSeen，history.json 覆盖全部条目", () => {
+  const snapshot = getPicksSnapshot();
+  assert.ok(snapshot, "没有快照");
+  const history = JSON.parse(read("content/picks/history.json")) as {
+    version: number;
+    seen: Record<string, string>;
+  };
+  assert.equal(history.version, 1, "台账版本不对");
+  for (const entry of snapshot.entries) {
+    assert.ok(entry.firstSeen instanceof Date, `${entry.name} 缺 firstSeen`);
+    assert.ok(!Number.isNaN(entry.firstSeen.getTime()), `${entry.name} 的 firstSeen 不是有效日期`);
+    assert.ok(history.seen[entry.repo], `台账里没有 ${entry.repo}，下次同步会把它当新上榜`);
+    assert.ok(
+      entry.firstSeen.getTime() >= new Date(2026, 0, 1).getTime(),
+      `${entry.name} 的 firstSeen 太早，像是解析错了`,
+    );
+  }
+});
+
+test("定时任务：一天 4 次，且只提交精选路径", () => {
+  assert.ok(has("scripts/picks-cron.mjs"), "缺定时任务入口");
+  assert.ok(has("scripts/picks-cron.cmd"), "缺 Windows 计划任务用的 cmd 包装");
+  assert.ok(has("scripts/install-picks-task.ps1"), "缺计划任务注册脚本");
+  assert.ok(has(".github/workflows/picks.yml"), "缺 GitHub Actions 定时任务");
+
+  const cron = read("scripts/picks-cron.mjs");
+  assert.ok(cron.includes("content/picks"), "定时任务没限定提交路径");
+  assert.ok(cron.includes('"commit"'), "定时任务没提交");
+  // -- 之后跟路径：工作区别处暂存的东西不会被卷进这次提交
+  assert.ok(cron.includes('"--"'), "git commit 没有用 -- 限定路径");
+
+  const workflow = read(".github/workflows/picks.yml");
+  assert.match(workflow, /cron: "0 1,7,13,19 \* \* \*"/, "CI 不是一天 4 次");
+  assert.ok(workflow.includes("contents: write"), "CI 没有写权限，推不上去");
+});
+
+test("无限滚动：先渲染一屏，滚动再追加", () => {
+  const view = read("components/picks-view.tsx");
+  assert.ok(view.includes("PAGE_SIZE"), "没有分页大小");
+  assert.ok(view.includes("IntersectionObserver"), "没有滚动监听");
+  assert.ok(view.includes("slice(0, limit)"), "列表没有按页截断");
+  assert.ok(view.includes("加载更多"), "缺手动兜底入口");
+});
+
+
 test("页面与脚本：/picks 存在、进了导航、同步脚本在", () => {
   assert.ok(has("app/picks/page.tsx"), "缺 /picks 页面");
   assert.ok(has("components/pick-row.tsx"), "缺列表行组件");

@@ -1,27 +1,69 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PickRow } from "@/components/pick-row";
 import { ProfileCard } from "@/components/profile-card";
 import { RailList } from "@/components/rail-list";
 import { ShellStrip, SiteShell } from "@/components/site-shell";
-import { DEFAULT_FILTER, filterPicks, pickCategories, risingRepos, type PickFilter } from "@/lib/picks";
+import {
+  DEFAULT_FILTER,
+  filterPicks,
+  pickCategories,
+  risingRepos,
+  sameDay,
+  type PickFilter,
+} from "@/lib/picks";
 import type { Profile } from "@/lib/profile";
 import type { PickEntry } from "@/lib/schema";
+
+/** 一屏先放 12 条，剩下的滚到底再追加。26 条时正好两屏半 */
+const PAGE_SIZE = 12;
 
 type PicksViewProps = {
   entries: PickEntry[];
   profile: Profile;
   updatedAt: Date;
+  /** 这份快照的同步日期，用来判断谁是新上榜 */
+  syncedAt: Date;
 };
 
-export function PicksView({ entries, profile, updatedAt }: PicksViewProps) {
+export function PicksView({ entries, profile, updatedAt, syncedAt }: PicksViewProps) {
   const [filter, setFilter] = useState<PickFilter>(DEFAULT_FILTER);
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const categories = pickCategories(entries);
   const visible = filterPicks(entries, filter);
   const rising = risingRepos(entries);
   const risingCount = rising.size;
+
+  const today = entries.filter((entry) => sameDay(entry.firstSeen, syncedAt)).map((entry) => entry.repo);
+  // 建台账的第一天所有条目都是「新」，全标等于没标
+  const fresh = new Set(today.length > 0 && today.length < entries.length ? today : []);
+
+  // 换筛选条件就回到第一屏，否则会带着上一次翻的页数
+  useEffect(() => {
+    setLimit(PAGE_SIZE);
+  }, [filter.category, filter.risingOnly]);
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (records) => {
+        if (records.some((record) => record.isIntersecting)) {
+          setLimit((current) => current + PAGE_SIZE);
+        }
+      },
+      // 提前 200px 触发，滚到底之前就接上，不会看到空白
+      { rootMargin: "200px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [visible.length]);
+
+  const shown = visible.slice(0, limit);
+  const remaining = visible.length - shown.length;
 
   return (
     <SiteShell
@@ -63,13 +105,26 @@ export function PicksView({ entries, profile, updatedAt }: PicksViewProps) {
       </div>
 
       <ul>
-        {visible.map((entry) => (
-          <PickRow key={entry.repo} entry={entry} hot={rising.has(entry.repo)} />
+        {shown.map((entry) => (
+          <PickRow key={entry.repo} entry={entry} hot={rising.has(entry.repo)} fresh={fresh.has(entry.repo)} />
         ))}
       </ul>
 
       {visible.length === 0 ? (
         <p className="px-5 py-10 text-small text-muted">这个筛选下还没有条目。</p>
+      ) : null}
+
+      {remaining > 0 ? (
+        <div ref={sentinelRef} className="border-t border-line px-5 py-4 text-center">
+          {/* 滚动到底自动追加；按钮是给键盘和关掉 IntersectionObserver 的环境兜底 */}
+          <button
+            type="button"
+            onClick={() => setLimit((current) => current + PAGE_SIZE)}
+            className="text-small text-accent-ink hover:underline"
+          >
+            加载更多（还有 {remaining} 个）
+          </button>
+        </div>
       ) : null}
 
       <ShellStrip>
