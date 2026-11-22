@@ -32,7 +32,7 @@ GitHub 明文规定：用 `GITHUB_TOKEN` 产生的事件不会创建新的 workf
 
 ## 验收
 
-- [ ] 推一次带代码改动的提交，`deploy.yml` 被触发并且 success
+- [x] 推一次带代码改动的提交，`deploy.yml` 被触发并且 success（`623400e` → run `45028771030`）
 - [ ] 推一次只改 `PROGRESS.md` 的提交，`deploy.yml` 不触发
-- [ ] 线上页面确实是新构建的产物
+- [x] 线上页面确实是新构建的产物：`/srv/blog/index.html` mtime `21:41:34 +0800`，`Last-Modified: Sun, 22 Nov 2026 13:41:34 GMT`，与 run 的构建时刻一致
 - [ ] `picks.yml` 手动触发仍然能跑完（共用 concurrency 后没被自己挡住）
