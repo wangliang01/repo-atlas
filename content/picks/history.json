@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "seen": {
+    "AUTOMATIC1111/stable-diffusion-webui": "2026-11-22",
+    "BaaRai/ARTEX": "2026-11-22",
+    "Comfy-Org/ComfyUI": "2026-11-22",
+    "JuliusBrussee/caveman": "2026-11-22",
+    "NousResearch/hermes-agent": "2026-11-22",
+    "Significant-Gravitas/AutoGPT": "2026-11-22",
+    "Snailclimb/JavaGuide": "2026-11-22",
+    "debpalash/VoiceStudio": "2026-11-22",
+    "f/prompts.chat": "2026-11-22",
+    "firecrawl/firecrawl": "2026-11-22",
+    "github/spec-kit": "2026-11-22",
+    "google-gemini/gemini-cli": "2026-11-22",
+    "koala73/worldmonitor": "2026-11-22",
+    "langchain-ai/langchain": "2026-11-22",
+    "langgenius/dify": "2026-11-22",
+    "microsoft/generative-ai-for-beginners": "2026-11-22",
+    "morluto/rea": "2026-11-22",
+    "n8n-io/n8n": "2026-11-22",
+    "obra/superpowers": "2026-11-22",
+    "open-webui/open-webui": "2026-11-22",
+    "openclaw/openclaw": "2026-11-22",
+    "pbakaus/impeccable": "2026-11-22",
+    "shadcn-ui/ui": "2026-11-22",
+    "supabase/supabase": "2026-11-22",
+    "thedotmack/claude-mem": "2026-11-22",
+    "x1xhlol/system-prompts-and-models-of-ai-tools": "2026-11-22"
+  }
+}
