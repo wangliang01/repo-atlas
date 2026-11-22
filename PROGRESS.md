@@ -6,7 +6,7 @@
 
 P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能拿出手。
 
-> 首页、项目库、项目详情、笔记列表、笔记详情、精选都能点开，404 有正经页面。P0 完成；P1 先做了「精选」——不再是 HelloGitHub 搬运，改成从 GitHub 抓的 AI 项目雷达（T-010）。
+> 首页、项目详情、笔记列表、笔记详情、精选都能点开，404 有正经页面。P0 完成；P1 先做了「精选」——不再是 HelloGitHub 搬运，改成从 GitHub 抓的 AI 项目（T-010）；T-011 把导航收成 首页 / 精选 / 笔记 三项，三页统一成掘金式三栏。
 
 ## 进行中
 
@@ -34,6 +34,7 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 | T-008 | P0 收口：404、项目库、溢出与 alt 通检 | `181dad7` + `3c55594` | SPEC 9 条 P0 验收 9/9：6 路由 × 375/1440 共 12 次 `scrollWidth===clientWidth`；`/nope` 404 且有返回首页；删 `license` 字段构建 exit 1 后 md5 还原；`node --test` 41/41。第二轮裁判要求补的三项见下：`pnpm check:alt`（空集退出码 2）、详情页渲染「替代 / 适合 / 不适合」、AC-6 改按 SPEC 9 条 |
 | T-009 | HelloGitHub 精选：分类 tab + 单列卡片 + 导入脚本 | `052fa4b` | 7/7：导入 41 条草稿与源文件一致；`○ /picks`；点「Go 项目」剩 2 张、点「全部」回 7 张；链接全 github + noopener；375/1440 无溢出；删 `why` 构建报 `entries.6.why: rubik/radon：Required` 后 md5 还原；`node --test` 46/46 |
 | T-010 | 精选改 AI 雷达：GitHub 同步脚本 + 掘金式列表 + 换文案与高亮 | `c6fcb7c` | `node --test` 51/51；typecheck 0；lint 0 error；build 11 页全 `○`/`●`；`pnpm sync:picks` 拉到 26 条 + 26 张头像；`/picks` 1440 高 3416（首屏 6 行）、375 `scrollWidth=375`（修掉 315px 项目名撑出的 14px 溢出）；点 tab 实测 全部 26 / 涨得快 10 / Agent 13 / MCP 3 / 其它 7，与 tab 上的数字一致；`aria-selected` 跟随、链接全 `noopener`；`pnpm check:alt` 26/26；代码块换 vitesse 双主题、行内代码加 `--line` 底 |
+| T-011 | 信息架构重构：导航收成三项，三页统一三栏；精选拆成「分类 × 涨得快」两轴；首页去掉占位截图卡 | `217e616` | `node --test` 73/73；typecheck 0；lint 0 error；build 10 页全 `○`/`●`；三栏实测 1440/1280 → 200/592/280、1024 → 160/784、768 → 160/528、375 → 335，3 路由 × 5 档 `scrollWidth - clientWidth = 0`；滚 600px 后左右栏 `top = 72`（sticky 生效）；`/projects` 308 → `/`；导航 3 项且 `aria-current` 跟随路径（`#1a1917` vs `#6e6a63`）；筛选实测 26 → 涨得快 10 → Agent 6 → MCP 1 → 只 MCP 3，`aria-pressed` 跟随、`aria-live` 报「6 个」、`[role=tab]` 数为 0；`pnpm check:alt` 26/26 |
 
 ### P0 验收（SPEC「验收标准」9 条，2026-11-22 跑）
 
@@ -41,7 +42,7 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 |---|---|---|
 | AC-1 | `pnpm install && pnpm typecheck` 退出码 0 | ✅ 0 / 0 |
 | AC-2 | 路由表含 `/`、`/projects/[slug]`、`/notes/[slug]` 且全静态 | ✅ 10 页全 `○`/`●`，无 `ƒ` |
-| AC-3 | 三页 200 | ✅ `/` `/projects` `/notes` `/projects/cal-com` `/notes/why-mdx` 全 200 |
+| AC-3 | 三页 200 | ✅ `/` `/notes` `/projects/cal-com` `/notes/why-mdx` 全 200（`/projects` 在 T-011 后 308 → `/`） |
 | AC-4 | 375 / 1440 无横向滚动 | ✅ 12 次全 `true`（6 路由 × 2 档） |
 | AC-5 | 首页首屏含 `\d{4}\.\d{2}\.\d{2}` | ✅ `2026.11.20` |
 | AC-6 | 项目页六段标题齐全 | ✅ 6/6 |
@@ -57,9 +58,10 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 | R-4：Noto Serif SC 子集化 | 已实测：`subsets: ["latin"]` + `preload: false`，构建 11.6s 通过 | 标题字体 |
 | 导航里的 `/projects`、`/about` 在 P0 期间是 404 | 已解决（T-008）：`/projects` 建了列表页；`/about` 从导航移除，等你写完 bio 再加回 | 已关闭 |
 | 主题按钮的图标靠 `useEffect` 回读，SSR 恒为太阳图标，暗色用户会看到图标跳一下 | 未处理，P1 里挑一版纯 CSS 方案再评估 | 首屏观感 |
-| 375px 下 40px 主张把"项目"拆成两行（CJK 断词） | 已解决（T-008）：`text-balance`，断成「把值得读的开源 / 项目，拆开看。」，没有新增字号档 | 已关闭 |
+| 375px 下 40px 主张把"项目"拆成两行（CJK 断词） | 已解决（T-008）：`text-balance`；现文案在 375 断成「我跑过的开源 / 项目，和它们 / 的真实成色。」，没有新增字号档 | 已关闭 |
 | 首页 `updatedAt` 取构建时间，`No.001` 硬编码 | 已解决：改为 `max(publishedAt)` 与 `getIssueNumber()`（T-004） | 已关闭 |
 | `content/**` 三份项目 + 一篇笔记都是代写骨架，不是真实跑过的记录 | 上线前由你自己替换（尤其"我的判断""我还没搞懂的部分"） | 内容可信度 |
+| `lib/profile.ts` 的 `PROFILE` 是空对象，右栏只显示站点名与主张兜底 | 填上头像 / 名字 / 一句话 / GitHub / 邮箱 / 状态城市技术栈；空字段会自动不渲染，不会出现「未填写」 | 右栏完整度 |
 | `forWho` / `notFor` / `replaces` 仍是必填，但没有任何渲染点 | 已解决（T-008）：详情页渲染「替代 Calendly」与「适合 / 不适合」两栏 | 已关闭 |
 | `alternatives` 渲染路径已实现，但三条内容都是空数组，页面上看不到 | 补内容时填 2–3 个真实站内替代品 | 详情页完整度 |
 | 干净构建（`rm -rf .next` 后）需要能访问 Google Fonts | `next/font` 在构建时下载字体，本次出现过一次失败重跑即过；真要离线构建就换自托管（P1） | 构建稳定性 |
