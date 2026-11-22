@@ -8,15 +8,13 @@ type PickRowProps = {
   entry: PickEntry;
   /** 这一批里 stars/天 排前 10 */
   hot: boolean;
-  /** 站内已有深度评测时传 slug，行内会多一个「已跑过」入口 */
-  projectSlug?: string;
 };
 
 /**
  * 掘金式条目：标题 / 两行描述 / meta 一行（头像 + 仓库 + 语言 + 标签），
  * 右侧一列放星数与涨速当扫描锚点。原来右下角那个大衬线数字跟着衬线一起没了。
  */
-export function PickRow({ entry, hot, projectSlug }: PickRowProps) {
+export function PickRow({ entry, hot }: PickRowProps) {
   return (
     <li className="relative border-b border-line transition-colors duration-150 last:border-b-0 hover:bg-surface-2">
       <div className="flex gap-4 px-5 py-4">
@@ -31,14 +29,6 @@ export function PickRow({ entry, hot, projectSlug }: PickRowProps) {
             >
               {entry.name}
             </a>
-            {projectSlug ? (
-              <a
-                href={`/projects/${projectSlug}`}
-                className="relative z-10 shrink-0 rounded-[2px] bg-accent-soft px-1.5 py-0.5 text-micro text-accent-ink"
-              >
-                已跑过
-              </a>
-            ) : null}
           </div>
 
           <p lang="en" className="mt-1 line-clamp-2 text-small text-muted">

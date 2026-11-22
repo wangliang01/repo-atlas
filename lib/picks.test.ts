@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import { getPicksSnapshot, getProjectSlugByRepo } from "./content.ts";
+import { getPicksSnapshot } from "./content.ts";
 import {
   ALL_CATEGORIES,
   filterPicks,
@@ -118,12 +118,10 @@ test("真实快照：stars 倒序，不出现重复仓库", () => {
   assert.equal(new Set(entries.map((e) => e.repo)).size, entries.length, "快照里有重复仓库");
 });
 
-test("互链：跑过的仓库能从精选链回详情页", () => {
-  const byRepo = getProjectSlugByRepo();
-  assert.equal(byRepo.get("n8n-io/n8n"), "n8n", "n8n 在两边都有，必须能互链");
-  for (const slug of byRepo.values()) {
-    assert.ok(has(`content/projects/${slug}.mdx`), `slug ${slug} 没有对应内容`);
-  }
+test("互链：站内已经没有评测页，精选行只走 GitHub", () => {
+  // T-014 删掉了三条代写评测，「已跑过」入口跟着没了
+  assert.equal(has("app/projects"), false, "评测路由不该再存在");
+  assert.equal(read("components/pick-row.tsx").includes("/projects/"), false, "精选行还在链评测页");
 });
 
 test("页面与脚本：/picks 存在、进了导航、同步脚本在", () => {

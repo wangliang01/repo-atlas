@@ -6,9 +6,11 @@ const root = new URL("../", import.meta.url);
 const read = (p: string) => readFileSync(new URL(p, root), "utf8");
 const has = (p: string) => existsSync(new URL(p, root));
 
-test("项目列表页已删除，详情页还在", () => {
-  assert.equal(has("app/projects/page.tsx"), false, "列表页应该并进首页了");
-  assert.ok(has("app/projects/[slug]/page.tsx"), "详情页不能一起删");
+test("项目路由整条删掉：列表页和详情页都不在", () => {
+  assert.equal(has("app/projects/page.tsx"), false, "项目列表页还在");
+  // T-014：三条评测是代写的假内容，详情页跟着一起删
+  assert.equal(has("app/projects/[slug]/page.tsx"), false, "项目详情页还在");
+  assert.equal(has("content/projects"), false, "content/projects 还在");
 });
 
 test("老链接 /projects 有 308 兜底，不是 404", () => {

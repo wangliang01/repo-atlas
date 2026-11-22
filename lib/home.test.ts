@@ -27,29 +27,35 @@ test("身份卡：真名 + 定位 + 城市状态 + 技术栈，第一屏就知�
   assert.equal(has("components/masthead.tsx"), false, "旧的 masthead.tsx 还在");
 });
 
-test("这个站本身：只写能当场验证的东西，不写形容词", () => {
-  assert.ok(has("components/about-site.tsx"), "components/about-site.tsx 不存在");
-  const about = read("components/about-site.tsx");
-  for (const part of ["静态页面", "单元测试", "实测项目", "公开仓库"]) {
-    assert.ok(about.includes(part), `缺少事实项 ${part}`);
-  }
-  assert.ok(about.includes("Zod"), "没提构建期校验");
-  assert.ok(about.includes("AI"), "没交代代码是跟 AI 结对写的");
-});
-
-test("空状态：没有内容时显示第一期正在写", () => {
-  assert.ok(has("components/empty-issue.tsx"), "components/empty-issue.tsx 不存在");
-  const e = read("components/empty-issue.tsx");
-  assert.ok(e.includes("第一期正在写"), "空状态缺文案");
-});
-
-test("首页组装：身份卡 + 四块内容 + 空状态", () => {
+test("首页只留三块：身份卡 + 最近在写 + 笔记", () => {
   const page = read("app/page.tsx");
-  for (const part of ["<IdentityCard", "<AboutSite", "<ProjectLead", "<RepoRow", "<EmptyIssue"]) {
+  for (const part of ["<IdentityCard", "<RepoRow", "<RisingPanel"]) {
     assert.ok(page.includes(part), `首页缺 ${part}`);
   }
-  for (const anchor of ['id="site"', 'id="picked"', 'id="repos"', 'id="notes"']) {
+  for (const anchor of ['id="repos"', 'id="notes"']) {
     assert.ok(page.includes(anchor), `首页缺锚点 ${anchor}`);
+  }
+  // T-014：介绍站点自己、以及代写的三条评测都撤掉了，别再挂回来
+  for (const gone of ["<AboutSite", "<ProjectLead", "<VerdictNote", 'id="site"', 'id="picked"']) {
+    assert.equal(page.includes(gone), false, `首页不该再有 ${gone}`);
   }
   assert.equal(page.includes('"/projects"'), false, "首页不该再链到已删除的列表页");
 });
+
+test("假评测已经删干净：内容、路由、组件都不在", () => {
+  assert.equal(has("content/projects"), false, "content/projects 还在");
+  assert.equal(has("app/projects"), false, "app/projects 路由还在");
+  for (const file of [
+    "components/project-lead.tsx",
+    "components/verdict-badge.tsx",
+    "components/verdict-note.tsx",
+    "components/about-site.tsx",
+    "components/meta-bar.tsx",
+    "components/project-row.tsx",
+    "components/topic-chip.tsx",
+    "components/empty-issue.tsx",
+  ]) {
+    assert.equal(has(file), false, `${file} 还留着`);
+  }
+});
+

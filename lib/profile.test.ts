@@ -59,3 +59,12 @@ test("PROFILE 里只有用户自己给的事实：王亮 / 成都 / GitHub，没
   assert.ok(view.avatar, "没头像");
   assert.ok(existsSync(new URL(`../public${view.avatar}`, import.meta.url)), `头像 ${view.avatar} 不存在`);
 });
+
+test("定位句写「在做什么」，不写「还差什么」", () => {
+  const headline = visibleProfileFields(PROFILE).headline ?? "";
+  // 「在补 X」是缺口式表达，招聘的人扫一眼读到的是「不会」
+  for (const bad of ["在补", "还在学", "正在学", "入门", "小白"]) {
+    assert.equal(headline.includes(bad), false, `定位句不该出现「${bad}」：${headline}`);
+  }
+  assert.ok(headline.length > 0 && headline.length <= 20, `定位句长度不合适：${headline}`);
+});

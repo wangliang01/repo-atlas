@@ -3,21 +3,12 @@ import { join } from "node:path";
 import matter from "gray-matter";
 import { NOTE_KIND_LABEL } from "./labels.ts";
 import {
-  assertAlternativesExist,
   NOTE_KINDS,
   noteFrontmatter,
   picksFrontmatter,
-  projectFrontmatter,
   type NoteFrontmatter,
   type PicksFrontmatter,
-  type ProjectFrontmatter,
 } from "./schema.ts";
-
-export type Project = {
-  slug: string;
-  data: ProjectFrontmatter;
-  body: string;
-};
 
 export type Note = {
   slug: string;
@@ -27,7 +18,7 @@ export type Note = {
 
 const CONTENT_DIR = join(process.cwd(), "content");
 
-function listMdx(kind: "projects" | "notes" | "picks"): string[] {
+function listMdx(kind: "notes" | "picks"): string[] {
   try {
     return readdirSync(join(CONTENT_DIR, kind)).filter((file) => file.endsWith(".mdx"));
   } catch (error) {
@@ -41,15 +32,6 @@ function formatIssues(where: string, issues: { path: (string | number)[]; messag
   return `${where} 校验失败：\n${lines.join("\n")}`;
 }
 
-function parseProject(file: string): Project {
-  const where = `content/projects/${file}`;
-  const raw = readFileSync(join(CONTENT_DIR, "projects", file), "utf8");
-  const { data, content } = matter(raw);
-  const parsed = projectFrontmatter.safeParse(data);
-  if (!parsed.success) throw new Error(formatIssues(where, parsed.error.issues));
-  return { slug: file.replace(/\.mdx$/, ""), data: parsed.data, body: content };
-}
-
 function parseNote(file: string): Note {
   const where = `content/notes/${file}`;
   const raw = readFileSync(join(CONTENT_DIR, "notes", file), "utf8");
@@ -61,16 +43,6 @@ function parseNote(file: string): Note {
 
 const byNewest = (a: { data: { publishedAt: Date } }, b: { data: { publishedAt: Date } }) =>
   b.data.publishedAt.getTime() - a.data.publishedAt.getTime();
-
-export function getAllProjects(): Project[] {
-  const projects = listMdx("projects").map(parseProject).sort(byNewest);
-  assertAlternativesExist(projects);
-  return projects;
-}
-
-export function getProject(slug: string): Project | undefined {
-  return getAllProjects().find((project) => project.slug === slug);
-}
 
 export function getAllNotes(): Note[] {
   return listMdx("notes").map(parseNote).sort(byNewest);
@@ -102,25 +74,19 @@ export function getPicksSnapshot(): PicksFrontmatter | undefined {
     .sort((a, b) => b.syncedAt.getTime() - a.syncedAt.getTime())[0];
 }
 
-// 首页"最近更新"：内容里最新的那一天；还没内容才退回构建日
+// 右栏"最近更新"：内容里最新的那一天；还没内容才退回构建日
 export function getLatestUpdate(): Date {
-  const dates = [
-    ...getAllProjects().map((item) => item.data.publishedAt.getTime()),
-    ...getAllNotes().map((item) => item.data.publishedAt.getTime()),
-  ];
-  // 精选同步也算更新：以前只算项目和笔记，首页日期比精选旧两天
+  const dates = getAllNotes().map((note) => note.data.publishedAt.getTime());
+  // 精选同步也算更新：只算笔记的话，日期会比精选旧
   const synced = getPicksSnapshot()?.syncedAt.getTime();
   if (synced) dates.push(synced);
   return dates.length > 0 ? new Date(Math.max(...dates)) : new Date();
 }
 
-// 首页左栏和右栏共用的站点数字。全部来自真实内容，没有一项是估的
-export function getSiteCounts(): { projects: number; notes: number; picks: number; updatedAt: Date } {
-  const projects = getAllProjects();
-  const notes = getAllNotes();
+// 右栏与目录共用的站点数字。全部来自真实内容，没有一项是估的
+export function getSiteCounts(): { notes: number; picks: number; updatedAt: Date } {
   return {
-    projects: projects.length,
-    notes: notes.length,
+    notes: getAllNotes().length,
     picks: getPicksSnapshot()?.entries.length ?? 0,
     updatedAt: getLatestUpdate(),
   };
@@ -133,22 +99,4 @@ export function groupNotesByKind(notes: Note[]): { kind: NoteFrontmatter["kind"]
     label: NOTE_KIND_LABEL[kind],
     notes: notes.filter((note) => note.data.kind === kind),
   })).filter((group) => group.notes.length > 0);
-}
-
-// 精选行要链回站内详情时用：repo → slug
-export function getProjectSlugByRepo(): Map<string, string> {
-  return new Map(getAllProjects().map((project) => [project.data.repo, project.slug]));
-}
-
-// 一期 3 个，期号从 1 开始
-export function getIssueNumber(): number {
-  return Math.max(1, Math.ceil(getAllProjects().length / 3));
-}
-
-// 列表按日期倒序：prev 更新、next 更旧
-export function getAdjacentProjects(slug: string): { prev?: Project; next?: Project } {
-  const all = getAllProjects();
-  const index = all.findIndex((project) => project.slug === slug);
-  if (index === -1) return {};
-  return { prev: all[index - 1], next: all[index + 1] };
 }

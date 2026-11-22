@@ -11,8 +11,8 @@ export function RepoRow({ repo }: { repo: Repo }) {
         className="flex items-baseline gap-3 px-5 py-3"
       >
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-body font-medium text-ink">{repo.name}</span>
-          <span className="mt-0.5 block truncate text-small text-muted">{repo.desc}</span>
+          <span className="block truncate text-body font-semibold text-ink">{repo.name}</span>
+          <span className="mt-0.5 block line-clamp-2 text-balance text-small text-muted">{repo.desc}</span>
         </span>
 
         <span className="hidden shrink-0 items-baseline gap-2.5 text-micro text-muted tabular-nums sm:flex">

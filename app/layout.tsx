@@ -28,7 +28,7 @@ const notoSans = Noto_Sans_SC({
 
 export const metadata: Metadata = {
   title: "Repo Atlas",
-  description: "我跑过的开源项目，和它们的真实成色。",
+  description: "王亮的个人站：前端 + Node，最近在做 AI 工具。我写的仓库、我在扫的 AI 项目，和一些笔记。",
 };
 
 export default function RootLayout({

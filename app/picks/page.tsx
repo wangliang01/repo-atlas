@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PicksView } from "@/components/picks-view";
-import { getPicksSnapshot, getProjectSlugByRepo, getSiteCounts } from "@/lib/content";
+import { getPicksSnapshot, getSiteCounts } from "@/lib/content";
 import { formatDate } from "@/lib/date";
 import { formatStars } from "@/lib/format";
 import { PROFILE } from "@/lib/profile";
@@ -46,12 +46,7 @@ export default function PicksPage() {
       </header>
 
       <div className="mt-4">
-        <PicksView
-          entries={entries}
-          profile={PROFILE}
-          updatedAt={updatedAt}
-          projectByRepo={Object.fromEntries(getProjectSlugByRepo())}
-        />
+        <PicksView entries={entries} profile={PROFILE} updatedAt={updatedAt} />
       </div>
     </div>
   );

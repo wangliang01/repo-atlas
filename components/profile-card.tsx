@@ -10,7 +10,7 @@ type ProfileCardProps = {
 
 // 个人字段全空时退回站点自己的身份，而不是留一个空盒子或写「未填写」
 const FALLBACK_NAME = "Repo Atlas";
-const FALLBACK_LINE = "我跑过的开源项目，和它们的真实成色。";
+const FALLBACK_LINE = "我写的仓库，和我正在看的项目。";
 
 /**
  * 右栏个人信息。数字放在左栏，这里只放「这个人是谁」——

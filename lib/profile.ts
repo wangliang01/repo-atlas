@@ -20,7 +20,7 @@ export type Profile = {
 
 export const PROFILE: Profile = {
   name: "王亮",
-  headline: "前端出身，在补 Node 和 AI 应用",
+  headline: "前端 + Node，最近在做 AI 工具",
   avatar: "/avatar.jpg",
   status: "求职中",
   location: "成都",

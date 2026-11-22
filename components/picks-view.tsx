@@ -13,11 +13,9 @@ type PicksViewProps = {
   entries: PickEntry[];
   profile: Profile;
   updatedAt: Date;
-  /** repo → 站内 slug，用来把精选行链回详情页 */
-  projectByRepo: Record<string, string>;
 };
 
-export function PicksView({ entries, profile, updatedAt, projectByRepo }: PicksViewProps) {
+export function PicksView({ entries, profile, updatedAt }: PicksViewProps) {
   const [filter, setFilter] = useState<PickFilter>(DEFAULT_FILTER);
 
   const categories = pickCategories(entries);
@@ -66,12 +64,7 @@ export function PicksView({ entries, profile, updatedAt, projectByRepo }: PicksV
 
       <ul>
         {visible.map((entry) => (
-          <PickRow
-            key={entry.repo}
-            entry={entry}
-            hot={rising.has(entry.repo)}
-            projectSlug={projectByRepo[entry.repo]}
-          />
+          <PickRow key={entry.repo} entry={entry} hot={rising.has(entry.repo)} />
         ))}
       </ul>
 
