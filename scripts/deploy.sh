@@ -6,6 +6,15 @@ set -euo pipefail
 HOST="${DEPLOY_HOST:-root@wlv587.top}"
 DIR="${DEPLOY_DIR:-/srv/blog}"
 
+# CI 里没有 ssh agent，密钥从 Secrets 传进来；本地跑这个脚本时不设这个变量，
+# 直接用手上已有的 key
+if [ -n "${DEPLOY_SSH_KEY:-}" ]; then
+  mkdir -p ~/.ssh
+  printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+  chmod 600 ~/.ssh/id_ed25519
+  ssh-keyscan -H "${HOST#*@}" >> ~/.ssh/known_hosts 2>/dev/null
+fi
+
 cd "$(dirname "$0")/.."
 
 pnpm build

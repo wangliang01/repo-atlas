@@ -1,0 +1,47 @@
+name: deploy
+
+# 推 master 就重新构建上线。笔记只存在 content/**/*.mdx 里，构建时才烘进 HTML，
+# 所以没有这一步的话写完笔记还得手动跑 scripts/deploy.sh。
+#
+# 注意：picks.yml 里那次自动提交用的是 GITHUB_TOKEN，GitHub 不会用它触发本 workflow，
+# 所以 picks 自己的部署步骤留着。两者共用 concurrency group `deploy`，不会同时动 /srv/blog。
+on:
+  push:
+    branches: [master]
+    # 只改文档的推送没必要重建；.mdx 是笔记内容，不在这里面
+    paths-ignore:
+      - "**.md"
+      - ".scratch/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 不取消进行中的部署：解压到 /srv/blog 的中途被杀会留下半个站点
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 构建并上传
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: bash scripts/deploy.sh

@@ -53,9 +53,11 @@
 - **静态导出，没有 Node 进程**。`next.config.ts` 里 `output: "export"`，构建产物是 `out/`，由服务器上已有的 Caddy 容器直接发文件。给这个站多开一个 Node 进程要吃掉一两百兆，不划算。
 - 导出带来两个约束：`next.config` 的 `redirects()` 用不了（`/projects → /` 的 308 写在 `deploy/Caddyfile` 里）；`next/image` 必须 `unoptimized`，否则头像会指向不存在的 `/_next/image`。
 - `bash scripts/deploy.sh` 做三件事：构建 → tar 过 ssh → 解到 `/srv/blog`。解压前会清空目录，**但不会替换目录本身**——`/srv/blog` 是 Caddy 容器的 bind mount，换 inode 挂载就断了。
+- **推 master 就自动上线**（`.github/workflows/deploy.yml`），所以改笔记只要 commit + push。只改 `.md` 或 `.scratch/**` 的推送会跳过构建。本地仍然可以手动跑 `scripts/deploy.sh`。
+- `.github/workflows/picks.yml` 每天 4 次同步精选，有变化时也会在 CI 里跑一遍 `scripts/deploy.sh`。picks 的提交是 `GITHUB_TOKEN` 推的，GitHub 不会用它触发 `deploy.yml`，所以那边必须自己部署。两个 workflow 共用 `concurrency: group: deploy`，不会同时动 `/srv/blog`。
+- 两个 workflow 都靠仓库 Secrets 里的 `DEPLOY_HOST` / `DEPLOY_SSH_KEY` ssh 到服务器——这把钥匙在 `root` 的 `authorized_keys` 里，泄露就等于交出服务器，换机器时记得一起换。
 - 80/443 由 Docker 里的 `edge_caddy` 持有，宿主机上的 nginx 没在跑。改站点配置是改 `/opt/edge/Caddyfile`（仓库里 `deploy/Caddyfile` 是副本），改完 `docker exec edge_caddy caddy reload --config /etc/caddy/Caddyfile` 热加载，不要 `docker compose up -d` 除非要加挂载。
 - 证书由 Caddy 自动申请续期，不用管。
-- `.github/workflows/picks.yml` 每天 4 次同步精选，有变化时会在 CI 里再跑一遍 `scripts/deploy.sh` 把新数据烘进页面。它用仓库 Secrets 里的 `DEPLOY_HOST` / `DEPLOY_SSH_KEY` ssh 到服务器——这把钥匙在 `root` 的 `authorized_keys` 里，泄露就等于交出服务器，换机器时记得一起换。
 
 ## 红线
 - NEVER 新增依赖，除非 Ticket 写明并获同意。

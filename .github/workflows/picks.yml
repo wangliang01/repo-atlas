@@ -11,7 +11,9 @@ permissions:
   contents: write
 
 concurrency:
-  group: picks
+  # 和 deploy.yml 共用同一个组：两边都会清空并重写 /srv/blog，
+  # 同时跑会得到一半新一半旧的站点
+  group: deploy
   cancel-in-progress: false
 
 jobs:
@@ -54,15 +56,11 @@ jobs:
           fi
 
       # 精选是构建时从 content/picks/*.mdx 烘进 HTML 的，不重新构建 + 上传，
-      # 线上 /picks 永远是上次部署的旧数据
+      # 线上 /picks 永远是上次部署的旧数据。
+      # 这里不能指望 deploy.yml：picks 的提交是 GITHUB_TOKEN 推的，GitHub 不会用它触发别的 workflow
       - name: 部署到线上
         if: steps.sync.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "${DEPLOY_HOST#*@}" >> ~/.ssh/known_hosts 2>/dev/null
-          bash scripts/deploy.sh
+        run: bash scripts/deploy.sh
