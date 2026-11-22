@@ -86,3 +86,11 @@ export function getLatestUpdate(): Date {
 export function getIssueNumber(): number {
   return Math.max(1, Math.ceil(getAllProjects().length / 3));
 }
+
+// 列表按日期倒序：prev 更新、next 更旧
+export function getAdjacentProjects(slug: string): { prev?: Project; next?: Project } {
+  const all = getAllProjects();
+  const index = all.findIndex((project) => project.slug === slug);
+  if (index === -1) return {};
+  return { prev: all[index - 1], next: all[index + 1] };
+}

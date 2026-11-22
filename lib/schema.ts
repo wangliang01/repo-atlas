@@ -35,7 +35,8 @@ export const projectFrontmatter = z.object({
   license: z.string().min(1),
   language: z.string().min(1),
   stars: z.number().int().nonnegative(),
-  screenshot: z.string().startsWith("/", "screenshot 必须是站内绝对路径"),
+  // 没有真截图时不填，页面渲染索引卡占位；别填不存在的路径
+  screenshot: z.string().startsWith("/", "screenshot 必须是站内绝对路径").optional(),
   publishedAt: dateOnly,
   highlight: z.string().min(1),
   forWho: z.string().min(1),
