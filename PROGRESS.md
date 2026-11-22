@@ -31,7 +31,7 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 | T-005 | 项目卡片/行/结论标签 + 首页两块列表 | `88c8444` | 裁判 5/7：`node --test` 27/27；3 个 `/projects/` 链接；行高 72；`推荐` 底色 `rgb(196,68,44)`、`别碰` `line-through`；375px 无溢出。AC-5（MetaBar）/AC-7（alt）未达成，已移交 T-006 |
 | T-006 | 项目详情页六段式 + MetaBar + 相邻导航 | `71ca74f` | 裁判 9/9：`node --test` 31/31；build 三条 slug 全 `●`；`/projects/nope` 404；六段 h2 各 2 次；375px `scrollWidth=375`、1440px 正文 720；MetaBar 六项 `tabular-nums`。返工两次（移动端 grid 隐式列按 max-content 撑到 400.6px；16:10 占位在 1200 容器里变成 1150×719 空白块） |
 | T-007 | 笔记列表 + 笔记详情 + 目录 + 构建期高亮代码块 | `b33848c` | 裁判 8/8：`node --test` 41/41；`○ /notes` + `● /notes/[slug]`；复制按钮读回原文一致；1440 目录 sticky（滚动后 top 仍 96）、1024 隐藏；正文 720/28px；375px 无溢出；表格/列表/引用都渲染出来。另修 `readingTime` 手填 6 分钟与实际 2 分钟不符（改为现算），页脚浮空（body 改 flex） |
-| T-008 | P0 收口：404、项目库、溢出与 alt 通检 | `PENDING` | SPEC 9 条 P0 验收 9/9：6 路由 × 375/1440 共 12 次 `scrollWidth===clientWidth`；`/nope` 404 且有返回首页；破坏性验证截图分支真的产出 `<img alt="…">`；删 `license` 字段构建 exit 1 后 md5 还原；`node --test` 41/41 |
+| T-008 | P0 收口：404、项目库、溢出与 alt 通检 | `181dad7` | SPEC 9 条 P0 验收 9/9：6 路由 × 375/1440 共 12 次 `scrollWidth===clientWidth`；`/nope` 404 且有返回首页；破坏性验证截图分支真的产出 `<img alt="…">`；删 `license` 字段构建 exit 1 后 md5 还原；`node --test` 41/41 |
 
 ### P0 验收（SPEC「验收标准」9 条，2026-11-22 跑）
 
