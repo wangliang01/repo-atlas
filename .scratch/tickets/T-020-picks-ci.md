@@ -68,7 +68,8 @@ push 明明成功了，脚本却走了 catch。根因：`git(["push"], { stdio: 
 - [x] `gh workflow run picks` 能手动触发，run 走完是 success（19 秒）
 - [x] run 结束后远端 `master` 多了一条 `chore(picks): 同步 AI 精选 2026-11-22 13:28`（`3aae696`）
 - [x] 定时表达式确认是 UTC `0 1,7,13,19 * * *`（北京时间 09/15/21/03）
-- [ ] CI 部署步骤能真的把新数据送上线（`workflow_dispatch` 触发，看 `/picks` 的更新时间变）
+- [x] CI 部署步骤能真的把新数据送上线：run `45028362303` 46 秒 success，`已部署：https://blog.wlv587.top`；线上 `/picks` HTML 里能查到 `9dda518` 那一版的 `473510` / `395030` / `323847`
+- [x] 部署后路由没退化：`/` `/picks` `/notes` `/notes/llmops-token-context` 全 200，`/projects` 308，`/notes/nope` 404；另外三个站点未受影响
 - [x] `node --test` 79/79（含改写后的 308 断言）
 
 ## 如果还是不被识别
