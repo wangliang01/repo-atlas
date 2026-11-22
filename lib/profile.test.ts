@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { PROFILE, hasPersonalProfile, visibleProfileFields } from "./profile.ts";
 
 test("空 profile：字段全空，个人段判空", () => {
@@ -43,6 +44,18 @@ test("只认 https 和 mailto，javascript: 与相对路径丢掉", () => {
   );
 });
 
-test("仓库里的 PROFILE 是空的——证明没编造姓名和联系方式", () => {
-  assert.equal(hasPersonalProfile(PROFILE), false, "PROFILE 里有值，说明有人填了假数据");
+test("PROFILE 里只有用户自己给的事实：王亮 / 成都 / GitHub，没有邮箱", () => {
+  const view = visibleProfileFields(PROFILE);
+  assert.equal(view.name, "王亮");
+  assert.equal(view.location, "成都");
+  assert.ok(view.stack.length >= 4, "技术栈太少");
+  assert.deepEqual(
+    view.links.map((link) => link.href),
+    ["https://github.com/wangliang01"],
+    "链接不止 GitHub 一个，或者地址不对",
+  );
+  // 个人站公开 mailto 会被爬，用户明确说不显示邮箱
+  assert.equal(view.links.some((link) => link.href.startsWith("mailto:")), false);
+  assert.ok(view.avatar, "没头像");
+  assert.ok(existsSync(new URL(`../public${view.avatar}`, import.meta.url)), `头像 ${view.avatar} 不存在`);
 });

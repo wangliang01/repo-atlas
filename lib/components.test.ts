@@ -36,13 +36,13 @@ test("列表行：标题 16px 600 + 两行描述 + 一行 meta，四条行共用
   }
 });
 
-test("ProjectLead：序号 + 结论 + 上手时间，不再用占位截图框", () => {
+test("ProjectLead：结论 + 上手时间 + 星数，不再用占位截图框", () => {
   const lead = read("components/project-lead.tsx");
   assert.ok(lead.includes("VerdictBadge"), "条目没放结论标签");
   assert.ok(lead.includes("setupTime"), "条目没显示上手时间");
   assert.ok(lead.includes("/projects/"), "条目没链到详情页");
-  assert.ok(lead.includes("padStart(2"), "没有两位序号");
-  // NO.01 那种空框在截图里像图没加载，已删掉，别再回来
+  // 本期编号随「本期」一起删了，首页现在按「这站 / 评测 / 轨迹 / 笔记」分区
+  assert.equal(lead.includes("padStart(2"), false, "序号又回来了");
   assert.equal(has("components/project-card.tsx"), false, "占位截图卡片又出现了");
   assert.equal(lead.includes("aspect-["), false, "不要再用固定比例的空框");
 });
@@ -54,14 +54,12 @@ test("区块标题组件：标题 + 可选的右侧动作", () => {
   assert.ok(head.includes("action"), "没有右侧动作入口");
 });
 
-test("首页组装：三栏壳 + masthead + 本期条目，不再重复列一遍同样的项目", () => {
+test("首页组装：身份卡 + 这站 + 评测 + 轨迹 + 笔记，第一屏不是 feed", () => {
   const page = read("app/page.tsx");
-  for (const part of ["SiteShell", "Masthead", "ProjectLead", "HomeRail", "ProfileCard", "本期"]) {
+  for (const part of ["IdentityCard", "AboutSite", "ProjectLead", "RepoRow", "VerdictNote"]) {
     assert.ok(page.includes(part), `首页缺 ${part}`);
   }
-  assert.equal(page.includes('"/projects"'), false, "首页不该再链到已删除的列表页");
-  // 本期取 slice(0,3)，「更早」必须从 3 之后开始，否则同一批项目出现两次
-  assert.ok(page.includes("projects.slice(3)"), "「更早」没有跳过本期三个");
+  assert.equal(page.includes("本期"), false, "首页还在用「本期」这个说法");
 });
 
 test("内容至少 3 个项目，才能验「本期 3 个」", () => {

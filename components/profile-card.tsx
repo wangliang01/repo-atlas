@@ -43,11 +43,12 @@ export function ProfileCard({ profile, updatedAt, variant }: ProfileCardProps) {
         )}
         <div className="min-w-0">
           <p className="truncate text-body font-semibold text-ink">{name}</p>
-          <p className="mt-0.5 text-micro text-muted">{headline}</p>
+          {meta ? <p className="mt-0.5 text-micro text-muted">{meta}</p> : null}
         </div>
       </div>
 
-      {meta ? <p className="mt-3 text-micro text-muted">{meta}</p> : null}
+      {/* 定位句单独占整行：挤在头像右边只剩 168px，末尾会掉出一个孤字 */}
+      <p className="mt-2.5 text-small text-muted">{headline}</p>
 
       {view.stack.length > 0 ? (
         <ul className="mt-2.5 flex flex-wrap gap-1.5">

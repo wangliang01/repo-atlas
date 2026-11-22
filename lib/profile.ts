@@ -19,17 +19,15 @@ export type Profile = {
 };
 
 export const PROFILE: Profile = {
-  // name: "",
-  // headline: "",
-  // avatar: "/me.png",
-  // status: "",
-  // location: "",
-  // stack: [],
-  // links: [
-  //   { label: "GitHub", href: "https://github.com/your-handle" },
-  //   { label: "邮箱", href: "mailto:you@example.com" },
-  // ],
-  // updatedAt: "2026-11-22",
+  name: "王亮",
+  headline: "前端出身，在补 Node 和 AI 应用",
+  avatar: "/avatar.jpg",
+  status: "求职中",
+  location: "成都",
+  stack: ["React", "TypeScript", "Node.js", "Next.js", "Vue", "Python"],
+  // 邮箱先不放：个人站公开 mailto 会被爬，面试走 GitHub 私信或简历里的联系方式
+  links: [{ label: "GitHub", href: "https://github.com/wangliang01" }],
+  updatedAt: "2026-11-22",
 };
 
 /** 只认这两种 href：外链和邮件。别的（javascript:、相对路径）一律丢掉 */
