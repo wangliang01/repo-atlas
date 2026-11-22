@@ -1,0 +1,167 @@
+---
+title: Vue3 的 ref 为什么非要加 .value？
+summary: reactive 能直接改，ref 却要 .value——差别不在 API 习惯，在 Proxy 拦不住基本类型。
+kind: source
+publishedAt: 2026-11-22
+---
+
+## 前言
+
+整理 my-vue3 的笔记时，我卡在一个最基础的问题上。
+
+`reactive({ count: 0 })` 直接改就行，`ref(0)` 非得写 `.value`。
+
+一开始以为这只是 API 设计上的习惯，翻到 `RefImpl` 才发现不是。
+
+## ref 和 reactive，差的真的只是一个 .value 吗
+
+先看用法。
+
+```ts
+const state = reactive({ count: 0 })
+state.count++
+
+const count = ref(0)
+count.value++
+```
+
+表面看，差别只是多敲五个字符。
+
+往下看一层，两者返回的东西根本不是一类：
+
+- `reactive()` 返回一个 `Proxy`
+- `ref()` 返回一个类的实例（`RefImpl`）
+
+## Proxy 为什么拦不住一个数字
+
+`reactive` 的核心是 `new Proxy(target, handlers)`。
+
+Proxy 的第一个参数必须是对象。数字、字符串、布尔值不是对象，包不住。
+
+所以基本类型只能换一条路：装进一个盒子，盒子是对象，值挂在盒子的 `value` 属性上。
+
+这个盒子就是 `RefImpl`。简化过的样子：
+
+```ts
+class RefImpl<T> {
+  private _value: T
+  private _rawValue: T
+  public readonly __v_isRef = true
+
+  constructor(value: T) {
+    this._rawValue = toRaw(value)
+    this._value = toReactive(value)
+  }
+
+  get value() {
+    trackRefValue(this)
+    return this._value
+  }
+
+  set value(newVal) {
+    newVal = toRaw(newVal)
+    if (hasChanged(newVal, this._rawValue)) {
+      this._rawValue = newVal
+      this._value = toReactive(newVal)
+      triggerRefValue(this)
+    }
+  }
+}
+```
+
+去掉了 shallow 和 readonly 的分支，剩下的骨架就这几行。
+
+## .value 是在哪一步被拦下来的
+
+看 getter 和 setter 里的那两行：
+
+- `get value()` 里调 `trackRefValue(this)`，把当前正在执行的 effect 收进依赖
+- `set value()` 里比对新旧值，变了就调 `triggerRefValue(this)`，把依赖全部重跑
+
+**所以 `.value` 不是语法糖，是拦截点。**
+
+少了这个属性访问，依赖收集和派发更新都没有地方发生。
+
+`reactive` 把拦截点放在 Proxy 的 `get`/`set` 上，`ref` 放在自己定义的 getter/setter 上。
+
+## 模板里为什么又不用写
+
+写模板的时候明明不用 `.value`：
+
+```vue
+<template>
+  <p>{{ count }}</p>
+</template>
+
+<script setup>
+const count = ref(0)
+</script>
+```
+
+因为 `setup` 的返回值被包了一层。
+
+组件初始化时执行 `instance.setupState = proxyRefs(setupResult)`，`proxyRefs` 又是一个 Proxy：
+
+```ts
+const shallowUnwrapHandlers = {
+  get: (target, key, receiver) => unref(Reflect.get(target, key, receiver)),
+  set: (target, key, value, receiver) => {
+    const oldValue = target[key]
+    if (isRef(oldValue) && !isRef(value)) {
+      oldValue.value = value
+      return true
+    }
+    return Reflect.set(target, key, value, receiver)
+  },
+}
+```
+
+`get` 里那句 `unref(...)` 就是答案：**读出来的时候自动拆盒。**
+
+于是同一个 `count` 有了两条访问路径：
+
+- 在 JS 里，你拿到的是盒子，得自己拆（`.value`）
+- 在模板里，渲染上下文先帮你拆过了
+
+这就是「模板不写、JS 必须写」的全部原因。
+
+## 什么时候必须写，什么时候可以不写
+
+| 场景 | 要不要 `.value` | 为什么 |
+|---|---|---|
+| 模板里 | 不要 | `proxyRefs` 的 get 里 `unref` |
+| `setup` 返回的对象里 | 不要 | 同上 |
+| `reactive` 对象内部 | 不要 | 基础 `get` 拦截器会解包 |
+| 数组、`Map`、`Set` 里 | 要 | 这几个容器不解包 |
+| 解构出来的变量 | 要（或改用 `toRefs`） | 解构拿到的已经不是那个盒子 |
+
+数组那条最容易踩：
+
+```ts
+const list = reactive([ref(1)])
+list[0]        // RefImpl，不是 1
+list[0].value  // 1
+```
+
+解构那条也常见：
+
+```ts
+const state = reactive({ count: 0 })
+
+const { count } = state              // 0，快照，改它没反应
+const { count: c } = toRefs(state)   // Ref<number>，还是活的
+```
+
+## 总结
+
+三句话：
+
+1. `reactive` 用 Proxy 拦对象，`ref` 用 getter/setter 拦一个盒子。
+2. `.value` 是拦截点，不是风格问题。
+3. 模板不写 `.value`，是因为渲染上下文又包了一层 `proxyRefs`。
+
+## 我还没搞懂的部分
+
+`computed` 的缓存我只知道有个 `_dirty` 标记，具体什么时候被置位、什么时候清掉，我还没跟完。
+
+`shallowRef` 和 `triggerRef` 的配合我也只用过一次，什么场景下必须手动 trigger，还没形成判断。
