@@ -15,12 +15,12 @@ export function HomeRail({ projects, picks, notes }: HomeRailProps) {
   ];
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <div>
       <VerdictLegend />
 
-      <dl className="hidden border-t border-line pt-3 font-mono text-micro md:block">
+      <dl className="mt-2 hidden border-t border-line px-3 pb-1 pt-2 text-micro md:block">
         {counts.map((item) => (
-          <div key={item.label} className="flex items-baseline justify-between py-0.5">
+          <div key={item.label} className="flex items-baseline justify-between py-1">
             <dt className="text-muted">{item.label}</dt>
             <dd className="tabular-nums text-ink">{item.value}</dd>
           </div>

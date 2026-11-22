@@ -7,7 +7,7 @@ const root = new URL("../", import.meta.url);
 const read = (p: string) => readFileSync(new URL(p, root), "utf8");
 const has = (p: string) => existsSync(new URL(p, root));
 
-test("结论标签：三种结论文案不同，别碰带删除线，推荐用强调色", () => {
+test("结论标签：三种结论文案不同，别碰带删除线，推荐用蓝底", () => {
   assert.ok(has("components/verdict-badge.tsx"), "components/verdict-badge.tsx 不存在");
   const labels = read("lib/labels.ts");
   for (const label of ["推荐", "观望", "别碰"]) {
@@ -15,23 +15,28 @@ test("结论标签：三种结论文案不同，别碰带删除线，推荐用�
   }
   const badge = read("components/verdict-badge.tsx");
   assert.ok(badge.includes("line-through"), "别碰没加删除线");
-  assert.ok(badge.includes("bg-accent"), "推荐没用强调色底");
+  assert.ok(badge.includes("bg-accent-fill"), "推荐没用蓝底（#1e80ff 压白字只有 3.76:1，必须用深一档）");
   assert.ok(/verdict/.test(badge), "没有 verdict prop");
 });
 
-test("ProjectRow：72px 行高 + 40px 图标 + 三档字号", () => {
-  assert.ok(has("components/project-row.tsx"), "components/project-row.tsx 不存在");
-  const row = read("components/project-row.tsx");
-  assert.ok(row.includes("h-[72px]"), "行高不是 72px");
-  assert.ok(row.includes("size-10"), "图标不是 40px");
-  assert.ok(row.includes("text-body"), "标题没用 16px");
-  assert.ok(row.includes("text-small"), "描述没用 13px 档");
-  assert.ok(row.includes("text-micro"), "元数据没用 12px 档");
-  assert.ok(row.includes("/projects/"), "行没链到详情页");
+test("列表行：标题 16px 600 + 两行描述 + 一行 meta，四条行共用一套字号", () => {
+  for (const file of [
+    "components/pick-row.tsx",
+    "components/project-lead.tsx",
+    "components/project-row.tsx",
+    "components/note-card.tsx",
+  ]) {
+    assert.ok(has(file), `${file} 不存在`);
+    const row = read(file);
+    assert.ok(row.includes("text-body font-semibold"), `${file} 标题不是 16px 600`);
+    assert.ok(row.includes("text-small"), `${file} 描述没用 13px 档`);
+    assert.ok(row.includes("text-micro"), `${file} 元信息没用 12px 档`);
+    assert.equal(row.includes("font-serif"), false, `${file} 还在用衬线`);
+    assert.equal(row.includes("border border-line"), false, `${file} 还是旧的外框卡片写法`);
+  }
 });
 
 test("ProjectLead：序号 + 结论 + 上手时间，不再用占位截图框", () => {
-  assert.ok(has("components/project-lead.tsx"), "components/project-lead.tsx 不存在");
   const lead = read("components/project-lead.tsx");
   assert.ok(lead.includes("VerdictBadge"), "条目没放结论标签");
   assert.ok(lead.includes("setupTime"), "条目没显示上手时间");
@@ -49,9 +54,9 @@ test("区块标题组件：标题 + 可选的右侧动作", () => {
   assert.ok(head.includes("action"), "没有右侧动作入口");
 });
 
-test("首页组装：三栏壳 + 主张 + 本期条目，不再重复列一遍同样的项目", () => {
+test("首页组装：三栏壳 + masthead + 本期条目，不再重复列一遍同样的项目", () => {
   const page = read("app/page.tsx");
-  for (const part of ["SiteShell", "Statement", "ProjectLead", "HomeRail", "ProfileCard", "本期"]) {
+  for (const part of ["SiteShell", "Masthead", "ProjectLead", "HomeRail", "ProfileCard", "本期"]) {
     assert.ok(page.includes(part), `首页缺 ${part}`);
   }
   assert.equal(page.includes('"/projects"'), false, "首页不该再链到已删除的列表页");

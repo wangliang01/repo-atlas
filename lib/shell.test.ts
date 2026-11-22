@@ -31,10 +31,11 @@ test("暗色下原生控件跟随：.dark 声明 color-scheme: dark", () => {
   assert.ok(darkPart.includes("color-scheme: dark"), ".dark 缺 color-scheme: dark");
 });
 
-test("header 是 56px 吸顶，footer 存在", () => {
+test("header 是 60px 白底吸顶，footer 存在", () => {
   assert.ok(has("components/site-header.tsx"), "components/site-header.tsx 不存在");
   const header = read("components/site-header.tsx");
-  assert.ok(header.includes("h-14"), "header 缺 h-14（56px）");
+  assert.ok(header.includes("h-[60px]"), "header 缺 h-[60px]");
+  assert.ok(header.includes("bg-surface"), "header 不是白底");
   assert.ok(header.includes("sticky"), "header 缺 sticky");
   assert.ok(has("components/site-footer.tsx"), "components/site-footer.tsx 不存在");
 });

@@ -1,62 +1,79 @@
 @import "tailwindcss";
 
+/*
+  视觉语言：掘金式信息流。
+  实测 juejin.cn（1440）：画布 #f2f3f5、卡片纯白 4px 圆角、三栏 180/720/270、
+  列间距 20、行高 99px、正文系统无衬线、主色 #1e80ff。
+*/
+
 /* 字号刻度：只有这六行，禁止新增第七档 */
 @theme {
-  --text-display: 40px;
-  --text-display--line-height: 1.2;
-  --text-h1: 32px;
-  --text-h1--line-height: 1.25;
-  --text-h2: 24px;
-  --text-h2--line-height: 1.35;
+  --text-display: 28px;
+  --text-display--line-height: 1.35;
+  --text-h1: 24px;
+  --text-h1--line-height: 1.4;
+  --text-h2: 18px;
+  --text-h2--line-height: 1.5;
   --text-body: 16px;
   --text-body--line-height: 1.75;
   --text-small: 13px;
-  --text-small--line-height: 1.5;
+  --text-small--line-height: 1.6;
   --text-micro: 12px;
-  --text-micro--line-height: 1.4;
-  --text-micro--letter-spacing: 0.08em;
+  --text-micro--line-height: 1.5;
 }
 
 /* 颜色 token 唯一来源：改这里就要重验对比度 */
 :root {
   color-scheme: light;
 
-  --bg: #FAF9F6;
-  --surface: #FFFFFF;
-  --ink: #1A1917;
-  --muted: #6E6A63;
-  --line: #E6E2D9;
-  --accent: #C4442C;
-  --accent-soft: #F6E7E2;
+  --bg: #f2f3f5;
+  --surface: #ffffff;
+  --surface-2: #f7f8fa;
+  --ink: #252933;
+  --muted: #6b7280;
+  --line: #e5e6eb;
+  --accent: #1e80ff;
+  /* #1e80ff 当 12–16px 文字只有 3.76:1，达不到 AA；文字统一用深一档的 #1668c9（4.83:1） */
+  --accent-ink: #1668c9;
+  /* 实心按钮/徽章用这个底，白字 7.05:1；暗色下 accent-ink 是浅蓝，白字压不上去 */
+  --accent-fill: #1668c9;
+  --accent-soft: #eaf2ff;
 
   --container: 1200px;
   --measure: 720px;
   --radius: 4px;
+  --shadow-header: 0 2px 8px rgb(0 0 0 / 0.04);
 }
 
 .dark {
   color-scheme: dark;
 
-  --bg: #121211;
-  --surface: #1A1A18;
-  --ink: #EDEAE3;
-  --muted: #9A958B;
-  --line: #2A2A27;
-  --accent: #E4694F;
-  --accent-soft: #2B1D19;
+  --bg: #17181a;
+  --surface: #232324;
+  --surface-2: #2a2b2e;
+  --ink: #e5e6eb;
+  --muted: #9aa1ad;
+  --line: #2f3033;
+  --accent: #4098ff;
+  --accent-ink: #6db2ff;
+  --accent-fill: #1e6fd0;
+  --accent-soft: #1b2b3f;
+  --shadow-header: 0 2px 8px rgb(0 0 0 / 0.4);
 }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-fill: var(--accent-fill);
   --color-accent-soft: var(--accent-soft);
 
   --font-sans: var(--font-inter), var(--font-noto-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-noto-serif), ui-serif, Georgia, serif;
   --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
 }
 
@@ -99,6 +116,12 @@
     }
   }
 
+  /* 掘金的白卡片：灰底上靠底色分层，不加阴影 */
+  .panel {
+    background-color: var(--surface);
+    border-radius: var(--radius);
+  }
+
   /* shiki 双主题：颜色走 CSS 变量，切暗色不重新高亮 */
   .code-block .shiki {
     background: transparent;
@@ -113,10 +136,12 @@
     color: var(--shiki-dark);
   }
 
-  /* 行内代码用 --line 做底：比 accent-soft 安静，长段落里不抢眼 */
+  /* 行内代码用 --surface-2 做底：比 accent-soft 安静，长段落里不抢眼 */
   [data-prose] :not(pre) > code {
-    background-color: var(--line);
+    background-color: var(--surface-2);
+    border: 1px solid var(--line);
     padding: 0.1em 0.35em;
+    border-radius: 3px;
     font-size: 0.92em;
     white-space: nowrap;
   }

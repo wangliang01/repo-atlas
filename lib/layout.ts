@@ -1,17 +1,13 @@
-// 三栏的宽度数字只在这里算一次；components/site-shell.tsx 里的 className 是字面量
-// （Tailwind 只认字面量），lib/layout.test.ts 负责把两边对起来。
 export const CONTAINER = 1200;
-/** ≥768px 的左右内边距，和 globals.css 的 .wrap 一致 */
 export const PADDING = 24;
-/** <768px 的左右内边距 */
 export const PADDING_MOBILE = 20;
 
-export const XL = { left: 200, right: 280, gap: 40 } as const;
-export const MD = { left: 160, gap: 32 } as const;
+/** 掘金实测：左 180 / 右 270 / 列间距 20 */
+export const XL = { left: 180, right: 260, gap: 20 } as const;
+export const MD = { left: 180, gap: 20 } as const;
 
-export type ShellBreakpoint = "xl" | "md" | "sm";
+export type ShellBreakpoint = "sm" | "md" | "xl";
 
-/** 某个视口宽度下中栏（feed）能拿到多少 px */
 export function feedWidth(viewport: number, breakpoint: ShellBreakpoint): number {
   const padding = viewport >= 768 ? PADDING : PADDING_MOBILE;
   const content = Math.min(viewport, CONTAINER) - padding * 2;

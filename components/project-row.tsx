@@ -9,18 +9,16 @@ export function ProjectRow({ project }: { project: Project }) {
   return (
     <Link
       href={`/projects/${slug}`}
-      className="flex h-[72px] items-center gap-4 border-b border-line transition-colors duration-150 hover:bg-surface"
+      className="flex items-center gap-4 border-b border-line px-5 py-3.5 transition-colors duration-150 last:border-b-0 hover:bg-surface-2"
     >
-      <span className="flex size-10 shrink-0 items-center justify-center border border-line font-mono text-micro text-muted">
-        {data.name.slice(0, 1)}
-      </span>
-
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-body text-ink">{data.name}</span>
+        <span className="block truncate text-body font-semibold leading-6 text-ink">
+          {data.name}
+        </span>
         <span className="block truncate text-small text-muted">{data.tagline}</span>
       </span>
 
-      <span className="hidden shrink-0 items-center gap-3 font-mono text-micro text-muted tabular-nums sm:flex">
+      <span className="hidden shrink-0 items-center gap-3 text-micro text-muted tabular-nums sm:flex">
         <span>{data.language}</span>
         <span>{formatStars(data.stars)}</span>
         <span>{formatDate(data.publishedAt)}</span>

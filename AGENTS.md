@@ -28,7 +28,13 @@
 
 三个列表页共用 `components/site-shell.tsx` 的三栏（左索引 / 中 feed / 右个人信息）：`md` 起出左栏，`xl` 起才出右栏，更窄时右栏内容降级到 feed 末尾的 `ShellStrip`。宽度常量在 `lib/layout.ts`，但栅格 className 必须写字面量——Tailwind v4 不扫模板字符串。
 
-aside 上不能加 `self-start`：那样 aside 被收缩到内容高度，里面 `sticky` 的元素没有行程，滚起来就跟着走了（实测滚 600px 后 `top = -351`）。保持默认 stretch。
+## 视觉语言
+掘金式信息流：灰画布 + 白卡片（`.panel`，4px 圆角）+ 蓝主色 + 无衬线。所有数值都是从 juejin.cn 实测来的，记在 `app/globals.css` 顶部的注释里。
+
+- 蓝色分三个 token，别混用：`--accent` 只做填充和装饰；`--accent-ink` 是所有 ≤16px 的蓝字；`--accent-fill` 是实心按钮/徽章底（配白字）。一个 `#1e80ff` 当文字只有 3.76:1，过不了 AA。
+- 没有衬线字体。`--font-serif` 已经删掉，别再加回来。
+- 字号六档：28 / 24 / 18 / 16 / 13 / 12。
+- 两个实测踩过的坑：aside 不能加 `self-start`（sticky 失去行程）；feed 面板不能加 `overflow-hidden`（它会变成 sticky 的包含块，`top-[60px]` 改成从面板顶算）。两条都有测试锁着。
 
 ## 工作流
 1. 改完先跑「类型检查 + 本次涉及的测试」，全绿再继续。

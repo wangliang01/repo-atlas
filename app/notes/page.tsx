@@ -17,19 +17,22 @@ export default function NotesPage() {
   const groups = groupNotesByKind(notes);
 
   return (
-    <div className="wrap py-10 md:py-16">
-      <header className="border-b border-line pb-6">
-        <p className="font-mono text-micro text-muted">笔记</p>
-        <h1 className="mt-2 text-balance font-serif text-h1 font-semibold text-ink">写下来的东西</h1>
-        <p className="mt-2 text-body text-muted">
-          {notes.length} 篇 · 源码怎么读、架构怎么拆、哪里还没搞懂
-        </p>
+    <div className="wrap py-4 md:py-5">
+      <header className="panel flex flex-wrap items-end justify-between gap-x-6 gap-y-2 px-5 py-4">
+        <div className="min-w-0">
+          <h1 className="text-balance text-display font-semibold tracking-tight text-ink">
+            写下来的东西
+          </h1>
+          <p className="mt-1 text-micro text-muted">
+            {notes.length} 篇 · 源码怎么读、架构怎么拆、哪里还没搞懂
+          </p>
+        </div>
       </header>
 
       {notes.length === 0 ? (
-        <p className="mt-10 text-body text-muted">还没有笔记。</p>
+        <p className="panel mt-4 px-5 py-10 text-small text-muted">还没有笔记。</p>
       ) : (
-        <div className="mt-8">
+        <div className="mt-4">
           <SiteShell
             left={
               <RailList
@@ -46,9 +49,11 @@ export default function NotesPage() {
             right={<ProfileCard profile={PROFILE} updatedAt={updatedAt} variant="rail" />}
           >
             {groups.map((group) => (
-              <section key={group.kind} id={`kind-${group.kind}`} className="scroll-mt-20 first:mt-0 mt-10">
-                <h2 className="font-mono text-micro text-muted">{group.label}</h2>
-                <ul className="mt-2">
+              <section key={group.kind} id={`kind-${group.kind}`} className="scroll-mt-20">
+                <h2 className="border-b border-line px-5 py-3 text-h2 font-semibold text-ink">
+                  {group.label}
+                </h2>
+                <ul>
                   {group.notes.map((note) => (
                     <NoteCard key={note.slug} note={note} />
                   ))}

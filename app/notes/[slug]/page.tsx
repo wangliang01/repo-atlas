@@ -49,53 +49,55 @@ export default async function NotePage({ params }: PageProps) {
   const headings = extractHeadings(body);
 
   return (
-    <article className="wrap py-10 md:py-16">
-      <nav aria-label="面包屑" className="font-mono text-micro text-muted">
-        <Link href="/notes" className="transition-colors duration-150 hover:text-ink">
-          笔记
-        </Link>
-        <span aria-hidden="true" className="mx-2 text-line">
-          /
-        </span>
-        <span>{data.title}</span>
-      </nav>
+    <article className="wrap py-4 md:py-5">
+      <div className="panel px-5 py-6 md:px-8 md:py-8">
+        <nav aria-label="面包屑" className="text-micro text-muted">
+          <Link href="/notes" className="transition-colors duration-150 hover:text-accent-ink">
+            笔记
+          </Link>
+          <span aria-hidden="true" className="mx-2 text-line">
+            /
+          </span>
+          <span>{data.title}</span>
+        </nav>
 
-      <header className="mt-6 border-b border-line pb-6">
-        <h1 className="font-serif text-h1 font-semibold text-ink">{data.title}</h1>
-        <p className="mt-3 max-w-[var(--measure)] text-body text-muted">{data.summary}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 font-mono text-micro text-muted">
-          <time dateTime={formatDate(data.publishedAt).replace(/\./g, "-")} className="tabular-nums">
-            {formatDate(data.publishedAt)}
-          </time>
-          <span>{NOTE_KIND_LABEL[data.kind]}</span>
-          <span>约 {readingTimeOf(body)} 分钟</span>
+        <header className="mt-4 border-b border-line pb-5">
+          <h1 className="text-h1 font-semibold text-ink">{data.title}</h1>
+          <p className="mt-2 max-w-[var(--measure)] text-body text-muted">{data.summary}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 text-micro text-muted">
+            <time dateTime={formatDate(data.publishedAt).replace(/\./g, "-")} className="tabular-nums">
+              {formatDate(data.publishedAt)}
+            </time>
+            <span>{NOTE_KIND_LABEL[data.kind]}</span>
+            <span>约 {readingTimeOf(body)} 分钟</span>
+          </div>
+        </header>
+
+        <div className="mt-8 grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,720px)_1fr]">
+          <div className="min-w-0">
+            <Prose>
+              <MDXRemote source={mainSource} components={components} options={mdxOptions} />
+            </Prose>
+
+            <section className="mt-12 border-t border-line pt-6">
+              <h2
+                id={slugify(UNRESOLVED_HEADING)}
+                className="scroll-mt-24 text-h2 font-semibold text-ink"
+              >
+                {UNRESOLVED_HEADING}
+              </h2>
+              <div className="mt-4">
+                <Prose>
+                  <MDXRemote source={unresolvedSource} components={components} options={mdxOptions} />
+                </Prose>
+              </div>
+            </section>
+          </div>
+
+          <aside className="hidden xl:block">
+            <Toc items={headings} />
+          </aside>
         </div>
-      </header>
-
-      <div className="mt-10 grid grid-cols-1 gap-12 xl:grid-cols-[minmax(0,720px)_1fr]">
-        <div className="min-w-0">
-          <Prose>
-            <MDXRemote source={mainSource} components={components} options={mdxOptions} />
-          </Prose>
-
-          <section className="mt-16 border-t border-line pt-6">
-            <h2
-              id={slugify(UNRESOLVED_HEADING)}
-              className="scroll-mt-24 font-serif text-h2 font-semibold text-ink"
-            >
-              {UNRESOLVED_HEADING}
-            </h2>
-            <div className="mt-4">
-              <Prose>
-                <MDXRemote source={unresolvedSource} components={components} options={mdxOptions} />
-              </Prose>
-            </div>
-          </section>
-        </div>
-
-        <aside className="hidden xl:block">
-          <Toc items={headings} />
-        </aside>
       </div>
     </article>
   );

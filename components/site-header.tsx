@@ -25,29 +25,36 @@ export function SiteHeader() {
 
   return (
     <header
-      className={`sticky top-0 z-40 h-14 border-b bg-bg transition-colors duration-150 ${
-        scrolled || menuOpen ? "border-line bg-bg/80 backdrop-blur" : "border-transparent"
+      className={`sticky top-0 z-40 h-[60px] bg-surface transition-shadow duration-150 ${
+        scrolled || menuOpen ? "shadow-[var(--shadow-header)]" : ""
       }`}
     >
-      <div className="wrap flex h-14 items-center gap-6">
-        <Link href="/" className="font-serif text-body font-semibold text-ink">
-          Repo Atlas
+      <div className="wrap flex h-[60px] items-center gap-7">
+        <Link href="/" className="flex shrink-0 items-center gap-2">
+          {/* 2×2 方块 = 索引/地图的意象，比一个纯色方块像标志 */}
+          <span aria-hidden className="grid size-[22px] grid-cols-2 gap-[2px]">
+            <span className="rounded-[1px] bg-accent" />
+            <span className="rounded-[1px] bg-accent/35" />
+            <span className="rounded-[1px] bg-accent/35" />
+            <span className="rounded-[1px] bg-accent/35" />
+          </span>
+          <span className="text-body font-semibold tracking-tight text-ink">Repo Atlas</span>
         </Link>
 
-        <nav aria-label="主导航" className="hidden items-center gap-5 text-small sm:flex">
+        <nav aria-label="主导航" className="hidden items-center gap-6 text-small sm:flex">
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               aria-current={pathname === item.href ? "page" : undefined}
-              className="text-muted transition-colors duration-150 hover:text-ink aria-[current=page]:text-ink"
+              className="text-ink/70 transition-colors duration-150 hover:text-accent-ink aria-[current=page]:font-medium aria-[current=page]:text-accent-ink"
             >
               {item.label}
             </Link>
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1">
           {/* 搜索面板在 P2 接 Pagefind，这里只留键盘提示，不做假按钮 */}
           <span aria-hidden="true" className="hidden font-mono text-micro text-muted sm:inline">
             ⌘K
@@ -58,7 +65,7 @@ export function SiteHeader() {
             aria-expanded={menuOpen}
             aria-controls="mobile-nav"
             onClick={() => setMenuOpen((open) => !open)}
-            className="flex size-8 items-center justify-center rounded-[4px] text-muted transition-colors duration-150 hover:bg-line hover:text-ink sm:hidden"
+            className="ml-2 flex size-8 items-center justify-center rounded-[4px] text-ink/70 transition-colors duration-150 hover:bg-surface-2 hover:text-ink sm:hidden"
           >
             <svg
               aria-hidden="true"
@@ -80,7 +87,7 @@ export function SiteHeader() {
       <div
         id="mobile-nav"
         hidden={!menuOpen}
-        className="absolute inset-x-0 top-14 border-b border-line bg-bg sm:hidden"
+        className="absolute inset-x-0 top-[60px] border-t border-line bg-surface shadow-[var(--shadow-header)] sm:hidden"
       >
         <nav aria-label="移动端导航" className="wrap flex flex-col py-2 text-small">
           {NAV.map((item) => (
@@ -89,7 +96,7 @@ export function SiteHeader() {
               href={item.href}
               aria-current={pathname === item.href ? "page" : undefined}
               onClick={() => setMenuOpen(false)}
-              className="py-3 text-muted transition-colors duration-150 hover:text-ink aria-[current=page]:text-ink"
+              className="py-3 text-ink/70 transition-colors duration-150 hover:text-accent-ink aria-[current=page]:font-medium aria-[current=page]:text-accent-ink"
             >
               {item.label}
             </Link>

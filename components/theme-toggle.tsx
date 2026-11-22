@@ -26,7 +26,7 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label={dark ? "切换到浅色模式" : "切换到深色模式"}
       aria-pressed={dark}
-      className="flex size-8 items-center justify-center rounded-[4px] text-muted transition-colors duration-150 hover:bg-line hover:text-ink"
+      className="flex size-8 items-center justify-center rounded-[4px] text-ink/70 transition-colors duration-150 hover:bg-surface-2 hover:text-ink"
     >
       <svg
         aria-hidden="true"

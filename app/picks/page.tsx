@@ -16,9 +16,11 @@ export default function PicksPage() {
 
   if (!snapshot) {
     return (
-      <div className="wrap py-10 md:py-16">
-        <h1 className="font-serif text-h1 font-semibold text-ink">最近值得看的 AI 项目</h1>
-        <p className="mt-4 text-body text-muted">还没有快照。跑一次 pnpm sync:picks，再回来看。</p>
+      <div className="wrap py-4 md:py-5">
+        <div className="panel p-5">
+          <h1 className="text-h1 font-semibold text-ink">最近值得看的 AI 项目</h1>
+          <p className="mt-2 text-small text-muted">还没有快照。跑一次 pnpm sync:picks，再回来看。</p>
+        </div>
       </div>
     );
   }
@@ -27,25 +29,23 @@ export default function PicksPage() {
   const total = entries.reduce((sum, entry) => sum + entry.stars, 0);
 
   return (
-    <div className="wrap py-10 md:py-14">
-      <header className="border-b border-line pb-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <p className="font-mono text-micro text-muted">精选</p>
-          <p className="font-mono text-micro text-muted tabular-nums">
-            {formatDate(snapshot.syncedAt)} 同步
+    <div className="wrap py-4 md:py-5">
+      <header className="panel flex flex-wrap items-end justify-between gap-x-6 gap-y-2 px-5 py-4">
+        <div className="min-w-0">
+          <h1 className="text-balance text-display font-semibold tracking-tight text-ink">
+            最近值得看的 AI 项目
+          </h1>
+          <p className="mt-1 text-micro text-muted">
+            {entries.length} 个 · 合计 {formatStars(total)} stars · 排序只看热度，不看好坏。
           </p>
         </div>
 
-        <h1 className="mt-2 text-balance font-serif text-h1 font-semibold text-ink">
-          最近值得看的 AI 项目
-        </h1>
-
-        <p className="mt-2 max-w-[var(--measure)] text-small text-muted">
-          {entries.length} 个 · 合计 {formatStars(total)} stars · 排序只看热度，不看好坏。
+        <p className="shrink-0 text-micro text-muted tabular-nums">
+          {formatDate(snapshot.syncedAt)} 同步
         </p>
       </header>
 
-      <div className="mt-6">
+      <div className="mt-4">
         <PicksView
           entries={entries}
           profile={PROFILE}

@@ -1,17 +1,20 @@
 import { VERDICT_LABEL } from "@/lib/labels";
 import type { ProjectFrontmatter } from "@/lib/schema";
 
-// 推荐用 bg 色做字色，不用 text-white：暗色下 accent 变亮，白字对比度只有 3.26:1，不合格
+/*
+  推荐用 accent-fill 做底：白字压在 #1e80ff 上只有 3.76:1，
+  压 #1668c9 是 7.05:1；暗色下 accent-ink 是浅蓝，白字压不上去，所以单独一个 fill。
+*/
 const STYLE: Record<ProjectFrontmatter["verdict"], string> = {
-  recommend: "bg-accent text-bg",
-  watch: "border border-line text-muted",
-  avoid: "border border-line text-muted line-through",
+  recommend: "bg-accent-fill text-white",
+  watch: "bg-surface-2 text-muted",
+  avoid: "bg-surface-2 text-muted line-through",
 };
 
 export function VerdictBadge({ verdict }: { verdict: ProjectFrontmatter["verdict"] }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center px-1.5 py-0.5 font-mono text-micro ${STYLE[verdict]}`}
+      className={`inline-flex shrink-0 items-center rounded-[2px] px-1.5 py-0.5 text-micro ${STYLE[verdict]}`}
     >
       {VERDICT_LABEL[verdict]}
     </span>

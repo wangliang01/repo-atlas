@@ -24,7 +24,7 @@ export const proseComponents = {
     <h2
       {...props}
       id={slugify(toText(children))}
-      className="mt-12 scroll-mt-24 border-t border-line pt-6 font-serif text-h2 font-semibold text-ink first:mt-0 first:border-t-0 first:pt-0"
+      className="mt-12 scroll-mt-24 border-t border-line pt-6 text-h2 font-semibold text-ink first:mt-0 first:border-t-0 first:pt-0"
     >
       {children}
     </h2>
@@ -55,14 +55,14 @@ export const proseComponents = {
   a: (props: ComponentPropsWithoutRef<"a">) => (
     <a
       {...props}
-      className="text-accent underline decoration-line underline-offset-4"
+      className="text-accent-ink underline decoration-line underline-offset-4"
       rel="noopener" target="_blank"
     />
   ),
   pre: (props: ComponentPropsWithoutRef<"pre">) => (
     <pre
       {...props}
-      className="mt-6 overflow-x-auto border border-line bg-surface p-4 font-mono text-small leading-relaxed"
+      className="mt-6 overflow-x-auto rounded-[4px] border border-line bg-surface-2 p-4 font-mono text-small leading-relaxed"
     />
   ),
   code: (props: ComponentPropsWithoutRef<"code">) => (

@@ -31,21 +31,28 @@ export function ProfileCard({ profile, updatedAt, variant }: ProfileCardProps) {
             alt={view.name ? `${view.name} 的头像` : "头像"}
             width={56}
             height={56}
-            className="size-14 shrink-0 border border-line object-cover"
+            className="size-12 shrink-0 rounded-full object-cover"
           />
-        ) : null}
+        ) : (
+          <span
+            aria-hidden
+            className="grid size-12 shrink-0 place-items-center rounded-full bg-accent-soft text-body font-semibold text-accent-ink"
+          >
+            {name.slice(0, 1).toUpperCase()}
+          </span>
+        )}
         <div className="min-w-0">
-          <p className="truncate font-serif text-body font-semibold text-ink">{name}</p>
-          <p className="mt-0.5 text-small text-muted">{headline}</p>
+          <p className="truncate text-body font-semibold text-ink">{name}</p>
+          <p className="mt-0.5 text-micro text-muted">{headline}</p>
         </div>
       </div>
 
-      {meta ? <p className="mt-3 font-mono text-micro text-muted">{meta}</p> : null}
+      {meta ? <p className="mt-3 text-micro text-muted">{meta}</p> : null}
 
       {view.stack.length > 0 ? (
-        <ul className="mt-3 flex flex-wrap gap-1.5">
+        <ul className="mt-2.5 flex flex-wrap gap-1.5">
           {view.stack.map((item) => (
-            <li key={item} className="border border-line px-1.5 font-mono text-micro text-muted">
+            <li key={item} className="rounded-[2px] bg-surface-2 px-1.5 py-0.5 text-micro text-muted">
               {item}
             </li>
           ))}
@@ -60,7 +67,7 @@ export function ProfileCard({ profile, updatedAt, variant }: ProfileCardProps) {
                 href={link.href}
                 rel="noopener"
                 target="_blank"
-                className="font-mono text-micro text-accent underline decoration-line underline-offset-4"
+                className="text-micro text-accent-ink hover:underline"
               >
                 {link.label} ↗
               </a>
@@ -69,7 +76,7 @@ export function ProfileCard({ profile, updatedAt, variant }: ProfileCardProps) {
         </ul>
       ) : null}
 
-      <p className="mt-3 border-t border-line pt-3 font-mono text-micro text-muted tabular-nums">
+      <p className="mt-3 border-t border-line pt-2.5 text-micro text-muted tabular-nums">
         最近更新 {formatDate(updatedAt)}
       </p>
     </>
@@ -77,14 +84,14 @@ export function ProfileCard({ profile, updatedAt, variant }: ProfileCardProps) {
 
   if (variant === "strip") {
     return (
-      <section aria-label="关于" className="border-t border-line pt-6">
+      <section aria-label="关于" className="border-t border-line p-5">
         {body}
       </section>
     );
   }
 
   return (
-    <section aria-label="关于" className="border border-line p-4">
+    <section aria-label="关于" className="panel p-4">
       {body}
     </section>
   );

@@ -40,24 +40,26 @@ export function PicksView({ entries, profile, updatedAt, projectByRepo }: PicksV
       }
       right={<ProfileCard profile={profile} updatedAt={updatedAt} variant="rail" />}
     >
-      <div className="sticky top-14 z-30 flex items-center gap-4 border-b border-line bg-bg/90 py-2.5 backdrop-blur">
+      {/* 掘金把排序/筛选放在白卡顶部当标签行，滚动时吸附在 header 下面 */}
+      <div className="sticky top-[60px] z-30 flex items-center gap-4 rounded-t-[4px] border-b border-line bg-surface/95 px-5 backdrop-blur">
         <button
           type="button"
           aria-pressed={filter.risingOnly}
           onClick={() => setFilter((current) => ({ ...current, risingOnly: !current.risingOnly }))}
-          className={`font-mono text-micro transition-colors duration-150 ${
-            filter.risingOnly ? "text-ink" : "text-muted hover:text-ink"
+          className={`relative flex items-center gap-1.5 py-3 text-small transition-colors duration-150 ${
+            filter.risingOnly
+              ? "font-medium text-accent-ink"
+              : "text-ink/70 hover:text-ink"
           }`}
         >
           只看涨得快
-          <span
-            className={`ml-1 tabular-nums ${filter.risingOnly ? "text-accent" : "text-muted/60"}`}
-          >
-            {risingCount}
-          </span>
+          <span className="text-micro tabular-nums text-muted">{risingCount}</span>
+          {filter.risingOnly ? (
+            <span aria-hidden className="absolute inset-x-0 -bottom-px h-0.5 bg-accent" />
+          ) : null}
         </button>
 
-        <p aria-live="polite" className="ml-auto font-mono text-micro text-muted tabular-nums">
+        <p aria-live="polite" className="ml-auto text-micro text-muted tabular-nums">
           {visible.length} 个
         </p>
       </div>
@@ -74,7 +76,7 @@ export function PicksView({ entries, profile, updatedAt, projectByRepo }: PicksV
       </ul>
 
       {visible.length === 0 ? (
-        <p className="mt-10 text-body text-muted">这个筛选下还没有条目。</p>
+        <p className="px-5 py-10 text-small text-muted">这个筛选下还没有条目。</p>
       ) : null}
 
       <ShellStrip>

@@ -29,8 +29,8 @@ export function Toc({ items }: { items: Heading[] }) {
   if (items.length === 0) return null;
 
   return (
-    <nav aria-label="本页目录" className="sticky top-24">
-      <p className="font-mono text-micro text-muted">本页</p>
+    <nav aria-label="本页目录" className="sticky top-20">
+      <p className="text-micro text-muted">本页</p>
       <ul className="mt-3 border-l border-line">
         {items.map((item) => (
           <li key={item.id}>
@@ -41,7 +41,7 @@ export function Toc({ items }: { items: Heading[] }) {
                 "-ml-px block border-l py-1 pr-2 text-small transition-colors duration-150",
                 item.depth === 3 ? "pl-6" : "pl-3",
                 item.id === activeId
-                  ? "border-accent text-ink"
+                  ? "border-accent-ink font-medium text-accent-ink"
                   : "border-transparent text-muted hover:text-ink",
               ].join(" ")}
             >
