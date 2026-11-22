@@ -68,16 +68,15 @@ test("alternatives 指向不存在的 slug 时抛错", () => {
   );
 });
 
-test("笔记 frontmatter 要求类型与阅读时长", () => {
+test("笔记 frontmatter 不含阅读时长：它由正文算，不靠手填", () => {
   const ok = noteFrontmatter.safeParse({
     title: "为什么用 MDX 而不是 CMS",
     summary: "内容少、更新慢，Git 就是最好的后台。",
     kind: "tool",
     publishedAt: "2026-11-18",
-    readingTime: 6,
   });
   assert.equal(ok.success, true);
-  const bad = noteFrontmatter.safeParse({ title: "x", summary: "y", kind: "随笔", publishedAt: "2026-11-18", readingTime: 6 });
+  const bad = noteFrontmatter.safeParse({ title: "x", summary: "y", kind: "随笔", publishedAt: "2026-11-18" });
   assert.equal(bad.success, false);
 });
 

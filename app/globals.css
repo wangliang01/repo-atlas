@@ -98,6 +98,33 @@
       padding-inline: 24px;
     }
   }
+
+  /* shiki 双主题：颜色走 CSS 变量，切暗色不重新高亮 */
+  .code-block .shiki {
+    background: transparent;
+  }
+
+  .code-block .shiki span {
+    color: var(--shiki-light);
+  }
+
+  .dark .code-block .shiki span {
+    color: var(--shiki-dark);
+  }
+
+  .code-block[data-line-numbers] .shiki code {
+    counter-reset: line;
+  }
+
+  .code-block[data-line-numbers] .line::before {
+    counter-increment: line;
+    content: counter(line);
+    display: inline-block;
+    width: 1.75rem;
+    margin-right: 1rem;
+    text-align: right;
+    color: var(--muted);
+  }
 }
 
 @custom-variant dark (&:where(.dark, .dark *));

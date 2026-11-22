@@ -49,7 +49,6 @@ export const noteFrontmatter = z.object({
   summary: z.string().min(1),
   kind: z.enum(NOTE_KINDS),
   publishedAt: dateOnly,
-  readingTime: z.number().int().positive(),
 });
 
 export type ProjectFrontmatter = z.infer<typeof projectFrontmatter>;

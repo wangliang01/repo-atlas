@@ -3,14 +3,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
+import { CodeBlock } from "@/components/code-block";
 import { MetaBar } from "@/components/meta-bar";
 import { Prose, proseComponents } from "@/components/prose";
 import { TopicChip } from "@/components/topic-chip";
 import { VerdictBadge } from "@/components/verdict-badge";
 import { getAdjacentProjects, getAllProjects, getProject } from "@/lib/content";
 import { formatDate } from "@/lib/date";
+import { preprocessCode } from "@/lib/highlight";
 
 type PageProps = { params: Promise<{ slug: string }> };
+
+const components = { ...proseComponents, CodeBlock };
 
 // 只有 content/projects 里存在的 slug 才预渲染，其余一律 404，不落到运行时
 export const dynamicParams = false;
@@ -36,6 +40,7 @@ export default async function ProjectPage({ params }: PageProps) {
 
   const { data, body } = project;
   const { prev, next } = getAdjacentProjects(slug);
+  const source = await preprocessCode(body);
 
   return (
     <article className="wrap py-10 md:py-16">
@@ -86,7 +91,7 @@ export default async function ProjectPage({ params }: PageProps) {
 
           <div className="mt-12">
             <Prose>
-              <MDXRemote source={body} components={proseComponents} />
+              <MDXRemote source={source} components={components} />
             </Prose>
           </div>
         </div>

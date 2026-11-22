@@ -1,4 +1,4 @@
-import type { ProjectFrontmatter } from "./schema.ts";
+import type { NoteFrontmatter, ProjectFrontmatter } from "./schema.ts";
 
 export const DEPLOY_LABEL: Record<ProjectFrontmatter["deploy"], string> = {
   docker: "Docker",
@@ -18,4 +18,11 @@ export const MAINTENANCE_LABEL: Record<ProjectFrontmatter["maintenance"], string
   active: "活跃",
   slowing: "变慢",
   stale: "停滞",
+};
+
+export const NOTE_KIND_LABEL: Record<NoteFrontmatter["kind"], string> = {
+  source: "源码",
+  architecture: "架构",
+  rebuild: "重建",
+  tool: "工具",
 };

@@ -1,19 +1,42 @@
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { isValidElement, type ComponentPropsWithoutRef, type ReactNode } from "react";
+import { slugify } from "@/lib/mdx";
 
 export function Prose({ children }: { children: ReactNode }) {
-  return <div className="min-w-0 max-w-[var(--measure)] text-body text-ink">{children}</div>;
+  return (
+    <div data-prose className="min-w-0 max-w-[var(--measure)] text-body text-ink">
+      {children}
+    </div>
+  );
+}
+
+// 标题的 id 必须和目录用同一个 slugify，否则点目录跳不过去
+export function toText(node: ReactNode): string {
+  if (node === null || node === undefined || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(toText).join("");
+  if (isValidElement<{ children?: ReactNode }>(node)) return toText(node.props.children);
+  return "";
 }
 
 // MDX 正文的排版：只覆盖用得到的标签，不用 typography 插件
 export const proseComponents = {
-  h2: (props: ComponentPropsWithoutRef<"h2">) => (
+  h2: ({ children, ...props }: ComponentPropsWithoutRef<"h2">) => (
     <h2
       {...props}
-      className="mt-12 border-t border-line pt-6 font-serif text-h2 font-semibold text-ink first:mt-0 first:border-t-0 first:pt-0"
-    />
+      id={slugify(toText(children))}
+      className="mt-12 scroll-mt-24 border-t border-line pt-6 font-serif text-h2 font-semibold text-ink first:mt-0 first:border-t-0 first:pt-0"
+    >
+      {children}
+    </h2>
   ),
-  h3: (props: ComponentPropsWithoutRef<"h3">) => (
-    <h3 {...props} className="mt-8 text-body font-semibold text-ink" />
+  h3: ({ children, ...props }: ComponentPropsWithoutRef<"h3">) => (
+    <h3
+      {...props}
+      id={slugify(toText(children))}
+      className="mt-8 scroll-mt-24 text-body font-semibold text-ink"
+    >
+      {children}
+    </h3>
   ),
   p: (props: ComponentPropsWithoutRef<"p">) => <p {...props} className="mt-4 text-muted" />,
   ul: (props: ComponentPropsWithoutRef<"ul">) => (
@@ -46,4 +69,23 @@ export const proseComponents = {
   code: (props: ComponentPropsWithoutRef<"code">) => (
     <code {...props} className="font-mono text-small" />
   ),
+  table: (props: ComponentPropsWithoutRef<"table">) => (
+    <div className="mt-6 overflow-x-auto">
+      <table {...props} className="w-full border-collapse text-small" />
+    </div>
+  ),
+  thead: (props: ComponentPropsWithoutRef<"thead">) => (
+    <thead {...props} className="border-b border-line text-left" />
+  ),
+  th: (props: ComponentPropsWithoutRef<"th">) => (
+    <th {...props} className="py-2 pr-4 font-medium text-ink" />
+  ),
+  td: (props: ComponentPropsWithoutRef<"td">) => (
+    <td {...props} className="border-b border-line py-2 pr-4 align-top text-muted" />
+  ),
+  figure: (props: ComponentPropsWithoutRef<"figure">) => <figure {...props} className="mt-6" />,
+  figcaption: (props: ComponentPropsWithoutRef<"figcaption">) => (
+    <figcaption {...props} className="mt-2 font-mono text-micro text-muted" />
+  ),
+  hr: (props: ComponentPropsWithoutRef<"hr">) => <hr {...props} className="mt-10 border-line" />,
 };
