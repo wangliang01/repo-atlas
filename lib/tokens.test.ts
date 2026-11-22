@@ -76,10 +76,14 @@ test("globals.css 声明了 light 与 dark 两套颜色 token", () => {
   }
 });
 
-test("字号只有六档刻度，且容器宽度 1200px", () => {
+test("UI 字号六档，正文另有两档（22 / 20），容器宽度 1200px", () => {
   const css = read("app/globals.css");
   for (const [name, value] of Object.entries(SIZES)) {
     assert.ok(css.includes(`${name}: ${value}`), `缺少字号 token ${name}: ${value}`);
+  }
+  // 正文的 22/20 不能并进上面六档：--text-h2 是首页区块标题，跟着变大会挤掉一屏的行数
+  for (const [name, value] of Object.entries({ "--text-prose-h2": "22px", "--text-prose-h3": "20px" })) {
+    assert.ok(css.includes(`${name}: ${value}`), `缺少正文字号 ${name}: ${value}`);
   }
   assert.match(css, /--container:\s*1200px/, "缺少 --container: 1200px");
 });
@@ -102,6 +106,42 @@ test("换成掘金蓝之后仍然过 AA：正文、次要文字、蓝字、蓝�
     assert.ok(
       contrast("#ffffff", tokens["--accent-fill"]) >= 4.5,
       `${theme}: 白字压 ${tokens["--accent-fill"]} 只有 ${contrast("#ffffff", tokens["--accent-fill"]).toFixed(2)}:1`,
+    );
+  }
+});
+
+test("正文排版的新配色也过 AA：行内代码、表头、引用、链接", () => {
+  const PROSE: Record<string, Record<string, string>> = {
+    light: {
+      code: "#cf3c1a",
+      "code-bg": "#fff5f5",
+      "table-head": "#005bb7",
+      "table-head-bg": "#dff0ff",
+      quote: "#6b7280",
+      "quote-bg": "#f7f8fa",
+    },
+    dark: {
+      code: "#ff8f70",
+      "code-bg": "#3a2420",
+      "table-head": "#8cc4ff",
+      "table-head-bg": "#1b2b3f",
+      quote: "#9aa1ad",
+      "quote-bg": "#2a2b2e",
+    },
+  };
+  for (const [theme, c] of Object.entries(PROSE)) {
+    // 掘金原值是 #ff502c 压 #fff5f5 = 3.05:1，13.9px 的字过不了 AA，所以压深了一档
+    assert.ok(
+      contrast(c.code, c["code-bg"]) >= 4.5,
+      `${theme}: 行内代码 ${c.code} 压 ${c["code-bg"]} 只有 ${contrast(c.code, c["code-bg"]).toFixed(2)}:1`,
+    );
+    assert.ok(
+      contrast(c["table-head"], c["table-head-bg"]) >= 4.5,
+      `${theme}: 表头 ${c["table-head"]} 压 ${c["table-head-bg"]} 只有 ${contrast(c["table-head"], c["table-head-bg"]).toFixed(2)}:1`,
+    );
+    assert.ok(
+      contrast(c.quote, c["quote-bg"]) >= 4.5,
+      `${theme}: 引用文字 ${c.quote} 压 ${c["quote-bg"]} 只有 ${contrast(c.quote, c["quote-bg"]).toFixed(2)}:1`,
     );
   }
 });

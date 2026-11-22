@@ -20,6 +20,12 @@
   --text-small--line-height: 1.6;
   --text-micro: 12px;
   --text-micro--line-height: 1.5;
+  /* 正文另有一套：掘金自己的 UI 是 16/14/13/12，文章正文却是 22/20/16。
+     两套不能混用——把 --text-h2 从 18 改到 22，首页和列表的区块标题会一起变大 */
+  --text-prose-h2: 22px;
+  --text-prose-h2--line-height: 1.55;
+  --text-prose-h3: 20px;
+  --text-prose-h3--line-height: 1.4;
 }
 
 /* 颜色 token 唯一来源：改这里就要重验对比度 */
@@ -38,6 +44,15 @@
   /* 实心按钮/徽章用这个底，白字 7.05:1；暗色下 accent-ink 是浅蓝，白字压不上去 */
   --accent-fill: #1668c9;
   --accent-soft: #eaf2ff;
+  /* 正文排版，取自 juejin.cn 文章页实测。掘金行内代码是 #ff502c 压 #fff5f5，
+     只有 3.05:1，13.9px 的字过不了 AA；这里压深一档到 4.55:1，色相不变 */
+  --code-ink: #cf3c1a;
+  --code-bg: #fff5f5;
+  --quote-line: #cbcbcb;
+  --link-line: #d1e9ff;
+  --table-line: #c3e0fd;
+  --table-head-bg: #dff0ff;
+  --table-head-ink: #005bb7;
 
   --container: 1200px;
   --measure: 720px;
@@ -58,6 +73,14 @@
   --accent-ink: #6db2ff;
   --accent-fill: #1e6fd0;
   --accent-soft: #1b2b3f;
+  /* 掘金只有浅色，暗色这三组是按同色系往下压的：6.5 / 7.8 / 7.1:1 */
+  --code-ink: #ff8f70;
+  --code-bg: #3a2420;
+  --quote-line: #3f4045;
+  --link-line: #2f4a6b;
+  --table-line: #2f4a6b;
+  --table-head-bg: #1b2b3f;
+  --table-head-ink: #8cc4ff;
   --shadow-header: 0 2px 8px rgb(0 0 0 / 0.4);
 }
 
@@ -72,6 +95,13 @@
   --color-accent-ink: var(--accent-ink);
   --color-accent-fill: var(--accent-fill);
   --color-accent-soft: var(--accent-soft);
+  --color-code-ink: var(--code-ink);
+  --color-code-bg: var(--code-bg);
+  --color-quote-line: var(--quote-line);
+  --color-link-line: var(--link-line);
+  --color-table-line: var(--table-line);
+  --color-table-head-bg: var(--table-head-bg);
+  --color-table-head-ink: var(--table-head-ink);
 
   --font-sans: var(--font-inter), var(--font-noto-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
@@ -136,16 +166,25 @@
     color: var(--shiki-dark);
   }
 
-  /* 行内代码用 --surface-2 做底：比 accent-soft 安静，长段落里不抢眼 */
+  /* 行内代码学掘金的红底红字：粉底把「这是个标识符」和正文分开，不用再加边框 */
   [data-prose] :not(pre) > code {
-    background-color: var(--surface-2);
-    border: 1px solid var(--line);
+    background-color: var(--code-bg);
+    color: var(--code-ink);
     padding: 0.1em 0.35em;
-    border-radius: 3px;
-    font-size: 0.92em;
+    border-radius: 2px;
+    font-size: 0.87em;
     /* 原来是 nowrap，`instance.setupState = proxyRefs(...)` 这种长标识符
        在 375px 下会把整页撑出 35px。anywhere 只在放不下时才断，短的不受影响 */
     overflow-wrap: anywhere;
+  }
+
+  /* 标题里的行内代码跟着标题走：22px 的红字压在粗体标题里太吵，抢了标题本身。
+     注意不能写 `:is(h2,h3) :not(pre) > code`——那要求 h2 和 code 之间还夹一层元素 */
+  [data-prose] :is(h2, h3) code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    font-size: 0.9em;
   }
 
   .code-block[data-line-numbers] .shiki code {

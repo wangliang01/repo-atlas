@@ -63,7 +63,10 @@ export default async function NotePage({ params }: PageProps) {
         </nav>
 
         <header className="mt-4 border-b border-line pb-5">
-          <h1 className="text-h1 font-semibold text-ink">{data.title}</h1>
+          {/* 正文 h2 已经是 22px，标题停在 24 就只差 2px，层次塌掉；用 display 档拉开到 28 */}
+          <h1 className="text-balance text-display font-semibold tracking-tight text-ink">
+            {data.title}
+          </h1>
           <p className="mt-2 max-w-[var(--measure)] text-body text-muted">{data.summary}</p>
           <div className="mt-3 flex flex-wrap items-center gap-x-4 text-micro text-muted">
             <time dateTime={formatDate(data.publishedAt).replace(/\./g, "-")} className="tabular-nums">
@@ -83,7 +86,7 @@ export default async function NotePage({ params }: PageProps) {
             <section className="mt-12 border-t border-line pt-6">
               <h2
                 id={slugify(UNRESOLVED_HEADING)}
-                className="scroll-mt-24 text-h2 font-semibold text-ink"
+                className="mb-2.5 scroll-mt-24 border-b border-line pb-3 text-prose-h2 font-bold text-ink"
               >
                 {UNRESOLVED_HEADING}
               </h2>
