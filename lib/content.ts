@@ -4,8 +4,10 @@ import matter from "gray-matter";
 import {
   assertAlternativesExist,
   noteFrontmatter,
+  picksFrontmatter,
   projectFrontmatter,
   type NoteFrontmatter,
+  type PicksFrontmatter,
   type ProjectFrontmatter,
 } from "./schema.ts";
 
@@ -23,7 +25,7 @@ export type Note = {
 
 const CONTENT_DIR = join(process.cwd(), "content");
 
-function listMdx(kind: "projects" | "notes"): string[] {
+function listMdx(kind: "projects" | "notes" | "picks"): string[] {
   try {
     return readdirSync(join(CONTENT_DIR, kind)).filter((file) => file.endsWith(".mdx"));
   } catch (error) {
@@ -74,6 +76,39 @@ export function getAllNotes(): Note[] {
 
 export function getNote(slug: string): Note | undefined {
   return getAllNotes().find((note) => note.slug === slug);
+}
+
+// 一期一个文件，条目是数组：轻量条目不值得一个项目一个文件
+export function getAllPicks(): PicksFrontmatter[] {
+  return listMdx("picks")
+    .map((file) => {
+      const where = `content/picks/${file}`;
+      const { data } = matter(readFileSync(join(CONTENT_DIR, "picks", file), "utf8"));
+      const parsed = picksFrontmatter.safeParse(data);
+      if (!parsed.success) {
+        // 41 条的草稿里只报 entries.6 找不到人，把仓库名带进消息
+        const issues = parsed.error.issues.map((issue) => {
+          const [field, index] = issue.path;
+          const raw = field === "entries" && typeof index === "number" ? data.entries?.[index] : undefined;
+          const label = raw?.repo ?? raw?.name;
+          return label ? { ...issue, message: `${label}：${issue.message}` } : issue;
+        });
+        throw new Error(formatIssues(where, issues));
+      }
+      return parsed.data;
+    })
+    .sort((a, b) => b.issue - a.issue);
+}
+
+// 目录只列真的有条目的分类，且按条目数从多到少，避免一排空 tab
+export function getPickCategories(picks: PicksFrontmatter[]): string[] {
+  const counts = new Map<string, number>();
+  for (const issue of picks) {
+    for (const entry of issue.entries) {
+      counts.set(entry.category, (counts.get(entry.category) ?? 0) + 1);
+    }
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([category]) => category);
 }
 
 // 首页"最近更新"：内容里最新的那一天；还没内容才退回构建日

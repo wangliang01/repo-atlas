@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV = [
   { href: "/projects", label: "雷达" },
+  { href: "/picks", label: "精选" },
   { href: "/notes", label: "笔记" },
 ];
 

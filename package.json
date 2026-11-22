@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "check:alt": "node scripts/check-alt.mjs"
+    "check:alt": "node scripts/check-alt.mjs",
+    "import:hg": "node scripts/import-hellogithub.mjs"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",

@@ -54,6 +54,26 @@ export const noteFrontmatter = z.object({
 export type ProjectFrontmatter = z.infer<typeof projectFrontmatter>;
 export type NoteFrontmatter = z.infer<typeof noteFrontmatter>;
 
+// 精选是"值得看一眼"的量级：只留一句自己的判断，不写六段
+export const pickEntry = z.object({
+  name: z.string().min(1),
+  repo: z.string().regex(/^[\w.-]+\/[\w.-]+$/, "repo 必须是 owner/name"),
+  category: z.string().min(1),
+  tagline: z.string().min(1),
+  why: z.string().min(1, "why 不能为空：照抄简介不算收录，写一句你自己的判断"),
+  stars: z.number().int().nonnegative().optional(),
+  language: z.string().min(1).optional(),
+});
+
+export const picksFrontmatter = z.object({
+  issue: z.number().int().positive(),
+  publishedAt: dateOnly,
+  entries: z.array(pickEntry).min(1),
+});
+
+export type PickEntry = z.infer<typeof pickEntry>;
+export type PicksFrontmatter = z.infer<typeof picksFrontmatter>;
+
 type ProjectLike = { slug: string; data: { alternatives: string[] } };
 
 // 站内互链一旦指向不存在的 slug，构建就该停，而不是渲染成死链
