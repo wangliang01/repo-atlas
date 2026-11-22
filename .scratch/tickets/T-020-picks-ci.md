@@ -27,23 +27,47 @@ curl https://api.github.com/.../actions/workflows      → {"total_count": 0}   
 
 ## 判断
 
-`0a4302a` 那次推送是用 SSH 推的（`gh repo create --push` 因为 token 缺 `workflow` scope 被拒），workflow 文件的索引没触发。先做一次改动重新推一遍，看是不是纯索引问题。
+`0a4302a` 那次推送是用 SSH 推的（`gh repo create --push` 因为 token 缺 `workflow` scope 被拒），workflow 文件的索引没触发。**再推一次就恢复了**：补了 `timeout-minutes` 之后推 `470c1c1`，10 秒内 `total_count` 从 0 变 1，`state: active`。
+
+结论：不是权限、不是 YAML、不是分支问题，纯粹是 GitHub 后台没索引到那个文件。以后再遇到「文件在但 Actions 看不见」，改一行再推一次即可，不用去网页点授权。
 
 顺手补一条 `timeout-minutes`：`concurrency` 的 `cancel-in-progress` 是 `false`，一次卡死的 run 会把后面所有定时任务堵在队列里，默认上限 360 分钟太长。
 
 ## 改动
 
 - `.github/workflows/picks.yml`：`sync` job 加 `timeout-minutes: 15`
+- `scripts/picks-cron.mjs`：`git()` 容忍 `execFileSync` 返回 `null`
+
+## 顺带修掉的 bug：推送成功却报「推送失败」
+
+第一次手动跑（run `45027679239`，19 秒 success）的日志里：
+
+```
+To https://github.com/wangliang01/repo-atlas
+   470c1c1..3aae696  master -> master
+[2026-11-22 13:28] 推送失败，提交已留在本地
+```
+
+push 明明成功了，脚本却走了 catch。根因：`git(["push"], { stdio: "inherit" })` 时 `execFileSync` 返回 `null`（实测：`inherit 返回: null`，默认 `"470c1c1\n"`），后面 `.trim()` 抛 TypeError，被 catch 吞成「推送失败」。
+
+这个 bug 的危害不是日志难看——是**真失败时也分不清**。修法是在 `git()` 里 `(out ?? "").trim()`。
+
+## 还没解决：CI 提交了，线上不会变
+
+`app/picks/page.tsx` 走 `getPicksSnapshot()`，是构建时 `readFileSync("content/picks/*.mdx")`。所以 Actions 每天 4 次更新仓库里的 mdx，`blog.wlv587.top/picks` 还是上次部署时烘进去的旧数据。
+
+要让定时同步真的体现在页面上，CI 得在 commit 之后再 `pnpm build` + 传 `/srv/blog`，也就是把 `scripts/deploy.sh` 搬进 workflow。这需要给仓库配一个能 ssh 到服务器的密钥（GitHub Secrets），等于把服务器的一把钥匙交给 Actions——属于安全决策，等确认。
 
 ## 验收
 
-- [ ] `gh api repos/wangliang01/repo-atlas/actions/workflows` 返回 `total_count: 1`，`state: active`
-- [ ] `gh workflow run picks` 能手动触发，run 走完是 success
-- [ ] run 结束后 `content/picks.json` 有变化（或者确认无新增时是空提交，不报错）
-- [ ] 定时表达式确认是 UTC `0 1,7,13,19 * * *`（北京时间 09/15/21/03）
+- [x] `gh api repos/wangliang01/repo-atlas/actions/workflows` 返回 `total_count: 1`，`state: active`
+- [x] `gh workflow run picks` 能手动触发，run 走完是 success（19 秒）
+- [x] run 结束后远端 `master` 多了一条 `chore(picks): 同步 AI 精选 2026-11-22 13:28`（`3aae696`）
+- [x] 定时表达式确认是 UTC `0 1,7,13,19 * * *`（北京时间 09/15/21/03）
+- [ ] 线上 `/picks` 跟着刷新 —— 待定，见上一节
 
 ## 如果还是不被识别
 
-GitHub 对「首次出现在仓库里的 workflow」有时要求网页上点一次授权（Settings → Actions → General → Workflow permissions 选 `Read and write permissions`）。点完之后再推一次。
+这次不是这个原因，但留个记录：GitHub 对「首次出现在仓库里的 workflow」偶尔要求网页上点一次授权（Settings → Actions → General → Workflow permissions 选 `Read and write permissions`）。点完之后再推一次。
 
-再不行就退回服务器侧：`/srv/blog` 是纯静态目录，服务器上起一个 `cron` + `node scripts/picks-cron.mjs` 也行，但服务器只有 Node 16，得先解决运行时——这是下策，会破坏 T-019「线上零 Node 进程」的前提。
+服务器侧 `cron` 是下策：`/srv/blog` 是纯静态目录，服务器只有 Node 16，跑不了 `sync-ai-picks.mjs` 依赖的那套工具链，也会破坏 T-019「线上零 Node 进程」的前提。

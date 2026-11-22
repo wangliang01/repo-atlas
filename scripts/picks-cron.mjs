@@ -6,8 +6,12 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 const root = join(import.meta.dirname, "..");
-const git = (args, options = {}) =>
-  execFileSync("git", args, { cwd: root, encoding: "utf8", ...options }).trim();
+const git = (args, options = {}) => {
+  // stdio: "inherit" 时 execFileSync 返回 null，直接 .trim() 会抛错，
+  // 把已经成功的 push 误报成失败（第一次在 Actions 上跑就是这么被骗的）
+  const out = execFileSync("git", args, { cwd: root, encoding: "utf8", ...options });
+  return (out ?? "").trim();
+};
 
 const stamp = () => {
   const now = new Date();
