@@ -17,6 +17,9 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    # concurrency 不取消进行中的 run，卡死一次就会把后面所有定时任务堵在队列里；
+    # 默认上限 360 分钟，缩到 15 分钟足够跑完一次同步
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
