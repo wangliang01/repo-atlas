@@ -59,7 +59,12 @@ export default async function ProjectPage({ params }: PageProps) {
           <h1 className="font-serif text-h1 font-semibold text-ink">{data.name}</h1>
           <VerdictBadge verdict={data.verdict} />
         </div>
-        <p className="mt-2 text-body text-muted">{data.tagline}</p>
+        <p className="mt-2 text-body text-muted">
+          {data.tagline}
+          {data.replaces.length > 0 ? (
+            <span className="ml-2 font-mono text-micro">替代 {data.replaces.join("、")}</span>
+          ) : null}
+        </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
           {data.topics.map((topic) => (
@@ -70,6 +75,17 @@ export default async function ProjectPage({ params }: PageProps) {
         <div className="mt-6 border-y border-line py-3">
           <MetaBar data={data} />
         </div>
+
+        <dl className="mt-6 grid gap-4 text-small sm:grid-cols-2">
+          <div>
+            <dt className="font-mono text-micro text-muted">适合</dt>
+            <dd className="mt-1 text-ink">{data.forWho}</dd>
+          </div>
+          <div>
+            <dt className="font-mono text-micro text-muted">不适合</dt>
+            <dd className="mt-1 text-ink">{data.notFor}</dd>
+          </div>
+        </dl>
       </header>
 
       <div className="mt-8 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,720px)_1fr]">

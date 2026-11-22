@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:alt": "node scripts/check-alt.mjs"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",

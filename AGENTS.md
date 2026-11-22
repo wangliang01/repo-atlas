@@ -20,6 +20,7 @@
 | 全量测试 | `node --test` |
 | Lint 单文件 | `pnpm lint <path>` |
 | 构建 | `pnpm build` |
+| 图片 alt 检查（扫构建产物） | `pnpm check:alt` |
 
 ## 工作流
 1. 改完先跑「类型检查 + 本次涉及的测试」，全绿再继续。
