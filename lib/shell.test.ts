@@ -53,3 +53,21 @@ test("移动端有可展开的导航，不是只能看到 logo", () => {
   assert.ok(/aria-controls="[^"]+"/.test(header), "汉堡按钮缺 aria-controls");
   assert.ok(/sm:hidden/.test(header), "移动端导航面板没有 sm:hidden 限定");
 });
+
+test("导航恰三项：首页 / 精选 / 笔记，没有已删除的 /projects", () => {
+  const header = read("components/site-header.tsx");
+  const start = header.indexOf("const NAV");
+  const block = header.slice(start, header.indexOf("];", start));
+
+  assert.equal((block.match(/href:/g) ?? []).length, 3, "导航不是三项");
+  for (const href of ['"/"', '"/picks"', '"/notes"']) {
+    assert.ok(block.includes(href), `导航缺 ${href}`);
+  }
+  assert.equal(block.includes("/projects"), false, "导航里还留着 /projects");
+});
+
+test("当前栏目用 aria-current 标出来，不只靠颜色", () => {
+  const header = read("components/site-header.tsx");
+  assert.ok(header.includes("usePathname"), "没读当前路径");
+  assert.ok(/aria-current=/.test(header), "缺 aria-current");
+});

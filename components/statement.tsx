@@ -7,7 +7,7 @@ type StatementProps = {
 
 export function Statement({ issue, updatedAt }: StatementProps) {
   return (
-    <section data-testid="statement" className="pt-16 md:pt-24">
+    <section data-testid="statement" className="pt-10 md:pt-14">
       <h1 className="max-w-[var(--measure)] text-balance font-serif text-display font-semibold text-ink">
         我跑过的开源项目，和它们的真实成色。
       </h1>

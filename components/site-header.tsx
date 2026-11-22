@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV = [
-  { href: "/projects", label: "雷达" },
+  { href: "/", label: "首页" },
   { href: "/picks", label: "精选" },
   { href: "/notes", label: "笔记" },
 ];
@@ -13,6 +14,7 @@ const NAV = [
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);
@@ -37,7 +39,8 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="text-muted transition-colors duration-150 hover:text-ink"
+              aria-current={pathname === item.href ? "page" : undefined}
+              className="text-muted transition-colors duration-150 hover:text-ink aria-[current=page]:text-ink"
             >
               {item.label}
             </Link>
@@ -84,8 +87,9 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={pathname === item.href ? "page" : undefined}
               onClick={() => setMenuOpen(false)}
-              className="py-3 text-muted transition-colors duration-150 hover:text-ink"
+              className="py-3 text-muted transition-colors duration-150 hover:text-ink aria-[current=page]:text-ink"
             >
               {item.label}
             </Link>

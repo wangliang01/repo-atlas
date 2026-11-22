@@ -1,8 +1,10 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import matter from "gray-matter";
+import { NOTE_KIND_LABEL } from "./labels.ts";
 import {
   assertAlternativesExist,
+  NOTE_KINDS,
   noteFrontmatter,
   picksFrontmatter,
   projectFrontmatter,
@@ -102,8 +104,40 @@ export function getPicksSnapshot(): PicksFrontmatter | undefined {
 
 // 首页"最近更新"：内容里最新的那一天；还没内容才退回构建日
 export function getLatestUpdate(): Date {
-  const dates = [...getAllProjects(), ...getAllNotes()].map((item) => item.data.publishedAt.getTime());
+  const dates = [
+    ...getAllProjects().map((item) => item.data.publishedAt.getTime()),
+    ...getAllNotes().map((item) => item.data.publishedAt.getTime()),
+  ];
+  // 精选同步也算更新：以前只算项目和笔记，首页日期比精选旧两天
+  const synced = getPicksSnapshot()?.syncedAt.getTime();
+  if (synced) dates.push(synced);
   return dates.length > 0 ? new Date(Math.max(...dates)) : new Date();
+}
+
+// 首页左栏和右栏共用的站点数字。全部来自真实内容，没有一项是估的
+export function getSiteCounts(): { projects: number; notes: number; picks: number; updatedAt: Date } {
+  const projects = getAllProjects();
+  const notes = getAllNotes();
+  return {
+    projects: projects.length,
+    notes: notes.length,
+    picks: getPicksSnapshot()?.entries.length ?? 0,
+    updatedAt: getLatestUpdate(),
+  };
+}
+
+// 笔记列表按类型分组；空类型整组不出现，免得左栏挂一排点进去是空的锚点
+export function groupNotesByKind(notes: Note[]): { kind: NoteFrontmatter["kind"]; label: string; notes: Note[] }[] {
+  return NOTE_KINDS.map((kind) => ({
+    kind,
+    label: NOTE_KIND_LABEL[kind],
+    notes: notes.filter((note) => note.data.kind === kind),
+  })).filter((group) => group.notes.length > 0);
+}
+
+// 精选行要链回站内详情时用：repo → slug
+export function getProjectSlugByRepo(): Map<string, string> {
+  return new Map(getAllProjects().map((project) => [project.data.repo, project.slug]));
 }
 
 // 一期 3 个，期号从 1 开始

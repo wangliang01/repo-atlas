@@ -23,6 +23,13 @@
 | 图片 alt 检查（扫构建产物） | `pnpm check:alt` |
 | 同步 AI 精选快照（GitHub API） | `pnpm sync:picks [--dry-run]` |
 
+## 信息架构
+导航只有三项：首页 `/`、精选 `/picks`、笔记 `/notes`。`/projects` 列表页已删，308 到 `/`；项目详情仍是 `/projects/[slug]`。
+
+三个列表页共用 `components/site-shell.tsx` 的三栏（左索引 / 中 feed / 右个人信息）：`md` 起出左栏，`xl` 起才出右栏，更窄时右栏内容降级到 feed 末尾的 `ShellStrip`。宽度常量在 `lib/layout.ts`，但栅格 className 必须写字面量——Tailwind v4 不扫模板字符串。
+
+aside 上不能加 `self-start`：那样 aside 被收缩到内容高度，里面 `sticky` 的元素没有行程，滚起来就跟着走了（实测滚 600px 后 `top = -351`）。保持默认 stretch。
+
 ## 工作流
 1. 改完先跑「类型检查 + 本次涉及的测试」，全绿再继续。
 2. 一次只做一个最小改动，做完停下来说明改了什么。

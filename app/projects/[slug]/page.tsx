@@ -45,8 +45,8 @@ export default async function ProjectPage({ params }: PageProps) {
   return (
     <article className="wrap py-10 md:py-16">
       <nav aria-label="面包屑" className="font-mono text-micro text-muted">
-        <Link href="/projects" className="transition-colors duration-150 hover:text-ink">
-          项目库
+        <Link href="/" className="transition-colors duration-150 hover:text-ink">
+          首页
         </Link>
         <span aria-hidden="true" className="mx-2 text-line">
           /

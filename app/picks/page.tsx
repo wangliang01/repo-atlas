@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
-import { PickList } from "@/components/pick-list";
-import { getPicksSnapshot } from "@/lib/content";
+import { PicksView } from "@/components/picks-view";
+import { getPicksSnapshot, getProjectSlugByRepo, getSiteCounts } from "@/lib/content";
 import { formatDate } from "@/lib/date";
-import { formatStars } from "@/lib/picks";
+import { formatStars } from "@/lib/format";
+import { PROFILE } from "@/lib/profile";
 
 export const metadata: Metadata = {
   title: "精选 | Repo Atlas",
-  description: "从 GitHub 上抓的 AI 项目雷达：按 stars 和涨星速度排，每周同步一次。",
+  description: "从 GitHub 上抓的 AI 项目：按 stars 和涨星速度排，每周同步一次。",
 };
 
 export default function PicksPage() {
   const snapshot = getPicksSnapshot();
+  const { updatedAt } = getSiteCounts();
 
   if (!snapshot) {
     return (
@@ -43,7 +45,14 @@ export default function PicksPage() {
         </p>
       </header>
 
-      <PickList entries={entries} />
+      <div className="mt-6">
+        <PicksView
+          entries={entries}
+          profile={PROFILE}
+          updatedAt={updatedAt}
+          projectByRepo={Object.fromEntries(getProjectSlugByRepo())}
+        />
+      </div>
     </div>
   );
 }

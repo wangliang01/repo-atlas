@@ -1,14 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import { getPicksSnapshot } from "./content.ts";
+import { getPicksSnapshot, getProjectSlugByRepo } from "./content.ts";
 import {
+  ALL_CATEGORIES,
   filterPicks,
   formatPerDay,
-  formatShortDate,
-  formatStars,
   pickBuckets,
-  pickTabs,
+  pickCategories,
   RISING_TOP,
   risingRepos,
 } from "./picks.ts";
@@ -39,8 +38,26 @@ test("分桶：词界要挡住假命中，build 里的 ui 不算工具", () => {
   assert.deepEqual(pickBuckets(like({ description: "UI for chat" })), ["工具"]);
 });
 
+test("分类：全部排第一，只出非空的，计数按全集", () => {
+  const entries = [
+    like({ topics: ["agent"] }),
+    like({ topics: ["mcp"] }),
+    like({ topics: ["ai"] }),
+  ];
+
+  const categories = pickCategories(entries);
+  assert.deepEqual(
+    categories.map((category) => category.label),
+    [ALL_CATEGORIES, "Agent", "MCP", "其它"],
+  );
+  assert.equal(categories[0].count, 3, "「全部」的计数应该是全集");
+  for (const category of categories) {
+    assert.ok(category.count > 0, `${category.label} 是空分类`);
+  }
+});
+
 test("涨得快：取 stars/天 最高的前 10 个，不是固定阈值", () => {
-  // 全部都在 15 星/天以上：阈值写法会把这 26 个全算进去，tab 就等于「全部」
+  // 全部都在 15 星/天以上：阈值写法会把这 26 个全算进去，开关就等于没有
   const entries = Array.from({ length: 26 }, (_, i) => like({ starsPerDay: 2000 - i * 10 }));
   const rising = risingRepos(entries);
 
@@ -49,50 +66,33 @@ test("涨得快：取 stars/天 最高的前 10 个，不是固定阈值", () =>
   assert.equal(rising.has(entries[RISING_TOP].repo), false, "第 11 名不该进去");
 });
 
-test("tab：count 和筛选结果对得上，且点进去不为空", () => {
+test("双轴过滤：分类和涨得快正交，交集数字对得上", () => {
+  // 前 6 个是 Agent，后 6 个是 MCP；stars/天 从 100 递减。
+  // 前 10 名 = 6 个 Agent + 4 个 MCP，所以 MCP × 涨得快 应该剩 4。
   const entries = [
-    like({ topics: ["agent"], stars: 30000, starsPerDay: 30 }),
-    like({ topics: ["mcp"], stars: 500, starsPerDay: 1 }),
-    like({ topics: ["ai"], stars: 100, starsPerDay: 0 }),
+    ...Array.from({ length: 6 }, (_, i) => like({ topics: ["agent"], starsPerDay: 100 - i })),
+    ...Array.from({ length: 6 }, (_, i) => like({ topics: ["mcp"], starsPerDay: 94 - i })),
   ];
 
-  const tabs = pickTabs(entries);
-  assert.deepEqual(
-    tabs.map((tab) => tab.label),
-    ["全部", "Agent", "MCP", "其它"],
-    "tab 顺序或出现条件不对",
-  );
+  const count = (category: string, risingOnly: boolean) =>
+    filterPicks(entries, { category, risingOnly }).length;
 
-  for (const tab of tabs) {
-    const visible = filterPicks(entries, tab.label);
-    assert.equal(visible.length, tab.count, `${tab.label} 的 count 和实际筛选结果不一致`);
-    assert.ok(visible.length > 0, `${tab.label} 是空 tab`);
-  }
+  assert.equal(count(ALL_CATEGORIES, false), 12);
+  assert.equal(count(ALL_CATEGORIES, true), 10);
+  assert.equal(count("Agent", false), 6);
+  assert.equal(count("Agent", true), 6);
+  assert.equal(count("MCP", false), 6);
+  assert.equal(count("MCP", true), 4);
 });
 
-test("tab：条目太少时不出「涨得快」；不再有重复的「高星」", () => {
-  const few = [like({ topics: ["agent"], stars: 999999, starsPerDay: 0.4 })];
-  assert.equal(pickTabs(few).some((tab) => tab.label === "涨得快"), false);
-
-  const many = Array.from({ length: RISING_TOP + 1 }, (_, i) => like({ starsPerDay: i }));
-  const labels = pickTabs(many).map((tab) => tab.label);
-  assert.ok(labels.includes("涨得快"));
-  assert.equal(labels.includes("高星"), false, "「高星」和按 stars 排序的「全部」重复了");
+test("双轴过滤：不认识的分类返回空，不会退化成全部", () => {
+  const entries = [like({ topics: ["agent"] })];
+  assert.equal(filterPicks(entries, { category: "不存在的分类", risingOnly: false }).length, 0);
 });
 
-test("数字格式：k / M 进位不出现 1000.0k", () => {
-  assert.equal(formatStars(999), "999");
-  assert.equal(formatStars(1000), "1.0k");
-  assert.equal(formatStars(472937), "472.9k");
-  assert.equal(formatStars(999999), "1.0M");
-  assert.equal(formatStars(1200000), "1.2M");
-
+test("涨速格式：整数不拖小数，小数保留一位", () => {
   assert.equal(formatPerDay(2130.3), "+2130/天");
   assert.equal(formatPerDay(4.25), "+4.3/天");
-});
-
-test("日期只留年月日，补零", () => {
-  assert.equal(formatShortDate(new Date(2026, 0, 5)), "26.01.05");
 });
 
 test("真实快照：字段齐全，头像文件真的在 public 里", () => {
@@ -118,9 +118,17 @@ test("真实快照：stars 倒序，不出现重复仓库", () => {
   assert.equal(new Set(entries.map((e) => e.repo)).size, entries.length, "快照里有重复仓库");
 });
 
+test("互链：跑过的仓库能从精选链回详情页", () => {
+  const byRepo = getProjectSlugByRepo();
+  assert.equal(byRepo.get("n8n-io/n8n"), "n8n", "n8n 在两边都有，必须能互链");
+  for (const slug of byRepo.values()) {
+    assert.ok(has(`content/projects/${slug}.mdx`), `slug ${slug} 没有对应内容`);
+  }
+});
+
 test("页面与脚本：/picks 存在、进了导航、同步脚本在", () => {
   assert.ok(has("app/picks/page.tsx"), "缺 /picks 页面");
-  assert.ok(has("components/pick-list.tsx"), "缺列表组件");
+  assert.ok(has("components/pick-row.tsx"), "缺列表行组件");
   assert.ok(has("scripts/sync-ai-picks.mjs"), "缺同步脚本");
   assert.ok(read("components/site-header.tsx").includes('"/picks"'), "导航里没有精选");
   assert.ok(read("package.json").includes("sync:picks"), "package.json 没注册 sync:picks");
