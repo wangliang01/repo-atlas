@@ -22,6 +22,7 @@
 | 构建 | `pnpm build` |
 | 图片 alt 检查（扫构建产物） | `pnpm check:alt` |
 | 同步 AI 精选快照（GitHub API） | `pnpm sync:picks [--dry-run]` |
+| 部署到线上 | `bash scripts/deploy.sh` |
 
 ## 信息架构
 导航只有三项：首页 `/`、精选 `/picks`、笔记 `/notes`。`/projects` 整条路由已删（T-014）：列表页 308 到 `/`，详情页 404。
@@ -45,10 +46,20 @@
 5. 完成的标准是跑过并贴出输出，不是 diff 看起来对。
 6. 跑 `pnpm build` 前先确认没有 `next dev` **或 `next start`** 在跑：两者都占用 `.next`，同时构建会写坏产物。踩过的坑：`next start` 还在跑时重建，构建「成功」但 `.next/server/app/notes/` 整个没了，`/notes/why-mdx` 变成 404。`TaskStop` 只杀 pnpm 外壳，`next` 子进程会残留——用 `Get-CimInstance Win32_Process | Where CommandLine -like "*本项目路径*"` 查出来再杀干净；保险起见 `rm -rf .next` 后重建。
 
+## 部署
+
+线上是 `https://blog.wlv587.top`，跑在一台 1.7G 内存的轻量云上。
+
+- **静态导出，没有 Node 进程**。`next.config.ts` 里 `output: "export"`，构建产物是 `out/`，由服务器上已有的 Caddy 容器直接发文件。给这个站多开一个 Node 进程要吃掉一两百兆，不划算。
+- 导出带来两个约束：`next.config` 的 `redirects()` 用不了（`/projects → /` 的 308 写在 `deploy/Caddyfile` 里）；`next/image` 必须 `unoptimized`，否则头像会指向不存在的 `/_next/image`。
+- `bash scripts/deploy.sh` 做三件事：构建 → tar 过 ssh → 解到 `/srv/blog`。解压前会清空目录，**但不会替换目录本身**——`/srv/blog` 是 Caddy 容器的 bind mount，换 inode 挂载就断了。
+- 80/443 由 Docker 里的 `edge_caddy` 持有，宿主机上的 nginx 没在跑。改站点配置是改 `/opt/edge/Caddyfile`（仓库里 `deploy/Caddyfile` 是副本），改完 `docker exec edge_caddy caddy reload --config /etc/caddy/Caddyfile` 热加载，不要 `docker compose up -d` 除非要加挂载。
+- 证书由 Caddy 自动申请续期，不用管。
+
 ## 红线
 - NEVER 新增依赖，除非 Ticket 写明并获同意。
 - NEVER 用 `any` / `@ts-ignore` 绕过类型错误，去修根因。
-- NEVER 让 `app/` 下出现动态渲染（`force-dynamic` / `revalidate = 0`）；动态只允许在 `/api/ask`。
+- NEVER 让 `app/` 下出现动态渲染（`force-dynamic` / `revalidate = 0`）；`output: "export"` 已经把这条路堵死了。
 - NEVER 改动 `globals.css` 的 token 数值或新增字号档位，除非 Ticket 明确要求并附对比度验证。
 - 注释只写「为什么」，不写「做什么」。
 
