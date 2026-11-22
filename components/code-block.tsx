@@ -16,18 +16,20 @@ export function CodeBlock({ lang, filename, lineNumbers, html, code }: CodeBlock
 
   return (
     <figure
-      className="code-block mt-6 overflow-hidden border border-line bg-surface"
+      className="code-block mt-[22px] overflow-hidden rounded-[4px] border border-line bg-surface"
       data-line-numbers={lineNumbers ? "true" : undefined}
     >
-      <figcaption className="flex items-center gap-3 border-b border-line bg-bg/60 px-4 py-2">
-        {/* 有文件名就不再标语言：lib/content.ts ts 连在一起像拼错了 */}
-        <span className="truncate font-mono text-micro text-ink">{filename ?? lang}</span>
+      {/* 头部用 surface-2 压一层：比加一条分隔线干净，暗色下也自然抬起来 */}
+      <figcaption className="flex h-9 items-center gap-2.5 border-b border-line bg-surface-2 px-3">
+        <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-accent" />
+        {/* 有文件名就不再标语言：lib/content.ts 连在一起像拼错了 */}
+        <span className="truncate font-mono text-micro text-muted">{filename ?? lang}</span>
         <span className="ml-auto shrink-0">
           <CopyButton text={source} />
         </span>
       </figcaption>
       <div
-        className="overflow-x-auto px-4 py-3.5 font-mono text-small leading-[1.7]"
+        className="overflow-x-auto px-4 py-3 font-mono text-small leading-[1.7]"
         dangerouslySetInnerHTML={{ __html: rendered }}
       />
     </figure>

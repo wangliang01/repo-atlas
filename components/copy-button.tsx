@@ -20,7 +20,7 @@ export function CopyButton({ text }: { text: string }) {
       type="button"
       onClick={copy}
       data-copied={copied ? "true" : "false"}
-      className="font-mono text-micro text-muted transition-colors duration-150 hover:text-ink"
+      className="rounded-[3px] px-2 py-1.5 font-mono text-micro text-muted transition-colors duration-150 hover:bg-line/70 hover:text-ink"
     >
       {copied ? "已复制" : "复制"}
     </button>

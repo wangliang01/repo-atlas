@@ -1,8 +1,9 @@
 import { codeToHtml } from "shiki";
 import { findFences, type Fence } from "./mdx.ts";
 
-// 暖色纸面配 vitesse：github-light 偏冷灰，压不住 --bg 的米色
-const THEMES = { light: "vitesse-light", dark: "vitesse-dark" };
+// 原来配的是 vitesse：那会儿底色是米色纸面。换成掘金的灰白之后它偏黄绿，跟蓝主色打架，
+// github-light 的藏青/红/紫更贴这个站的配色
+const THEMES = { light: "github-light", dark: "github-dark" };
 
 const escapeAttr = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
