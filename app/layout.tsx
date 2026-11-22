@@ -36,7 +36,7 @@ const notoSerif = Noto_Serif_SC({
 
 export const metadata: Metadata = {
   title: "Repo Atlas",
-  description: "把值得读的开源项目，拆开看。",
+  description: "我跑过的开源项目，和它们的真实成色。",
 };
 
 export default function RootLayout({

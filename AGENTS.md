@@ -1,6 +1,6 @@
 # Repo Atlas
 
-把值得读的开源项目拆开看的个人技术名片。给面试官（全栈 / AI 应用方向）看，不是内容平台。
+我跑过的开源项目、和它们的真实成色的个人技术名片。给面试官（全栈 / AI 应用方向）看，不是内容平台。
 
 ## 技术栈
 - 语言 / 运行时：TypeScript strict / Node 24
@@ -21,7 +21,7 @@
 | Lint 单文件 | `pnpm lint <path>` |
 | 构建 | `pnpm build` |
 | 图片 alt 检查（扫构建产物） | `pnpm check:alt` |
-| 导入 HelloGitHub 某期草稿 | `pnpm import:hg <期号> [--stars]` |
+| 同步 AI 精选快照（GitHub API） | `pnpm sync:picks [--dry-run]` |
 
 ## 工作流
 1. 改完先跑「类型检查 + 本次涉及的测试」，全绿再继续。
@@ -29,7 +29,7 @@
 3. 不许为了让测试通过而修改测试；要改必须先说明理由并获得同意。
 4. 提交前跑 Lint；一个 Ticket 一个提交，单次改动 < 200 行。
 5. 完成的标准是跑过并贴出输出，不是 diff 看起来对。
-6. 跑 `pnpm build` 前先确认没有 `next dev` 在跑：dev 与 build 共用 `.next`，同时跑会写坏产物（`next start` 报 `Cannot find module './xxx.js'`，页面 500）。`TaskStop` 只杀 pnpm 外壳，`next` 子进程会残留——用 `Get-CimInstance Win32_Process | Where CommandLine -like "*本项目路径*"` 查出来再杀干净。
+6. 跑 `pnpm build` 前先确认没有 `next dev` **或 `next start`** 在跑：两者都占用 `.next`，同时构建会写坏产物。踩过的坑：`next start` 还在跑时重建，构建「成功」但 `.next/server/app/notes/` 整个没了，`/notes/why-mdx` 变成 404。`TaskStop` 只杀 pnpm 外壳，`next` 子进程会残留——用 `Get-CimInstance Win32_Process | Where CommandLine -like "*本项目路径*"` 查出来再杀干净；保险起见 `rm -rf .next` 后重建。
 
 ## 红线
 - NEVER 新增依赖，除非 Ticket 写明并获同意。

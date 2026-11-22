@@ -1,7 +1,8 @@
 import { codeToHtml } from "shiki";
 import { findFences, type Fence } from "./mdx.ts";
 
-const THEMES = { light: "github-light", dark: "github-dark" };
+// 暖色纸面配 vitesse：github-light 偏冷灰，压不住 --bg 的米色
+const THEMES = { light: "vitesse-light", dark: "vitesse-dark" };
 
 const escapeAttr = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");

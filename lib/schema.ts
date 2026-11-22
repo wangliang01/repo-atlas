@@ -54,20 +54,27 @@ export const noteFrontmatter = z.object({
 export type ProjectFrontmatter = z.infer<typeof projectFrontmatter>;
 export type NoteFrontmatter = z.infer<typeof noteFrontmatter>;
 
-// 精选是"值得看一眼"的量级：只留一句自己的判断，不写六段
+// 精选是数据驱动的雷达：字段全部来自 GitHub API，唯一手写的是可选的 why
 export const pickEntry = z.object({
   name: z.string().min(1),
   repo: z.string().regex(/^[\w.-]+\/[\w.-]+$/, "repo 必须是 owner/name"),
-  category: z.string().min(1),
-  tagline: z.string().min(1),
-  why: z.string().min(1, "why 不能为空：照抄简介不算收录，写一句你自己的判断"),
-  stars: z.number().int().nonnegative().optional(),
+  owner: z.string().min(1),
+  avatar: z.string().startsWith("/", "头像必须是站内路径，同步时下载到 public/avatars").optional(),
+  description: z.string().min(1),
   language: z.string().min(1).optional(),
+  topics: z.array(z.string()).default([]),
+  stars: z.number().int().nonnegative(),
+  forks: z.number().int().nonnegative().default(0),
+  starsPerDay: z.number().nonnegative().default(0),
+  createdAt: dateOnly,
+  pushedAt: dateOnly,
+  // 有话说才写；没有就不显示，不拿占位文案凑
+  why: z.string().min(1).optional(),
 });
 
 export const picksFrontmatter = z.object({
-  issue: z.number().int().positive(),
-  publishedAt: dateOnly,
+  syncedAt: dateOnly,
+  query: z.string().min(1),
   entries: z.array(pickEntry).min(1),
 });
 

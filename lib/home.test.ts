@@ -16,8 +16,8 @@ test("日期格式为 YYYY.MM.DD，月日补零", async () => {
 test("主张区：40px 宋体标题 + 两行说明 + 本期编号与日期", () => {
   assert.ok(has("components/statement.tsx"), "components/statement.tsx 不存在");
   const s = read("components/statement.tsx");
-  assert.ok(s.includes("把值得读的开源项目，拆开看。"), "缺主张文案");
-  assert.ok(s.includes("每周 3 个，只收我跑起来过的。"), "缺第一行说明");
+  assert.ok(s.includes("我跑过的开源项目，和它们的真实成色。"), "缺主张文案");
+  assert.ok(s.includes("每周 3 个，跑不通的不写。"), "缺第一行说明");
   assert.ok(s.includes("前端出身，正在往全栈和 AI 应用走。"), "缺第二行说明");
   assert.ok(s.includes("text-display"), "主张没用 display 字号");
   assert.ok(s.includes("font-serif"), "主张没用宋体");
