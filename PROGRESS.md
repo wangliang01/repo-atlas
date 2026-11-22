@@ -33,7 +33,7 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 | T-007 | 笔记列表 + 笔记详情 + 目录 + 构建期高亮代码块 | `b33848c` | 裁判 8/8：`node --test` 41/41；`○ /notes` + `● /notes/[slug]`；复制按钮读回原文一致；1440 目录 sticky（滚动后 top 仍 96）、1024 隐藏；正文 720/28px；375px 无溢出；表格/列表/引用都渲染出来。另修 `readingTime` 手填 6 分钟与实际 2 分钟不符（改为现算），页脚浮空（body 改 flex） |
 | T-008 | P0 收口：404、项目库、溢出与 alt 通检 | `181dad7` + `3c55594` | SPEC 9 条 P0 验收 9/9：6 路由 × 375/1440 共 12 次 `scrollWidth===clientWidth`；`/nope` 404 且有返回首页；删 `license` 字段构建 exit 1 后 md5 还原；`node --test` 41/41。第二轮裁判要求补的三项见下：`pnpm check:alt`（空集退出码 2）、详情页渲染「替代 / 适合 / 不适合」、AC-6 改按 SPEC 9 条 |
 | T-009 | HelloGitHub 精选：分类 tab + 单列卡片 + 导入脚本 | `052fa4b` | 7/7：导入 41 条草稿与源文件一致；`○ /picks`；点「Go 项目」剩 2 张、点「全部」回 7 张；链接全 github + noopener；375/1440 无溢出；删 `why` 构建报 `entries.6.why: rubik/radon：Required` 后 md5 还原；`node --test` 46/46 |
-| T-010 | 精选改 AI 雷达：GitHub 同步脚本 + 掘金式列表 + 换文案与高亮 | 本次提交 | `node --test` 51/51；typecheck 0；lint 0 error；build 11 页全 `○`/`●`；`pnpm sync:picks` 拉到 26 条 + 26 张头像；`/picks` 1440 高 3416（首屏 6 行）、375 `scrollWidth=375`（修掉 315px 项目名撑出的 14px 溢出）；点 tab 实测 全部 26 / 涨得快 10 / Agent 13 / MCP 3 / 其它 7，与 tab 上的数字一致；`aria-selected` 跟随、链接全 `noopener`；`pnpm check:alt` 26/26；代码块换 vitesse 双主题、行内代码加 `--line` 底 |
+| T-010 | 精选改 AI 雷达：GitHub 同步脚本 + 掘金式列表 + 换文案与高亮 | `c6fcb7c` | `node --test` 51/51；typecheck 0；lint 0 error；build 11 页全 `○`/`●`；`pnpm sync:picks` 拉到 26 条 + 26 张头像；`/picks` 1440 高 3416（首屏 6 行）、375 `scrollWidth=375`（修掉 315px 项目名撑出的 14px 溢出）；点 tab 实测 全部 26 / 涨得快 10 / Agent 13 / MCP 3 / 其它 7，与 tab 上的数字一致；`aria-selected` 跟随、链接全 `noopener`；`pnpm check:alt` 26/26；代码块换 vitesse 双主题、行内代码加 `--line` 底 |
 
 ### P0 验收（SPEC「验收标准」9 条，2026-11-22 跑）
 
