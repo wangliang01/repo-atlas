@@ -40,7 +40,29 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: 同步并提交
+        id: sync
         env:
           # 带上 token 后搜索额度从 60 次/小时提到 5000
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/picks-cron.mjs
+        run: |
+          before=$(git rev-parse HEAD)
+          node scripts/picks-cron.mjs
+          if [ "$before" != "$(git rev-parse HEAD)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 精选是构建时从 content/picks/*.mdx 烘进 HTML 的，不重新构建 + 上传，
+      # 线上 /picks 永远是上次部署的旧数据
+      - name: 部署到线上
+        if: steps.sync.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${DEPLOY_HOST#*@}" >> ~/.ssh/known_hosts 2>/dev/null
+          bash scripts/deploy.sh

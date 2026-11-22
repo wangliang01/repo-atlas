@@ -14,10 +14,10 @@ test("项目路由整条删掉：列表页和详情页都不在", () => {
 });
 
 test("老链接 /projects 有 308 兜底，不是 404", () => {
-  const config = read("next.config.ts");
-  assert.ok(config.includes('source: "/projects"'), "缺 /projects 重定向");
-  assert.ok(config.includes('destination: "/"'), "重定向目标不是首页");
-  assert.ok(config.includes("permanent: true"), "不是永久重定向");
+  // T-019 起 output: "export"，next.config 的 redirects() 不生效，308 挪到 Caddy 发。
+  // 断言跟着行为走：查的是部署配置，不是 next.config
+  const caddy = read("deploy/Caddyfile");
+  assert.match(caddy, /^\s*redir \/projects \/ 308$/m, "Caddy 里缺 /projects → / 的 308");
 });
 
 test("旧的精选列表组件已删除，没有两套行渲染", () => {

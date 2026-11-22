@@ -56,7 +56,11 @@ push 明明成功了，脚本却走了 catch。根因：`git(["push"], { stdio: 
 
 `app/picks/page.tsx` 走 `getPicksSnapshot()`，是构建时 `readFileSync("content/picks/*.mdx")`。所以 Actions 每天 4 次更新仓库里的 mdx，`blog.wlv587.top/picks` 还是上次部署时烘进去的旧数据。
 
-要让定时同步真的体现在页面上，CI 得在 commit 之后再 `pnpm build` + 传 `/srv/blog`，也就是把 `scripts/deploy.sh` 搬进 workflow。这需要给仓库配一个能 ssh 到服务器的密钥（GitHub Secrets），等于把服务器的一把钥匙交给 Actions——属于安全决策，等确认。
+修法（已确认）：workflow 里在 commit 之后跑 `scripts/deploy.sh`。密钥方案是新建一把专用 ed25519，公钥进服务器 `root` 的 `authorized_keys`，私钥存仓库 Secrets（`DEPLOY_SSH_KEY` / `DEPLOY_HOST`）。
+
+只在 `sync` 那一步真的产生新提交时才部署（用 `git rev-parse HEAD` 前后对比，写进 `$GITHUB_OUTPUT`），`workflow_dispatch` 手动触发则无条件部署，方便验证。
+
+另外 `lib/routes.test.ts` 那条 308 断言原来是查 `next.config.ts` 的 `redirects()`，T-019 之后永远不可能为真，改成查 `deploy/Caddyfile` 里的 `redir /projects / 308`（已获同意）。
 
 ## 验收
 
@@ -64,7 +68,8 @@ push 明明成功了，脚本却走了 catch。根因：`git(["push"], { stdio: 
 - [x] `gh workflow run picks` 能手动触发，run 走完是 success（19 秒）
 - [x] run 结束后远端 `master` 多了一条 `chore(picks): 同步 AI 精选 2026-11-22 13:28`（`3aae696`）
 - [x] 定时表达式确认是 UTC `0 1,7,13,19 * * *`（北京时间 09/15/21/03）
-- [ ] 线上 `/picks` 跟着刷新 —— 待定，见上一节
+- [ ] CI 部署步骤能真的把新数据送上线（`workflow_dispatch` 触发，看 `/picks` 的更新时间变）
+- [x] `node --test` 79/79（含改写后的 308 断言）
 
 ## 如果还是不被识别
 

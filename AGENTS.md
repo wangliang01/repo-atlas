@@ -55,6 +55,7 @@
 - `bash scripts/deploy.sh` 做三件事：构建 → tar 过 ssh → 解到 `/srv/blog`。解压前会清空目录，**但不会替换目录本身**——`/srv/blog` 是 Caddy 容器的 bind mount，换 inode 挂载就断了。
 - 80/443 由 Docker 里的 `edge_caddy` 持有，宿主机上的 nginx 没在跑。改站点配置是改 `/opt/edge/Caddyfile`（仓库里 `deploy/Caddyfile` 是副本），改完 `docker exec edge_caddy caddy reload --config /etc/caddy/Caddyfile` 热加载，不要 `docker compose up -d` 除非要加挂载。
 - 证书由 Caddy 自动申请续期，不用管。
+- `.github/workflows/picks.yml` 每天 4 次同步精选，有变化时会在 CI 里再跑一遍 `scripts/deploy.sh` 把新数据烘进页面。它用仓库 Secrets 里的 `DEPLOY_HOST` / `DEPLOY_SSH_KEY` ssh 到服务器——这把钥匙在 `root` 的 `authorized_keys` 里，泄露就等于交出服务器，换机器时记得一起换。
 
 ## 红线
 - NEVER 新增依赖，除非 Ticket 写明并获同意。
