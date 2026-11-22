@@ -7,7 +7,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 const NAV = [
   { href: "/projects", label: "雷达" },
   { href: "/notes", label: "笔记" },
-  { href: "/about", label: "关于" },
 ];
 
 export function SiteHeader() {

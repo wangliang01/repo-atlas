@@ -56,8 +56,7 @@ export const proseComponents = {
     <a
       {...props}
       className="text-accent underline decoration-line underline-offset-4"
-      rel="noopener"
-      target="_blank"
+      rel="noopener" target="_blank"
     />
   ),
   pre: (props: ComponentPropsWithoutRef<"pre">) => (
