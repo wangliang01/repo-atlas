@@ -1,0 +1,136 @@
+---
+title: 上下文 16K，不是 16K 个字
+summary: 窗口和账单都按 Token 算，不按字符。1.5 个 Token 才是一个汉字，所以中文的账要往上估一半。
+kind: architecture
+publishedAt: 2026-11-22
+---
+
+JS 里 `'你好'.length` 是 2，`'hello'.length` 是 5。
+
+按字符算，中文短得多。到了大模型这边，账反过来了。
+
+上 LLMOps 第一周，讲到 Token 那节课我才把这件事对上：之前估上下文长度、估接口费用，我用的都是 `str.length`。
+
+## 上下文窗口装的是 Token，不是字符
+
+课程举的例子是 GPT-3.5-16K，16K 指 16,000 个 Token。
+
+这 16,000 能装多少字，取决于你写中文还是英文。课上给的经验值是：
+
+- 1 个 Token ≈ 1 个英文单词
+- 1.5 个 Token ≈ 1 个汉字
+
+拿它换算，一段 100 字的周报，进窗口就是 150 个 Token。同样的内容写成英文大概 60 个词，60 个 Token。
+
+**同一个意思，中文的 Token 数是英文的两倍多。**
+
+这不是模型偏心，是词表的构建方式决定的——中文一个词往往只有一两个字，拆到 Token 这一层反而更碎。
+
+## Token 是词表里的一格，可能只有半个字
+
+课上给的词表片段长这样：
+
+```json
+{
+  "<unk>": 0,
+  "<|endoftext|>": 2,
+  "<0x00>": 305,
+  "ct": 611,
+  "▁re": 612,
+  "子和": 28564
+}
+```
+
+三行值得停一下。
+
+`▁re` 里那个 `▁` 不是下划线，是「这个词从这里开始」的标记。所以 `re` 单独一格、`▁re` 另占一格，模型靠这个区分词头和词中间。
+
+`子和` 是两个汉字粘成了一格。而 `子` 和 `和` 单独出现时又各自是一格——**同一个字，落在哪一格取决于它前后是谁。**
+
+`<0x00>` 是字节回退。词表里没收录的字符，退回按字节存，一个字符可能占好几个 Token。
+
+所以「一个 Token 是一个词」这句话只在英文里勉强成立。中文里它可能是半个字，也可能两个字。
+
+## 每轮对话都要把历史重发一遍
+
+接口是无状态的。第二轮的请求里必须把第一轮的问答一起带上，模型才知道你在说什么。
+
+```ts
+const messages = [
+  { role: "user", content: "第一个问题" },
+  { role: "assistant", content: "第一个回答" },
+  { role: "user", content: "第二个问题" },
+];
+```
+
+第三轮再发一次，`messages` 会变成五项。
+
+<Figure caption="同一段问答被重复发送：第 3 轮的请求里装着前两轮的全部内容。三轮下来送了 9 个块，内容其实只有 5 个。">
+  <svg viewBox="0 0 300 200" className="mx-auto block w-full max-w-[420px] py-3" role="img">
+    <title>三轮对话的请求内容，逐轮变长</title>
+
+    <text x="11" y="26" fontSize="11" fill="var(--muted)">第 1 轮请求</text>
+    <rect x="11" y="32" width="50" height="32" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
+    <text x="36" y="53" fontSize="11" textAnchor="middle" fill="var(--accent-ink)">问 1</text>
+
+    <text x="11" y="92" fontSize="11" fill="var(--muted)">第 2 轮请求</text>
+    <rect x="11" y="98" width="50" height="32" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
+    <text x="36" y="119" fontSize="11" textAnchor="middle" fill="var(--accent-ink)">问 1</text>
+    <rect x="68" y="98" width="50" height="32" rx="3" fill="var(--surface-2)" stroke="var(--line)" />
+    <text x="93" y="119" fontSize="11" textAnchor="middle" fill="var(--muted)">答 1</text>
+    <rect x="125" y="98" width="50" height="32" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
+    <text x="150" y="119" fontSize="11" textAnchor="middle" fill="var(--accent-ink)">问 2</text>
+
+    <text x="11" y="158" fontSize="11" fill="var(--muted)">第 3 轮请求</text>
+    <rect x="11" y="164" width="50" height="32" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
+    <text x="36" y="185" fontSize="11" textAnchor="middle" fill="var(--accent-ink)">问 1</text>
+    <rect x="68" y="164" width="50" height="32" rx="3" fill="var(--surface-2)" stroke="var(--line)" />
+    <text x="93" y="185" fontSize="11" textAnchor="middle" fill="var(--muted)">答 1</text>
+    <rect x="125" y="164" width="50" height="32" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
+    <text x="150" y="185" fontSize="11" textAnchor="middle" fill="var(--accent-ink)">问 2</text>
+    <rect x="182" y="164" width="50" height="32" rx="3" fill="var(--surface-2)" stroke="var(--line)" />
+    <text x="207" y="185" fontSize="11" textAnchor="middle" fill="var(--muted)">答 2</text>
+    <rect x="239" y="164" width="50" height="32" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
+    <text x="264" y="185" fontSize="11" textAnchor="middle" fill="var(--accent-ink)">问 3</text>
+  </svg>
+</Figure>
+
+按 100 字一轮、1.5 倍系数算，单次请求的 Token 数是这样长的：
+
+| 轮次 | 单次请求 | 累计送出 |
+|---|---|---|
+| 第 1 轮 | 150 | 150 |
+| 第 5 轮 | 750 | 2,250 |
+| 第 10 轮 | 1,500 | 8,250 |
+| 第 20 轮 | 3,000 | 31,500 |
+
+第 10 轮时，内容本身只有 1,500 个 Token，累计送进去 8,250 个。
+
+**窗口看的是单次请求，账单看的是累计——这两个数会差 5 倍以上。**
+
+窗口什么时候满也是同一个算法。单次请求等于 150 乘轮次，16,000 除以 150 约等于 106，所以同样的密度能聊到第 106 轮，第 107 轮就超了。
+
+## 平台层为什么要管这个
+
+课程把 LLMOps 定义成 LLM 应用的生命周期管理。第一周听下来，我觉得它管的是两件很具体的事：上下文怎么裁，钱花在哪。
+
+课上列了两种开发流程的对比：
+
+- 不用 LLMOps：整理需求、写 Prompt、部署 LLM、对接接口、处理应用数据、记日志、开发工具、编排工作流、写前后端、部署
+- 用 LLMOps：整理需求、写 Prompt、上传数据、勾选插件、可视化编排工作流、选模型、发布
+
+后一条短了三步，短掉的正好是最容易重复劳动的那几步。
+
+而上下文裁剪、历史摘要、多模型切换，这些以前每个应用各写一遍，现在变成平台上的一个开关。Token 账算得清不清，决定这个开关该不该开。
+
+## 总结
+
+1. 窗口和计费都按 Token 算，`str.length` 在这里没用。
+2. 1.5 个 Token 才是一个汉字，中文的账按字数乘 1.5 往上估。
+3. 窗口看单次请求，账单看累计，两者能差出一个量级。
+
+## 我还没搞懂的部分
+
+BPE 到底按什么规则决定哪些字该粘成一个 Token，课上只说「统计出来的」，合并的具体过程我没跟完。
+
+还有一点没验证：1.5 这个系数是课程给的经验值。不同模型的 tokenizer 差多少，我没有实测。等第二周把接口跑通，拿同一段中文分别打两个模型，对一下 `usage` 里的数字。
