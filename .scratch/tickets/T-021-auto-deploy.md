@@ -33,6 +33,10 @@ GitHub 明文规定：用 `GITHUB_TOKEN` 产生的事件不会创建新的 workf
 ## 验收
 
 - [x] 推一次带代码改动的提交，`deploy.yml` 被触发并且 success（`623400e` → run `45028771030`）
-- [ ] 推一次只改 `PROGRESS.md` 的提交，`deploy.yml` 不触发
+- [x] 推一次只改 `PROGRESS.md` 的提交，`deploy.yml` 不触发（`780fe24` 之后 `deploy.yml` 的 run 列表还是只有 `623400e` 那条）
 - [x] 线上页面确实是新构建的产物：`/srv/blog/index.html` mtime `21:41:34 +0800`，`Last-Modified: Sun, 22 Nov 2026 13:41:34 GMT`，与 run 的构建时刻一致
-- [ ] `picks.yml` 手动触发仍然能跑完（共用 concurrency 后没被自己挡住）
+- [x] `picks.yml` 手动触发仍然能跑完（run `45028943012` success，共用 concurrency 后没被自己挡住，日志有「已部署」）
+
+## 一个已知的边界
+
+`paths-ignore` 只在**整次推送全是文档**时才跳过。夹了代码的提交照样重建，这是对的——但反过来，如果只改了 `content/notes/*.mdx` 里的一行字，也会走一次完整构建。静态站没有增量构建，接受。
