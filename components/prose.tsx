@@ -82,6 +82,17 @@ export const proseComponents = {
   td: (props: ComponentPropsWithoutRef<"td">) => (
     <td {...props} className="border-b border-line py-2 pr-4 align-top text-muted" />
   ),
+  // 截图走这里：不加宽度约束，一张 2 倍图会把正文撑破 720px
+  img: ({ alt, ...props }: ComponentPropsWithoutRef<"img">) => (
+    // eslint-disable-next-line @next/next/no-img-element -- 正文图是运行时才知道的 MDX 内容，拿不到宽高，next/image 的必填尺寸给不出来
+    <img
+      {...props}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      className="mt-6 w-full rounded-[4px] border border-line"
+    />
+  ),
   figure: (props: ComponentPropsWithoutRef<"figure">) => <figure {...props} className="mt-6" />,
   figcaption: (props: ComponentPropsWithoutRef<"figcaption">) => (
     <figcaption {...props} className="mt-2 font-mono text-micro text-muted" />

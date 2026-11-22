@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
 import { CodeBlock } from "@/components/code-block";
+import { Figure } from "@/components/figure";
 import { Prose, proseComponents } from "@/components/prose";
 import { Toc } from "@/components/toc";
 import { getAllNotes, getNote } from "@/lib/content";
@@ -16,7 +17,7 @@ type PageProps = { params: Promise<{ slug: string }> };
 
 export const dynamicParams = false;
 
-const components = { ...proseComponents, CodeBlock };
+const components = { ...proseComponents, CodeBlock, Figure };
 
 // 表格是 GFM 语法，不加这个插件 remark 会把 | 当普通文本
 const mdxOptions = { mdxOptions: { remarkPlugins: [remarkGfm] } };

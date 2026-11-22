@@ -32,3 +32,18 @@ test("首页组装：身份卡 + 轨迹 + 笔记，第一屏不是 feed", () => 
   }
   assert.equal(page.includes("本期"), false, "首页还在用「本期」这个说法");
 });
+
+test("正文插图：img 有懒加载和宽度约束，图注组件已注册", () => {
+  const prose = read("components/prose.tsx");
+  assert.ok(prose.includes('loading="lazy"'), "img 没有懒加载，长文会一次性拉全部图");
+  assert.ok(prose.includes("w-full"), "img 没有宽度约束，2 倍图会撑破 720px 正文");
+
+  assert.ok(has("components/figure.tsx"), "components/figure.tsx 不存在");
+  const figure = read("components/figure.tsx");
+  assert.ok(figure.includes("figcaption"), "图注组件没有 figcaption");
+  assert.ok(figure.includes("caption"), "图注组件没有 caption 入参");
+
+  // MDX 里的 <Figure> 靠 components 映射解析，漏了会渲染成未知标签
+  const page = read("app/notes/[slug]/page.tsx");
+  assert.ok(page.includes("Figure"), "笔记页没注册 Figure");
+});

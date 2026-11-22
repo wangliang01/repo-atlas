@@ -10,3 +10,5 @@ decisions.tsv
 .vercel/
 # 验收探针与截图，一次性产物
 .audit/
+# 课件解压出来的原文，只在本机查资料用
+.scratch/week1/

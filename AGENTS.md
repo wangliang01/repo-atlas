@@ -24,7 +24,7 @@
 | 同步 AI 精选快照（GitHub API） | `pnpm sync:picks [--dry-run]` |
 
 ## 信息架构
-导航只有三项：首页 `/`、精选 `/picks`、笔记 `/notes`。`/projects` 列表页已删，308 到 `/`；项目详情仍是 `/projects/[slug]`。
+导航只有三项：首页 `/`、精选 `/picks`、笔记 `/notes`。`/projects` 整条路由已删（T-014）：列表页 308 到 `/`，详情页 404。
 
 三个列表页共用 `components/site-shell.tsx` 的三栏（左索引 / 中 feed / 右个人信息）：`md` 起出左栏，`xl` 起才出右栏，更窄时右栏内容降级到 feed 末尾的 `ShellStrip`。宽度常量在 `lib/layout.ts`，但栅格 className 必须写字面量——Tailwind v4 不扫模板字符串。
 
@@ -35,6 +35,7 @@
 - 没有衬线字体。`--font-serif` 已经删掉，别再加回来。
 - 字号六档：28 / 24 / 18 / 16 / 13 / 12。
 - 两个实测踩过的坑：aside 不能加 `self-start`（sticky 失去行程）；feed 面板不能加 `overflow-hidden`（它会变成 sticky 的包含块，`top-[60px]` 改成从面板顶算）。两条都有测试锁着。
+- 正文插图两条产线：示意图写内联 `<svg>`（外部 svg 文件拿不到 CSS 变量，暗色会糊），套 `components/figure.tsx` 的 `<Figure>`；截图走 `public/shots/<slug>/` + `![]()`，`proseComponents` 的 `img` 已带懒加载和宽度约束。技术示意图不许用 AI 生图。
 
 ## 工作流
 1. 改完先跑「类型检查 + 本次涉及的测试」，全绿再继续。
