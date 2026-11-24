@@ -55,7 +55,9 @@ export function findFences(body: string): Fence[] {
   let i = 0;
 
   while (i < lines.length) {
-    const open = /^```([\w+#.-]*)(.*)$/.exec(lines[i]);
+    // CRLF 文件里 `$` 不会停在 \r 前，先去掉行尾的 \r 再做行内匹配；offset 仍按原行长计算
+    const line = lines[i].replace(/\r$/, "");
+    const open = /^```([\w+#.-]*)(.*)$/.exec(line);
     if (!open) {
       offset += lines[i].length + 1;
       i += 1;
@@ -70,8 +72,8 @@ export function findFences(body: string): Fence[] {
 
     const codeLines: string[] = [];
     let j = i + 1;
-    while (j < lines.length && !/^```\s*$/.test(lines[j])) {
-      codeLines.push(lines[j]);
+    while (j < lines.length && !/^```\s*$/.test(lines[j].replace(/\r$/, ""))) {
+      codeLines.push(lines[j].replace(/\r$/, ""));
       j += 1;
     }
 

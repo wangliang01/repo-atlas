@@ -86,6 +86,14 @@ test("findFences：解析语言、文件名、行号开关", () => {
   assert.equal(fences[1].lineNumbers, false);
 });
 
+test("findFences：CRLF 文件也能认出围栏和文件名", () => {
+  const body = '```ts filename="lib/schema.ts"\r\nconst a = 1;\r\n```\r\n';
+  const fences = findFences(body);
+  assert.equal(fences.length, 1);
+  assert.equal(fences[0].filename, "lib/schema.ts");
+  assert.equal(fences[0].code, "const a = 1;\n");
+});
+
 test("preprocessCode：围栏变成 CodeBlock，HTML 带 data-language 且无残留反引号", async () => {
   const body = '```ts filename="a.ts"\nconst a = 1;\n```\n';
   const out = await preprocessCode(body);
