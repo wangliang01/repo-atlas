@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "items": {
+    "andyshi70/tiny-cyber-pusa": {
+      "repo": "andyshi70/tiny-cyber-pusa",
+      "status": "pending",
+      "mentions": [
+        {
+          "kind": "toutiao",
+          "title": "一键搞定，让Hermes用上opencode的免费模型",
+          "notePath": "notes/技术/2026-10-25-一键搞定让Hermes用上opencode的免费模型.md",
+          "url": "https://www.toutiao.com/article/7699821734748471858/",
+          "date": "2026-10-25"
+        }
+      ],
+      "addedAt": "2026-11-24"
+    },
+    "emilkowalski/skills": {
+      "repo": "emilkowalski/skills",
+      "status": "pending",
+      "mentions": [
+        {
+          "kind": "toutiao",
+          "title": "终于有一个蒸馏 Apple 风格的 Skill 了，GitHub 上有 10.5K 人点赞。",
+          "notePath": "notes/技术/2026-07-16-终于有一个蒸馏Apple风格的Skill了GitHub上有105K人点赞.md",
+          "url": "https://www.toutiao.com/article/7663040728657920558/",
+          "date": "2026-07-16"
+        }
+      ],
+      "addedAt": "2026-11-24"
+    },
+    "harry0703/moneyprinterturbo": {
+      "repo": "harry0703/MoneyPrinterTurbo",
+      "status": "pending",
+      "mentions": [
+        {
+          "kind": "toutiao",
+          "title": "GitHub 9万星的自动印钞机！一个关键词生成一条短视频",
+          "notePath": "notes/技术/2026-06-25-GitHub9万星的自动印钞机一个关键词生成一条短视频.md",
+          "url": "https://www.toutiao.com/article/7655336088059363875/",
+          "date": "2026-06-25"
+        }
+      ],
+      "addedAt": "2026-11-24"
+    },
+    "mengto/threeui": {
+      "repo": "MengTo/threeui",
+      "status": "pending",
+      "mentions": [
+        {
+          "kind": "toutiao",
+          "title": "ThreeUI 开源了！不用从零写 Three.js 直接做 3D 网页",
+          "notePath": "notes/技术/2026-08-29-ThreeUI开源了不用从零写Threejs直接做3D网页.md",
+          "url": "https://www.toutiao.com/article/7678287860050461224/",
+          "date": "2026-08-29"
+        }
+      ],
+      "addedAt": "2026-11-24"
+    },
+    "nvlabs/sol-pi": {
+      "repo": "NVlabs/SoL-Pi",
+      "status": "pending",
+      "mentions": [
+        {
+          "kind": "toutiao",
+          "title": "英伟达震撼开源Harness，AI自己爆改AI",
+          "notePath": "notes/技术/2026-09-11-英伟达震撼开源HarnessAI自己爆改AI.md",
+          "url": "https://www.toutiao.com/article/7684073527380591156/",
+          "date": "2026-09-11"
+        }
+      ],
+      "addedAt": "2026-11-24"
+    },
+    "pbakaus/impeccable": {
+      "repo": "pbakaus/impeccable",
+      "status": "pending",
+      "mentions": [
+        {
+          "kind": "toutiao",
+          "title": "GitHub 70.4K Star！Impeccable火了！专治AI生成的丑网页",
+          "notePath": "notes/技术/2026-09-28-GitHub704KStarImpeccable火了专治AI生成的丑网页.md",
+          "url": "https://www.toutiao.com/article/7688974092569084456/",
+          "date": "2026-09-28"
+        }
+      ],
+      "addedAt": "2026-11-24"
+    },
+    "saadeghi/daisyui": {
+      "repo": "saadeghi/daisyui",
+      "status": "pending",
+      "mentions": [
+        {
+          "kind": "toutiao",
+          "title": "前端人彻底赢麻了！这个 4 万 Star 开源项目让你少写 80% CSS",
+          "notePath": "notes/技术/2026-07-28-前端人彻底赢麻了这个4万Star开源项目让你少写80CSS.md",
+          "url": "https://www.toutiao.com/article/7665931320920457780/",
+          "date": "2026-07-28"
+        }
+      ],
+      "addedAt": "2026-11-24"
+    },
+    "vuejs-ai/skills": {
+      "repo": "vuejs-ai/skills",
+      "status": "pending",
+      "mentions": [
+        {
+          "kind": "toutiao",
+          "title": "尤雨溪都转发了！嫌 AI 写 Vue 太烂？给它装上这套 Skills！",
+          "notePath": "notes/技术/2026-10-26-尤雨溪都转发了嫌AI写Vue太烂给它装上这套Skills.md",
+          "url": "https://www.toutiao.com/article/7700766243388752399/",
+          "date": "2026-10-26"
+        }
+      ],
+      "addedAt": "2026-11-24"
+    }
+  }
+}

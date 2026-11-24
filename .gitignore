@@ -12,3 +12,6 @@ decisions.tsv
 .audit/
 # 课件解压出来的原文，只在本机查资料用
 .scratch/week1/
+
+# README 缓存只在本机用，中文详情写进 content/repos/*.mdx
+.cache/readme/

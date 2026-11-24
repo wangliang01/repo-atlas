@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "check:alt": "node scripts/check-alt.mjs",
-    "sync:picks": "node scripts/sync-ai-picks.mjs"
+    "sync:picks": "node scripts/sync-ai-picks.mjs",
+    "picks:import": "node scripts/import-toutiao-repos.mjs"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",
