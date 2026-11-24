@@ -1,0 +1,58 @@
+---
+repo: "pbakaus/impeccable"
+title: "给编码代理补上设计判断力与 AI 模板味检测"
+summary: "一套装进编码代理的设计词汇和 24 个命令，用 critique、audit 评审界面，用 polish、bolder 等指令调整风格，并用 62 条确定性规则检测模板化设计。适合需要让代理稳定产出可上线界面的前端团队。"
+banner: "https://github.com/pbakaus/impeccable/raw/main/docs/images/readme-without.webp"
+categories: ["图像与设计", "前端"]
+verdict: recommend
+featuredAt: 2026-11-24
+readmeSha: "dedd4ef31619e9fc3fa04006f2280d12abb3cefc"
+readmeFetchedAt: "2026-11-24"
+sources: [github]
+---
+
+## 它是什么
+
+Impeccable 是给编码代理使用的一套设计词汇与命令。README 的出发点是代理在缺少指导时总会生成同一批默认样式：Inter 字体、紫蓝渐变、卡片套卡片、彩色背景上的灰字、每个标题上方的圆角图标块。它用 `critique` 和 `audit` 做设计评审，用 `polish`、`bolder`、`quieter`、`distill` 等命令描述想要的方向，再用一个不依赖 LLM 的检测器抓出模板化痕迹。README 说明它在已有界面上最强，也就是把代理指向一个页面或组件反复迭代，新页面也能做，但难度更高。
+
+## 怎么上手
+
+在项目根目录安装，然后重载编码工具：
+
+```bash
+npx impeccable install
+```
+
+安装器会识别本机的编码工具，询问装到当前项目还是全局，并在支持的工具上提供设计 hook，README 建议接受。之后在代理里执行 `/impeccable init`（Codex 用 `$impeccable init`），它会读取代码，只询问无法推断的信息，并写出 `PRODUCT.md`。再运行 `/impeccable document` 把现有视觉系统记录到 `DESIGN.md`，后续命令都会读这两份文件。
+
+Node 只用于 `npx`；技能本身运行的是随附或首次下载到 `~/.impeccable/bin/` 的自包含引擎二进制。少数工具需要额外一步：Codex 要在 `/hooks` 批准项目 hook，Grok Build 要运行 `/hooks-trust` 或以 `--trust` 启动，Hermes Agent 要先启用 `impeccable-design-hook` 插件。检测器也能脱离代理在终端或 CI 运行：
+
+```bash
+npx impeccable detect src/
+npx impeccable detect --json .
+npx impeccable detect --github src/
+npx impeccable detect --sarif src/
+npx impeccable detect --list-rules
+```
+
+扫描 URL 时会调用本机已安装的 Chrome 或 Edge，因此可以先启动开发服务器，再对 `http://localhost:5173` 运行检测。README 还给出 GitHub Actions 配合 `upload-sarif` 的配置示例。
+
+## 值得注意的设计
+
+上下文先落盘，再执行命令。`init` 只问代理推断不出的产品受众、目标和约束，写进 `PRODUCT.md`；`document` 把现有视觉系统写进 `DESIGN.md`。这两份文件成为后续 critique、polish 等命令的共同输入，避免每次对话重新解释品牌和约束。`extract` 还能把重复出现的模式抽回设计系统。
+
+检测器把「AI 味」变成可重复的规则。README 说有 62 条确定性规则，不需要 LLM 或 API key，可以在三个位置运行：代理编辑 UI 文件时的 hook、独立 CLI 或 CI、浏览器扩展覆盖层。需要渲染页面的规则（如低对比度、过小字号）只在扫描 URL 时运行，JSX、TSX 等源码只走模式规则。CLI 的退出码区分「发现问题」（2）和「目标无法扫描」（1），并支持 SARIF 2.1.0 与 GitHub Actions 注解。
+
+Live mode 把浏览器选择接回源码。`/impeccable live` 在运行中的开发服务器上打开覆盖层，选中元素后循环切换变体，接受后写回本地源码，支持 Vite、Next、SvelteKit、Astro、Nuxt 和普通 HTML。它把「描述想要什么」变成「在真实页面上挑选」，但 README 也明确限定它只应修改本地 checkout。
+
+## 边界与风险
+
+Live mode 的 Apply 行为需要仔细审查。当聊天代理一分钟内没有轮询时，它会从 PATH 运行 `codex`，缺失时回退到 `claude`，并关闭审批、权限检查和沙箱（`--dangerously-bypass-approvals-and-sandbox` 或 `--permission-mode bypassPermissions`），同时继承当前环境。应用文案修改还会执行 `package.json` 里可选的 `impeccable:manual-edit-validate` 脚本。README 建议在不熟悉的仓库里先审查该脚本，并可用 `IMPECCABLE_LIVE_COPY_AGENT=chat` 或 `off` 改变行为。
+
+设计 hook 在模型审批之外运行，Claude Code 中即使拒绝模型自己的命令，已安装的 command hook 仍会执行，首次编辑还可能触发引擎下载。README 建议在无人值守运行前检查 hook，或用 `--settings '{"disableAllHooks": true}'` 临时关闭。检测器也有范围限制：源码扫描只覆盖模式规则，对比度等规则需要浏览器；原生应用只有设计命令、audit 和 adapt 可用，检测器、live mode 的 generate 与编辑 hook 仍只支持 Web。
+
+遥测方面，新设计开始时技能会从 impeccable.style 目录拉取视觉方向。即使关闭遥测，这个请求仍会发生，关闭的只是「展示了哪些方向、最终选了哪个」的匿名记录；项目名、文件、代码和 `PRODUCT.md` 不会发送。项目采用 Apache 2.0 许可证，README 未说明各编码工具的最低版本与完整兼容矩阵，只给出安装和 hook 的文档入口。
+
+## 来源
+
+GitHub：[pbakaus/impeccable](https://github.com/pbakaus/impeccable)（README sha dedd4ef31619）

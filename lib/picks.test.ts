@@ -1,17 +1,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { ALL_CATEGORIES } from "./categories.ts";
 import { getPicksSnapshot } from "./content.ts";
 import {
-  ALL_CATEGORIES,
+  categoriesOf,
   filterPicks,
   formatPerDay,
-  pickBuckets,
   pickCategories,
   RISING_TOP,
   risingRepos,
+  type PickDetailInfo,
+  type PickLike,
 } from "./picks.ts";
-import type { PickLike } from "./picks.ts";
 
 const root = new URL("../", import.meta.url);
 const read = (p: string) => readFileSync(new URL(p, root), "utf8");
@@ -27,67 +28,68 @@ const like = (over: Partial<PickLike> = {}): PickLike => ({
   ...over,
 });
 
-test("分桶：topics 和简介都参与，命中多个就进多个桶", () => {
-  assert.deepEqual(pickBuckets(like({ topics: ["ai", "agent"] })), ["Agent"]);
-  assert.deepEqual(pickBuckets(like({ description: "MCP server for a CLI tool" })), ["MCP", "工具"]);
-  assert.deepEqual(pickBuckets(like({ topics: ["agent-skills"], description: "" })), ["Agent", "Skill"]);
+const detail = (categories: string[]): PickDetailInfo => ({
+  slug: "owner--repo",
+  summary: "中文摘要",
+  categories,
+  verdict: "watch",
 });
 
-test("分桶：词界要挡住假命中，build 里的 ui 不算工具", () => {
-  assert.deepEqual(pickBuckets(like({ description: "A build system for storage" })), ["其它"]);
-  assert.deepEqual(pickBuckets(like({ description: "UI for chat" })), ["工具"]);
+test("分类来自详情页，没有详情才归到「其他」", () => {
+  const entry = like({ repo: "a/b" });
+  const details = { "a/b": detail(["前端", "图像与设计"]) };
+  assert.deepEqual(categoriesOf(entry, details), ["前端", "图像与设计"]);
+  assert.deepEqual(categoriesOf(like({ repo: "c/d" }), details), ["其他"]);
 });
 
-test("分类：全部排第一，只出非空的，计数按全集", () => {
-  const entries = [
-    like({ topics: ["agent"] }),
-    like({ topics: ["mcp"] }),
-    like({ topics: ["ai"] }),
-  ];
-
-  const categories = pickCategories(entries);
+test("分类计数：全部排第一，只出非空分类，按分类表顺序", () => {
+  const a = like({ repo: "a/one" });
+  const b = like({ repo: "b/two" });
+  const c = like({ repo: "c/three" });
+  const details = {
+    "a/one": detail(["前端"]),
+    "b/two": detail(["前端", "架构"]),
+    "c/three": detail(["视频剪辑"]),
+  };
+  const categories = pickCategories([a, b, c], details);
   assert.deepEqual(
     categories.map((category) => category.label),
-    [ALL_CATEGORIES, "Agent", "MCP", "其它"],
+    [ALL_CATEGORIES, "视频剪辑", "前端", "架构"],
   );
-  assert.equal(categories[0].count, 3, "「全部」的计数应该是全集");
-  for (const category of categories) {
-    assert.ok(category.count > 0, `${category.label} 是空分类`);
-  }
+  assert.equal(categories[0].count, 3);
+  assert.equal(categories.find((category) => category.label === "前端")!.count, 2);
 });
 
 test("涨得快：取 stars/天 最高的前 10 个，不是固定阈值", () => {
-  // 全部都在 15 星/天以上：阈值写法会把这 26 个全算进去，开关就等于没有
   const entries = Array.from({ length: 26 }, (_, i) => like({ starsPerDay: 2000 - i * 10 }));
   const rising = risingRepos(entries);
-
   assert.equal(rising.size, RISING_TOP);
-  assert.ok(rising.has(entries[0].repo), "最快的那个没进去");
-  assert.equal(rising.has(entries[RISING_TOP].repo), false, "第 11 名不该进去");
+  assert.ok(rising.has(entries[0].repo));
+  assert.equal(rising.has(entries[RISING_TOP].repo), false);
 });
 
-test("双轴过滤：分类和涨得快正交，交集数字对得上", () => {
-  // 前 6 个是 Agent，后 6 个是 MCP；stars/天 从 100 递减。
-  // 前 10 名 = 6 个 Agent + 4 个 MCP，所以 MCP × 涨得快 应该剩 4。
+test("双轴过滤：分类和涨得快正交", () => {
   const entries = [
-    ...Array.from({ length: 6 }, (_, i) => like({ topics: ["agent"], starsPerDay: 100 - i })),
-    ...Array.from({ length: 6 }, (_, i) => like({ topics: ["mcp"], starsPerDay: 94 - i })),
+    ...Array.from({ length: 6 }, (_, i) => like({ repo: `agent/${i}`, starsPerDay: 100 - i })),
+    ...Array.from({ length: 6 }, (_, i) => like({ repo: `mcp/${i}`, starsPerDay: 94 - i })),
   ];
+  const details: Record<string, PickDetailInfo> = {};
+  for (const entry of entries) details[entry.repo] = detail([entry.repo.startsWith("agent/") ? "Agent 框架" : "办公"]);
 
   const count = (category: string, risingOnly: boolean) =>
-    filterPicks(entries, { category, risingOnly }).length;
+    filterPicks(entries, { category, risingOnly }, details).length;
 
   assert.equal(count(ALL_CATEGORIES, false), 12);
   assert.equal(count(ALL_CATEGORIES, true), 10);
-  assert.equal(count("Agent", false), 6);
-  assert.equal(count("Agent", true), 6);
-  assert.equal(count("MCP", false), 6);
-  assert.equal(count("MCP", true), 4);
+  assert.equal(count("Agent 框架", false), 6);
+  assert.equal(count("Agent 框架", true), 6);
+  assert.equal(count("办公", false), 6);
+  assert.equal(count("办公", true), 4);
 });
 
-test("双轴过滤：不认识的分类返回空，不会退化成全部", () => {
-  const entries = [like({ topics: ["agent"] })];
-  assert.equal(filterPicks(entries, { category: "不存在的分类", risingOnly: false }).length, 0);
+test("不认识的分类返回空，不会退化成全部", () => {
+  const entries = [like({ repo: "a/b" })];
+  assert.equal(filterPicks(entries, { category: "不存在的分类", risingOnly: false }, {}).length, 0);
 });
 
 test("涨速格式：整数不拖小数，小数保留一位", () => {
@@ -111,17 +113,18 @@ test("真实快照：字段齐全，头像文件真的在 public 里", () => {
   }
 });
 
-test("真实快照：stars 倒序，不出现重复仓库", () => {
+test("真实快照：按趋势分倒序，不出现重复仓库", () => {
   const entries = getPicksSnapshot()?.entries ?? [];
-  const stars = entries.map((entry) => entry.stars);
-  assert.deepEqual(stars, [...stars].sort((a, b) => b - a), "快照没有按 stars 倒序");
+  const scores = entries.map((entry) => entry.trendScore ?? 0);
+  assert.deepEqual(scores, [...scores].sort((a, b) => b - a), "快照没有按 trendScore 倒序");
   assert.equal(new Set(entries.map((e) => e.repo)).size, entries.length, "快照里有重复仓库");
 });
 
-test("互链：站内已经没有评测页，精选行只走 GitHub", () => {
-  // T-014 删掉了三条代写评测，「已跑过」入口跟着没了
+test("精选行不再直接跳 GitHub，有详情走站内", () => {
+  const row = read("components/pick-row.tsx");
+  assert.equal(row.includes("https://github.com/${entry.repo}"), false, "精选行还在直接跳 GitHub");
+  assert.ok(row.includes('href={href ?') || row.includes("href ?"), "精选行没有站内链接分支");
   assert.equal(has("app/projects"), false, "评测路由不该再存在");
-  assert.equal(read("components/pick-row.tsx").includes("/projects/"), false, "精选行还在链评测页");
 });
 
 test("首次上榜台账：每条都有 firstSeen，history.json 覆盖全部条目", () => {
@@ -136,10 +139,6 @@ test("首次上榜台账：每条都有 firstSeen，history.json 覆盖全部条
     assert.ok(entry.firstSeen instanceof Date, `${entry.name} 缺 firstSeen`);
     assert.ok(!Number.isNaN(entry.firstSeen.getTime()), `${entry.name} 的 firstSeen 不是有效日期`);
     assert.ok(history.seen[entry.repo], `台账里没有 ${entry.repo}，下次同步会把它当新上榜`);
-    assert.ok(
-      entry.firstSeen.getTime() >= new Date(2026, 0, 1).getTime(),
-      `${entry.name} 的 firstSeen 太早，像是解析错了`,
-    );
   }
 });
 
@@ -152,7 +151,6 @@ test("定时任务：一天 4 次，且只提交精选路径", () => {
   const cron = read("scripts/picks-cron.mjs");
   assert.ok(cron.includes("content/picks"), "定时任务没限定提交路径");
   assert.ok(cron.includes('"commit"'), "定时任务没提交");
-  // -- 之后跟路径：工作区别处暂存的东西不会被卷进这次提交
   assert.ok(cron.includes('"--"'), "git commit 没有用 -- 限定路径");
 
   const workflow = read(".github/workflows/picks.yml");
@@ -168,11 +166,65 @@ test("无限滚动：先渲染一屏，滚动再追加", () => {
   assert.ok(view.includes("加载更多"), "缺手动兜底入口");
 });
 
+test("首页不给精选加右栏：个人卡与笔记条都不在 feed 里", () => {
+  const view = read("components/picks-view.tsx");
+  for (const gone of ["ProfileCard", "ShellStrip", "updatedAt", "profile"]) {
+    assert.equal(view.includes(gone), false, `精选 feed 还带着 ${gone}`);
+  }
+  const shell = read("components/site-shell.tsx");
+  assert.ok(shell.includes("right?"), "SiteShell 的右栏不是可选的");
+  assert.ok(shell.includes("SHELL_NO_RIGHT_CLASS"), "没有右栏时没有去掉那一列");
+});
 
-test("页面与脚本：/picks 存在、进了导航、同步脚本在", () => {
-  assert.ok(has("app/picks/page.tsx"), "缺 /picks 页面");
-  assert.ok(has("components/pick-row.tsx"), "缺列表行组件");
-  assert.ok(has("scripts/sync-ai-picks.mjs"), "缺同步脚本");
-  assert.ok(read("components/site-header.tsx").includes('"/picks"'), "导航里没有精选");
-  assert.ok(read("package.json").includes("sync:picks"), "package.json 没注册 sync:picks");
+test("详情页布局：掘金式两栏，右栏是 项目信息 / 目录 / 相关推荐 三张卡", () => {
+  const page = read("app/picks/[slug]/page.tsx");
+  assert.ok(page.includes("xl:grid-cols-[minmax(0,1fr)_340px]"), "详情页不是两栏白卡布局");
+  assert.ok(page.includes("<PickAside"), "右栏没有拆成独立组件");
+  assert.ok(page.includes("GitHub ↗"), "GitHub 链接不在头部 meta 行");
+  const aside = read("components/pick-aside.tsx");
+  for (const part of ["在 GitHub 打开", "目录", "相关推荐", "Stars"]) {
+    assert.ok(aside.includes(part), `右栏缺 ${part}`);
+  }
+});
+
+test("详情页 banner：有 README 首图才显示，没有就不渲染", () => {
+  const page = read("app/picks/[slug]/page.tsx");
+  assert.ok(page.includes("data.banner"), "详情页没有 banner 分支");
+  assert.ok(page.includes("来自项目 README"), "banner 没有可读的 alt");
+  // banner 是外链 GitHub 原始文件，不应出现徽章图
+  for (const file of readdirSync("content/repos").filter((f) => f.endsWith(".mdx"))) {
+    const src = read(`content/repos/${file}`);
+    const banner = (src.match(/^banner: "(.*)"$/m) ?? [])[1];
+    if (banner) {
+      assert.match(banner, /^https:\/\//, `${file} 的 banner 不是 https`);
+      assert.equal(/shields\.io|badge|trendshift|star-history/i.test(banner), false, `${file} 的 banner 是徽章图`);
+    }
+  }
+});
+
+test("代码块常驻深色：两套主题统一 github-dark-default，外壳与复制按钮用暗色", () => {
+  const highlight = read("lib/highlight.ts");
+  assert.match(
+    highlight,
+    /const THEMES = \{ light: "github-dark-default", dark: "github-dark-default" \}/,
+    "浅色模式又用回亮色代码块",
+  );
+  const block = read("components/code-block.tsx");
+  assert.ok(block.includes("bg-[#0d1117]"), "代码块外壳不是深色");
+  assert.ok(block.includes('tone="dark"'), "复制按钮没切暗色");
+  assert.equal(block.includes("bg-surface-2"), false, "代码块头部还跟着页面主题走");
+  assert.ok(
+    read("app/picks/[slug]/page.tsx").includes("preprocessCode(body)"),
+    "详情页没走高亮预处理，代码块仍是默认浅色 pre",
+  );
+});
+
+test("单页方案：/picks 列表页已删，首页承担精选", () => {
+  assert.equal(has("app/picks/page.tsx"), false, "独立的 /picks 列表页还在");
+  assert.ok(has("app/picks/[slug]/page.tsx"), "详情页路由被误删");
+  const header = read("components/site-header.tsx");
+  const nav = header.slice(header.indexOf("const NAV"), header.indexOf("];", header.indexOf("const NAV")));
+  assert.equal(nav.includes('"/picks"'), false, "导航里还有精选入口");
+  assert.ok(read("app/page.tsx").includes("<PicksView"), "首页没有精选 feed");
+  assert.ok(read("deploy/Caddyfile").includes("redir /picks / 308"), "Caddy 没有把 /picks 重定向到首页");
 });

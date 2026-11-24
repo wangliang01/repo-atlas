@@ -1,0 +1,60 @@
+---
+repo: "google/elephant-goldfish-model"
+title: "大象写规格、金鱼做无记忆评审的双角色设计插件"
+summary: "Google 开源的设计工作流插件：掌握项目上下文的 Elephant 起草规格，没有前文记忆的 Goldfish 审查员从零挑出隐含假设，最后由人决定架构取舍并签核。适合把设计评审变成固定流程的团队。"
+banner: "https://raw.githubusercontent.com/google/elephant-goldfish-model/HEAD/docs/assets/readme-header.svg"
+categories: ["架构"]
+verdict: watch
+featuredAt: 2026-11-24
+readmeSha: "31e32c0aaf4416a6661e677a88a7211888e06e3b"
+readmeFetchedAt: "2026-11-24"
+sources: [github]
+---
+
+## 它是什么
+
+Elephant-Goldfish Model（EGM）是面向 AI 助手的开源插件，核心是把设计过程拆成两种记忆状态。Elephant 持有项目背景、需求和此前决策，负责探索问题并起草规格；Goldfish 审查员只看到文档及其引用的源材料，不带上游对话，因此更容易发现未写明的假设、含糊要求和实现风险；人负责解决取舍、批准设计。README 说明内置的起草与设计评审流程面向软件规格，其他文档可以用 `/egm-review-loop` 自选审查员和标准，bootstrap 与 drift 报告则面向软件代码库。
+
+## 怎么上手
+
+前置条件是一个能创建全新子代理上下文的编码代理，Goldfish 评审依赖这一点。按代理选择安装方式，README 要求安装完整插件，让技能能读取审查员提示和文档标准。Claude Code：
+
+```bash
+claude plugin marketplace add google/elephant-goldfish-model
+claude plugin install egm@egm
+```
+
+Antigravity CLI：
+
+```sh
+agy plugin install https://github.com/google/elephant-goldfish-model
+```
+
+Codex CLI 使用对应的 `codex plugin marketplace add` 与 `codex plugin add egm@egm`。ChatGPT 和 Codex 桌面版可以直接从已发布的插件列表安装，Claude Cowork 与 ChatGPT Work 另有设置指南。安装后要新开会话。
+
+对已有设计文档做一次快速评审，不需要先写新规格：
+
+```text
+/egm:egm-review docs/designs/webhooks.md
+/egm:egm-drift-report docs/designs/
+```
+
+完整设计流程依次是 `/egm-brainstorm`、`/egm-draft` 和 `/egm-review design_draft.md`。前两步分别产出 `concepts_brief.md` 和 `design_draft.md`，评审后由人决定采纳哪些问题。Antigravity 与 Claude Code 使用 `/egm:` 前缀；Codex 在技能选择器里选对应 EGM 技能。README 特别提醒 agy CLI 1.4.8 不会自动补前缀，1.4.10 才会。
+
+## 值得注意的设计
+
+「新上下文」不是建议，而是硬约束。README 写明 Goldfish 评审必须使用全新的子代理上下文；如果代理无法创建，EGM 会停止评审，而不是退化成同一会话里的自我检查。这条规则把「换一双眼睛」落实成可验证的运行时条件。
+
+技能被拆成可独立使用的单元，而不是一条强制流水线。Brainstorm 测试想法并写概念简报，Draft 把简报变成设计文档，Resolve 处理评审发现，Bootstrap 为现有代码库补文档，Lite 处理小改动和缺陷，Review 用五个阶段做设计审查，Review loop 运行自定义审查组，Drift report 对比已提交文档与当前源码。团队可以只调用需要的部分。
+
+文档与代码的漂移被当作持续问题处理。Drift report 逐份比较目录中的文档和当前源码，报告分歧点，由人决定改文档还是改代码。评审阶段的五阶段流程则分别检查设计本身、清晰度、与代码的契合度以及实现计划，避免把所有问题混成一次笼统的「看看这设计」。
+
+## 边界与风险
+
+EGM 对代理能力有明确要求：不能创建全新子代理的会话无法完成 Goldfish 评审，README 把支持状态与验证限制放在单独文档里，正文没有给出所有 harness 的完整能力矩阵。内置流程主要针对软件规格，bootstrap 和 drift 只适用于软件代码库；其他类型文档需要自行配置审查员和标准。
+
+README 明确说评审不能替代测试或人的判断。它也没有给出评审结论的量化标准，最终仍是人选择要处理哪些发现。项目采用 Apache 2.0 许可证，但 README 声明它不是 Google 官方支持的产品，维护承诺与普通 Google 产品不同。不同代理的命令前缀和技能选择方式存在差异，跨版本使用时容易踩到调用语法问题；README 未说明具体版本兼容表，只指向 harness 文档。
+
+## 来源
+
+GitHub：[google/elephant-goldfish-model](https://github.com/google/elephant-goldfish-model)（README sha 31e32c0aaf44）

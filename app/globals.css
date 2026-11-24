@@ -198,7 +198,8 @@
     width: 1.75rem;
     margin-right: 1rem;
     text-align: right;
-    color: var(--muted);
+    /* 代码块常驻深色底，行号不能用页面 muted，否则在 #101010 上糊成一片 */
+    color: #6e7681;
   }
 }
 

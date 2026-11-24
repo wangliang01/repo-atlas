@@ -1,0 +1,56 @@
+---
+repo: "obra/superpowers"
+title: "给编码 Agent 装上从头脑风暴到提交的完整开发方法论"
+summary: "Superpowers 把头脑风暴、写计划、TDD、子 Agent 开发和代码评审拆成可组合的 skills，并在会话启动时注入引导，让多种编码 Agent 按同一套流程工作。"
+categories: ["Agent 框架"]
+verdict: recommend
+featuredAt: 2026-11-24
+readmeSha: "c5bb59fdaf17ba154e803c549cd71a73ef36c24b"
+readmeFetchedAt: "2026-11-24"
+sources: [github]
+---
+
+## 它是什么
+
+Superpowers 是一套给编码 Agent 用的软件开发方法论，由一组可组合的 skills 和一段启动指令组成。它不让 Agent 一上来就写代码，而是先追问你真正想做什么，把需求整理成规格，分块给你确认，再产出足够细的实施计划。计划要求细到「一个热情但没品味、没判断力、不了解项目、还讨厌写测试的初级工程师」也能照做，并强调真正的红绿 TDD、YAGNI 和 DRY。
+
+设计通过后，Agent 进入 subagent-driven development：为每个工程任务派一个全新的子 Agent，逐项检查与评审，然后继续下一个。README 说 Agent 连续自主工作几个小时而不偏离计划并不罕见。它适合已经在用 Claude Code、Codex、Cursor、Gemini CLI 等工具，但希望把开发过程固定成可审计流程的团队或个人。
+
+## 怎么上手
+
+安装方式按 harness 区分，用多个 Agent 就要分别安装。Claude Code 可以直接从 Anthropic 官方插件市场装：
+
+```bash
+/plugin install superpowers@claude-plugins-official
+```
+
+也可以注册 Superpowers 自己的市场再安装：
+
+```bash
+/plugin marketplace add obra/superpowers-marketplace
+/plugin install superpowers@superpowers-marketplace
+```
+
+其他 harness 各有入口。Antigravity 用 `agy plugin install https://github.com/obra/superpowers`，Gemini CLI 用 `gemini extensions install https://github.com/obra/superpowers`，Cursor 在 Agent 聊天里执行 `/add-plugin superpowers`，Codex、GitHub Copilot CLI、Devin CLI、Factory Droid、Kimi Code、OpenCode、Pi、Qwen Code、Hermes Agent 和 Muse 也都给出了对应的安装命令。除 harness 本身外，README 没有列出额外的运行时前置条件。
+
+装好后的基本流程是七步：brainstorming 激活并梳理意图，using-git-worktrees 在通过设计后创建隔离分支并验证测试基线，writing-plans 把工作拆成 2 到 5 分钟的小任务，subagent-driven-development 或 executing-plans 执行，test-driven-development 在实现阶段强制红绿重构，requesting-code-review 在任务之间评审，finishing-a-development-branch 在收尾时验证测试并给出合并、PR、保留或丢弃的选项。
+
+## 值得注意的设计
+
+第一个设计是启动时注入。`using-superpowers` skill 的说明会促使模型在会话开始就加载整套技能，Claude Code、Codex、Cursor、Gemini、Pi 等 harness 通过 `SessionStart` hook 注入，Pi 还会在上下文压缩后再次注入。这样不依赖用户每次手动提醒，skill 是默认生效而不是可选插件。
+
+第二个设计是执行策略可选。subagent-driven-development 为每个任务派新子 Agent，并在每个任务后做规格符合性与代码质量的两阶段评审，最彻底也最贵；executing-plans 则在当前会话里顺序执行，最后对整个分支做一次评审，成本最低。README 把这条取舍直接写出来，让使用者按任务风险选择。
+
+第三个设计是流程带自诊断。技能库分为测试、调试、协作和元技能四类，其中 `diagnosing-superpowers` 会读取会话记录，用行级证据说明某个 skill 为什么误触发或漏触发，并能打包脱敏后的报告。`writing-skills` 则规定新增 skill 要按测试方法论验证，说明这套东西本身也被当成需要测试的软件。
+
+## 边界与风险
+
+贡献政策比较严格。维护者通常不接受新增 skill 的贡献，对现有 skill 的修改必须同时适配所有支持的编码 Agent；别人已提交 issue 的问题，除非维护者明确要求，否则不接受由 Agent 代写的修复 PR。这意味着使用者更适合消费现成流程，而不是把它当成随意扩展的技能市场。
+
+不同 harness 的能力差异会影响体验。README 提到 Hermes 没有上下文压缩后的 hook，超长会话在第一次压缩后可能丢失引导，需要重新开会话。其他 harness 的更新方式也不统一，README 只说通常会自动更新。
+
+遥测有一个可关闭的入口。brainstorming 的可选可视化伴侣会从 Prime Radiant 网站加载 logo，请求里包含 Superpowers 版本，但不包含项目、提示词或 Agent 信息。设置 `SUPERPOWERS_DISABLE_TELEMETRY` 为任意真值即可关闭，也会尊重 Claude Code 的 `DISABLE_TELEMETRY` 和 `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`。项目采用 MIT 许可证，README 没有给出各 harness 的完整兼容矩阵，只逐个列出了安装命令。
+
+## 来源
+
+GitHub：[obra/superpowers](https://github.com/obra/superpowers)（README sha c5bb59fdaf17）

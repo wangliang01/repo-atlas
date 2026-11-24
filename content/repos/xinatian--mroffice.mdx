@@ -1,0 +1,67 @@
+---
+repo: "XinaTian/MROffice"
+title: "在浏览器里编辑 Office 文件并让 AI 直接改稿的开源编辑器套件"
+summary: "MR Office 开源了文档、表格、演示、PDF 和代码五个编辑器，AI 在真实文件对象上修改并提供 MCP 接口。适合想把 Office 编辑能力嵌入产品，或让 Agent 读写 docx、xlsx、pptx 的开发者。"
+banner: "https://raw.githubusercontent.com/XinaTian/MROffice/HEAD/docs/media/mr-office-demo.webp"
+categories: ["办公"]
+verdict: watch
+featuredAt: 2026-11-24
+readmeSha: "6ff9472a1303303bb2f5e36f8b327f9f92e7ba8b"
+readmeFetchedAt: "2026-11-24"
+sources: [github]
+---
+
+## 它是什么
+
+MR Office 是一套面向真实文件的 AI 办公套件，覆盖 Word、Excel、PowerPoint 和 PDF，提供网页版与免费桌面应用，AI 可以在文档旁工作，也支持多人实时协同。这个仓库开放的是其中五个编辑器的源码：文档、表格、演示、PDF 和代码，外加共享的 `@mrnote/core`、浏览器 playground、Electron 桌面外壳和 MCP server。README 的说法是，这些就是 MR Office 实际运行的同一套编辑器，可以自行构建、运行和嵌入。仓库采用 AGPL-3.0 加 NOTICE 附加条款，同时提供商业许可证。它适合两类读者：想把 Office 编辑能力嵌进自己产品的开发者，以及想让 Claude、ChatGPT、Cursor、Codex 等 Agent 直接读写 Office 文件的 AI 应用作者。
+
+## 怎么上手
+
+五个编辑器在 `packages/` 下，统一在 `apps/playground` 里运行。README 给出的本地启动顺序是：
+
+```bash
+npm install
+npm run fonts
+npm run build
+npm run preview
+```
+
+`preview` 默认监听 5178 端口，`npm run dev` 启动同一地址的开发服务器，`npm run smoke` 检查构建。README 未说明所需的 Node 版本。桌面外壳构建后用 `npm run desktop` 启动；完整桌面能力还需要从 Releases 下载免费的 MR Office 组件，否则只会运行开源编辑器本身。
+
+让 Agent 通过 MCP 操作文档，可以在 Claude Code 或 Codex 里注册：
+
+```bash
+claude mcp add mroffice -- npx -y mroffice-mcp
+```
+
+```bash
+codex mcp add mroffice -- npx -y mroffice-mcp
+```
+
+其他支持 JSON 配置的客户端使用：
+
+```json
+{ "mcpServers": { "mroffice": { "command": "npx", "args": ["-y", "mroffice-mcp"] } } }
+```
+
+也可以走 [托管端点](https://mcp.mroffice.ai/mcp) 并登录 MR Office 账号。把编辑器嵌入自己的网页应用时，README 推荐先运行 `npx mroffice-embed init` 写入应用密钥，再由服务端调用 `createSessionToken` 签发短期会话令牌，页面用 `open()` 打开编辑器。`mroffice-docs`、`mroffice-sheets`、`mroffice-slides`、`mroffice-pdf`、`mroffice-code` 也作为 React 组件发布在 npm。
+
+## 值得注意的设计
+
+AI 操作的是文档对象模型，而不是把文本粘进聊天框。README 描述的过程是：模型读取文件，直接在文件自己的对象上改段落、表格、单元格、公式、形状和幻灯片，改动落盘前先预览，每次修改都可撤销；如果用户在这期间也改了文件，旧提案作废，不会覆盖用户内容。这个「先读回你的修改再继续」的约束，同样出现在 MCP 的 `update_document` 流程里，过期更新会被拒绝而不是静默覆盖。
+
+MCP server 源码在 `apps/mcp`，暴露 `create_document`、`open_document`、`update_document`、`get_document`、`render_page`、`export_document` 等工具，可导出 docx、xlsx、pptx、pdf、md、html 和 csv。支持 MCP Apps 的客户端会在对话里直接显示编辑器，其他客户端则返回同一编辑器的链接和页面截图。它既可以用 `npx -y mroffice-mcp` 本地运行，也可以走托管端点并用 OAuth 登录。
+
+嵌入模式把 AGPL 边界放在托管服务一侧：编辑器由 MR Office 托管，用户的服务端只负责签发短期 session token，`mro_sk_...` 密钥不出服务器，保存结果通过签名回调送回。README 明确表示，作为托管服务使用不会给调用方应用带来 AGPL 义务。身份层则是一个 OAuth 2.1 授权服务器，支持 PKCE、client ID metadata documents 和动态注册。
+
+## 边界与风险
+
+许可证是 AGPL-3.0，并附带 NOTICE.md 的额外条款：通过网络提供修改版时，必须向用户提供完整源码，同时保留 MR Office 署名和指向官网的链接，且不获得名称与 logo 的使用权。商业授权需联系支持邮箱。README 把「使用托管 embed 可规避 AGPL 义务」作为卖点，但这是产品方的表述，选用前应由法务确认自身场景。
+
+开源与商业能力有明确分层。自托管的开源编辑器主要打开自有格式 `.mrdoc`、`.mrsheet`、`.mrslides`，以及 CSV、HTML、Markdown 和 PDF；Word、Excel、PowerPoint 文件、完整公式引擎、图表、SmartArt 和自动化 API 由免费桌面应用或托管 embed 的 Free 计划提供。README 说开源编辑器会保留文件中的公式、图表和 SmartArt，但完整计算与 Office 格式读写并不完全在自托管路径里。桌面完整版还依赖从 Releases 下载的免费组件，README 未说明该组件是否开源及其许可证。
+
+托管服务带配额和商业条款：Free 计划在 localhost 每月 1,000 个会话、自有域名 100 个、最多 2 个应用，付费从每月 29 美元起。README 未说明 SLA、数据驻留地区、日志保留期或合规认证；AI 功能只写「today's leading AI models」，没有列出具体提供商和计价方式。构建侧也未说明 Node 版本、浏览器兼容范围与自托管部署要求。计划把这些编辑器用于生产前，需要把许可证、数据路径和商业配额一起核对。
+
+## 来源
+
+GitHub：[XinaTian/MROffice](https://github.com/XinaTian/MROffice)（README sha 6ff9472a1303）

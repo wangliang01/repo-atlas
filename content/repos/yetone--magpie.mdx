@@ -1,0 +1,49 @@
+---
+repo: "yetone/magpie"
+title: "用本地网关给多个代码 Agent 统一换模型和账号"
+summary: "本地网关把 Claude Code、Codex、Gemini CLI 等数十种 Agent 的模型与账号收到一处，按订阅或 API Key 路由，额度用尽自动切换，并在请求离开本机前脱敏密钥。适合同时使用多个 Agent、供应商或账号的人。"
+banner: "https://raw.githubusercontent.com/yetone/magpie/HEAD/site/public/img/panel-light.png"
+categories: ["推理优化", "Agent 框架"]
+verdict: recommend
+featuredAt: 2026-11-24
+readmeSha: "46d61db52ff94db5e32e302f2d9430977bbcab7a"
+readmeFetchedAt: 2026-11-24
+sources: [github]
+---
+
+## 它是什么
+
+magpie 不是另一个 Agent，而是装在 Agent 与模型供应商之间的一层本地应用：菜单栏面板、窗口、TUI、Web UI 和 CLI 共用同一个网关，地址是 `127.0.0.1:3425`。它读取并改写各个 Agent 自己的配置，让 Claude Code 跑在 Kimi 上、Codex 跑在 DeepSeek 上、Gemini CLI 跑在 GLM 上，也能把你在 Claude、ChatGPT、Copilot、Gemini 或 Grok 上已登录的订阅提供给其他 Agent。README 明确说它面向同时使用多个 Agent、多个供应商或多个账号的人；如果只用一个 Agent 配官方套餐，并不需要它。它还能在某个账号额度耗尽时切到下一个账号或路由组，让 Agent 不直接看到错误。
+
+## 怎么上手
+
+macOS、Windows 和 Linux 都可以从 [usemagpie.ai](https://usemagpie.ai) 下载应用；README 给出的一行安装脚本是：
+
+```sh
+curl -fsSL https://usemagpie.ai/install.sh | sh
+```
+
+脚本在 Linux 上安装桌面应用，缺少 WebKitGTK 4.1 时会先通过包管理器补装；没有桌面或无法交互时则安装终端版本，也可以用 `--gui` 或 `--tui` 指定。README 还列出 Nix、`go install github.com/yetone/magpie@latest` 和 Docker 镜像三种方式。安装后进入 Providers 添加供应商，再到 Agents 页面为每个 Agent 选模型。等价的命令行操作如下：
+
+```sh
+magpie provider add deepseek sk-…
+magpie claude deepseek/deepseek-v4-pro
+magpie codex moonshot/kimi-k2.5
+magpie group add "Opus anywhere" models=claude/claude-opus-5-5,copilot/claude-opus-5.5 routing=smart
+magpie claude group/opus-anywhere
+magpie quota
+```
+
+README 未列出统一的最低系统版本、内存或磁盘要求；Linux 桌面依赖 WebKitGTK 4.1，Windows 原生安装与 WSL 里的 Agent 也都在支持范围内。
+
+## 值得注意的设计
+
+第一层是协议转换：网关同时说 OpenAI Chat、OpenAI Responses、Anthropic Messages 和 Gemini 四种接口，并在它们之间转换，流式输出、工具调用和推理内容都包含在内。第二层是路由组：一个组可以包含多个模型甚至嵌套其他组，支持 `smart`、`order`、`rotate`、`usage`、`pace` 五种分配策略；会话会尽量留在已经作答的账号上，以保留厂商的 prompt cache，另有 intent routing 让一个小模型按每轮请求的内容选择强模型或便宜模型。第三层是隐私脱敏：开启后，密钥、私钥、令牌、邮箱和校验位成立的卡号等在本机被换成确定性占位符，回复中的占位符再换回真值，流式文本和工具调用参数都会还原；真值只保存在内存里，脱敏无法运行时请求会被拦下并返回 503。插件运行在 Bun 上，还能作为网关中间件通过 `onRequest`、`onEvent`、`onResponse` 改写或拒绝请求。
+
+## 边界与风险
+
+许可证是 MIT，但 README 写明仓库不接受外部 pull request，只有维护者能开 PR，反馈走 Discord，这会影响团队自行修补问题的路径。隐私功能默认关闭，需要在 Settings 中手动开启；关闭后密钥会照常发往供应商。magpie 还会读取 Claude Code、Codex 的登录文件和 Keychain 来发现订阅账号，可以用设置或 `magpie accounts discovery off` 关掉。README 说明已发布版本每天会上报一次匿名使用统计，可用 `DO_NOT_TRACK=1` 或设置关闭，但合作伙伴链接的点击计数不受该开关影响。脱敏也有代价：模型看到的是占位符，因此无法处理「这个 token 为什么被拒」这类针对密钥本身的任务，需要把值加入 Never mask。README 未说明最低硬件、性能开销或长期支持周期；在把生产环境的 Agent 配置交给它改写前，应先确认卸载脚本能恢复原状。
+
+## 来源
+
+GitHub：[yetone/magpie](https://github.com/yetone/magpie)（README sha 46d61db52ff9）

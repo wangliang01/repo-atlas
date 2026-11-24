@@ -1,9 +1,10 @@
 import { codeToHtml } from "shiki";
 import { findFences, type Fence } from "./mdx.ts";
 
-// 原来配的是 vitesse：那会儿底色是米色纸面。换成掘金的灰白之后它偏黄绿，跟蓝主色打架，
-// github-light 的藏青/红/紫更贴这个站的配色
-const THEMES = { light: "github-light", dark: "github-dark" };
+// 代码块统一深色：浅色页面里也保持一块稳定的暗面，读者的眼睛不用在两种底色间切换。
+// 主题选 github-dark-default：注释仍是可读的 #8b949e，不像 vesper 那样压到 2.7:1。
+// 两套主题填同一个值，既保留 --shiki-light/--shiki-dark 的渲染机制，也避免暗色模式闪一下。
+const THEMES = { light: "github-dark-default", dark: "github-dark-default" };
 
 const escapeAttr = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");

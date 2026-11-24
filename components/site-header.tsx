@@ -7,9 +7,14 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV = [
   { href: "/", label: "首页" },
-  { href: "/picks", label: "精选" },
   { href: "/notes", label: "笔记" },
 ];
+
+/** 首页现在同时是精选；详情页也要让「首页」保持高亮 */
+function isCurrent(pathname: string, href: string): boolean {
+  if (href === "/") return pathname === "/" || pathname.startsWith("/picks");
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
@@ -46,7 +51,7 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              aria-current={pathname === item.href ? "page" : undefined}
+              aria-current={isCurrent(pathname, item.href) ? "page" : undefined}
               className="text-ink/70 transition-colors duration-150 hover:text-accent-ink aria-[current=page]:font-medium aria-[current=page]:text-accent-ink"
             >
               {item.label}
@@ -94,7 +99,7 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              aria-current={pathname === item.href ? "page" : undefined}
+              aria-current={isCurrent(pathname, item.href) ? "page" : undefined}
               onClick={() => setMenuOpen(false)}
               className="py-3 text-ink/70 transition-colors duration-150 hover:text-accent-ink aria-[current=page]:font-medium aria-[current=page]:text-accent-ink"
             >

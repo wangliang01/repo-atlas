@@ -1,0 +1,57 @@
+---
+repo: "thedotmack/claude-mem"
+title: "给编码 Agent 跨会话续上记忆的本地记忆层"
+summary: "在编码 Agent 旁边运行观察者，把工具调用整理成观察与摘要，下次会话自动注入压缩索引。适合长期使用 Claude Code、Codex 等工具、受困于每次从零开始的人。"
+banner: "https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/cm-preview.gif"
+categories: ["记忆与上下文", "Agent 框架"]
+verdict: recommend
+featuredAt: 2026-11-24
+readmeSha: "947b3b1aeffcc04841a4e3f7d3c3093f4240a77b"
+readmeFetchedAt: "2026-11-24"
+sources: [github]
+---
+
+## 它是什么
+
+Claude-Mem 是给编码 Agent 用的持久记忆层。README 的定位很直接：Agent 每次新会话都从零开始，重复读文件、问问题、重走已经修过的错；Claude-Mem 在旁边跑第二个 Agent，一边工作一边记笔记。它支持 Claude Code、Codex、Cursor、OpenCode 以及另外十余种 Agent，其中 Copilot CLI、Goose、Roo Code、Warp 和 Zed 只能搜索记忆，不会记录会话。记忆保存在本机 `~/.claude-mem`，云同步需要主动开启。项目用 TypeScript 编写，构建于 Claude Agent SDK 之上，当前徽章版本为 16.1.2。
+
+## 怎么上手
+
+前置条件是 Node.js 20.19 以上的 20.x，或 22.12 以上；还需要一个受支持的 Agent。Bun 和 uv 会在缺失时自动安装，SQLite 随包提供。安装器会扫描本机 Agent 并询问要配置哪些：
+
+```bash
+npx claude-mem install
+```
+
+在 Claude Code 里也可以用插件市场安装：
+
+```bash
+/plugin marketplace add thedotmack/claude-mem
+/plugin install claude-mem
+```
+
+只配置某个 Agent 时加 `--ide`，例如 OpenCode：
+
+```bash
+npx claude-mem install --ide opencode
+```
+
+安装后重启 Agent。README 说明，记忆注入从项目的第二次会话开始；想把整个仓库预先读一遍，可以运行 `/learn-codebase`，典型仓库约五分钟。安装器随后会要求在浏览器登录并选择记忆提供方：claude-mem observer、自备 OpenRouter 或 Gemini key，或使用自己的 Anthropic 计划；在 CI 或非交互环境里可用 `--provider` 等参数跳过账号交互。排查问题从 `npx claude-mem doctor` 开始。注意 `npm install -g claude-mem` 只安装 SDK/库，不会注册 hooks 或 worker 服务。
+
+## 值得注意的设计
+
+核心是 hooks 加本地 worker 的两段式结构。每个 Agent 事件执行一条无 shell 的命令，例如 `claude-mem hook claude-code <event>`，Claude Code 侧覆盖 Setup、SessionStart、UserPromptSubmit、PreToolUse、PostToolUse、Stop、SubagentStop 和 SessionEnd 等生命周期。worker 是由 Bun 管理的本地 HTTP 服务，接收工具活动、调用观察者，并同时提供 viewer 与搜索接口。
+
+观察者是第二个模型调用方，prompt 放在 `src/sdk/`，模型来源通过 `ClaudeProvider.ts`、`OpenRouterProvider.ts` 这类 provider 适配。存储走 SQLite，数据库在 `~/.claude-mem/claude-mem.db`，用 FTS5 做关键词检索；Chroma 在其上补语义搜索。新会话拿到的是一份压缩索引，需要细节时再逐层展开，这就是 README 所说的 progressive disclosure。
+
+搜索被拆成 `search`、`timeline`、`get_observations` 三个 MCP 工具：先取 50 到 100 token 量级的索引，补时间线上下文，最后只对筛出的 ID 拉取 500 到 1,000 token 的全文。README 明确说明，索引与全文的体量比不等于端到端节省，时间线和详情也要计入成本。`CLAUDE_MEM_MODE` 还能同时控制工作流模式和观察语言，例如 `code--zh`。
+
+## 边界与风险
+
+记忆需要模型提供方，这是主要的使用成本。选择 claude-mem observer 会进入 30 天免费试用，结账页要求填写支付方式；试用结束后如果未订阅，会自动回退到 Anthropic 计划。匿名使用分析默认开启，可用 `npx claude-mem telemetry disable` 关闭；云同步是可选功能，截图默认保留在本机 `~/.claude-mem/media-v1/`，开启云同步或图像推理后才会外发。README 给出 `<private>` 标签来阻止内容入库，但没有给出数据库体积增长、清理策略或并发写入方面的说明。
+
+安装路径也有坑：Windows 上安装器会把启动器放到 `%LOCALAPPDATA%\claude-mem\bin\claude-mem.exe` 并写入用户 Path，装完要重启终端；hooks 找不到 `claude-mem` 时应先跑 doctor。支持列表里的部分 Agent 只能搜索、不能记录，团队选型时要按这个差异核对。许可证是 Apache 2.0，README 另有文档说明开源与商业边界；项目同时运营托管记忆服务，README 末尾还介绍了第三方发行的 CMEM 代币及合约地址，这部分与记忆功能无关，需要独立判断。
+
+## 来源
+
+GitHub：[thedotmack/claude-mem](https://github.com/thedotmack/claude-mem)（README sha 947b3b1aeffc）

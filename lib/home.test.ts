@@ -13,33 +13,28 @@ test("日期格式为 YYYY.MM.DD，月日补零", async () => {
   assert.match(src, /padStart\(2, "0"\)/, "月/日没有补零");
 });
 
-test("身份卡：真名 + 定位 + 城市状态 + 技术栈，第一屏就知道这是谁", () => {
-  assert.ok(has("components/identity-card.tsx"), "components/identity-card.tsx 不存在");
-  const card = read("components/identity-card.tsx");
-  for (const part of ["text-display", "headline", "location", "status", "stack", "links"]) {
-    assert.ok(card.includes(part), `身份卡缺 ${part}`);
-  }
-  assert.ok(/data-testid="identity"/.test(card), "缺 data-testid=identity（验收要量它）");
-  // 375px 下头像和文字必须上下堆叠：并排时文字只剩 223px，定位句会掉出一个孤字
-  const row = card.match(/<div className="[^"]*flex-1[^"]*">/)?.[0] ?? "";
-  assert.ok(row.includes("flex-col"), "身份卡在手机宽度要 flex-col 堆叠头像与文字");
-  assert.ok(row.includes("sm:flex-row"), "身份卡宽屏要 sm:flex-row 恢复并排");
-  assert.equal(has("components/masthead.tsx"), false, "旧的 masthead.tsx 还在");
-});
-
-test("首页只留三块：身份卡 + 最近在写 + 笔记", () => {
+test("首页只剩精选：身份卡、站点口号、最近在写、笔记区块都撤掉", () => {
   const page = read("app/page.tsx");
-  for (const part of ["<IdentityCard", "<RepoRow", "<RisingPanel"]) {
-    assert.ok(page.includes(part), `首页缺 ${part}`);
-  }
-  for (const anchor of ['id="repos"', 'id="notes"']) {
-    assert.ok(page.includes(anchor), `首页缺锚点 ${anchor}`);
-  }
-  // T-014：介绍站点自己、以及代写的三条评测都撤掉了，别再挂回来
-  for (const gone of ["<AboutSite", "<ProjectLead", "<VerdictNote", 'id="site"', 'id="picked"']) {
+  assert.ok(page.includes("<PicksView"), "首页没有精选 feed");
+  for (const gone of [
+    "<IdentityCard",
+    "<RepoRow",
+    "最近值得看的 AI 项目",
+    'id="repos"',
+    'id="notes"',
+    "最近在写",
+    "IdentityCard",
+    "REPOS",
+  ]) {
+    // 标题只允许出现在 sr-only 的 h1 里，不能回到可见的 slogan 区块
+    if (gone === "最近值得看的 AI 项目") {
+      assert.equal((page.match(/最近值得看的 AI 项目/g) ?? []).length, 1, "口号回到了可见区域");
+      continue;
+    }
     assert.equal(page.includes(gone), false, `首页不该再有 ${gone}`);
   }
-  assert.equal(page.includes('"/projects"'), false, "首页不该再链到已删除的列表页");
+  assert.equal(has("components/identity-card.tsx"), false, "身份卡组件还在");
+  assert.equal(has("components/repo-row.tsx"), false, "最近在写的行组件还在");
 });
 
 test("假评测已经删干净：内容、路由、组件都不在", () => {

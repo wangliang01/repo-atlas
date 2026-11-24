@@ -32,10 +32,8 @@ export function RisingPanel({
       <ul className="pb-1">
         {entries.map((entry) => (
           <li key={entry.repo}>
-            <a
-              href={`https://github.com/${entry.repo}`}
-              rel="noopener"
-              target="_blank"
+            <Link
+              href="/picks"
               className="block px-4 py-1.5 transition-colors duration-150 hover:bg-surface-2"
             >
               <span className="block truncate text-small text-ink">{entry.name}</span>
@@ -43,7 +41,7 @@ export function RisingPanel({
                 <span className="text-accent-ink">{formatPerDay(entry.starsPerDay)}</span>
                 <span className="ml-2">{formatStars(entry.stars)}</span>
               </span>
-            </a>
+            </Link>
           </li>
         ))}
       </ul>

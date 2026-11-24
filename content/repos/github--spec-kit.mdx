@@ -1,0 +1,73 @@
+---
+repo: "github/spec-kit"
+title: "给 AI 编码代理一套可复用、有记录的规格驱动流程"
+summary: "GitHub 开源的流程工具箱，把规格驱动开发、缺陷修复和想法评估做成编码代理可执行的技能与模板。适合想把代理产出纳入固定流程、留下评审记录的团队。"
+categories: ["架构", "测试与质量"]
+verdict: recommend
+featuredAt: 2026-11-24
+readmeSha: "a4ea4f520add603de250c59f96037f0eb7be46e5"
+readmeFetchedAt: "2026-11-24"
+sources: [github]
+---
+
+## 它是什么
+
+Spec Kit 是 GitHub 开源的流程工具箱，目标不是替代理写代码，而是给 AI 编码代理一套结构化流程、可复用模板和有记录的产出。README 把它拆成三个独立入口：核心内置的规格驱动开发（SDD），以及按需安装的缺陷修复和想法评估扩展。三者不是必须依次经过的阶段，团队可以只取其中一个。它面向已经在使用 Copilot、Claude Code、Codex 等编码代理，希望把需求、计划、任务和验证固定下来的人。
+
+## 怎么上手
+
+README 给出的前置条件是 Python 3.11+、uv，以及 Linux、macOS 或 Windows 上受支持的 AI 编码代理。安装 CLI 并初始化项目：
+
+```bash
+uv tool install specify-cli
+specify init my-project --integration copilot
+cd my-project
+```
+
+随后在项目目录里启动编码代理，技能要在代理聊天中逐条运行，而不是在终端运行。README 以 Copilot 的默认技能语法演示 SDD 最小流程：
+
+```text
+/speckit-constitution Create principles focused on code quality, testing, and maintainability.
+/speckit-specify Build a photo organizer with albums grouped by date and a tile preview of each album.
+/speckit-plan Use Vite with vanilla JavaScript. Keep images local and store metadata in SQLite.
+/speckit-tasks
+/speckit-implement
+/speckit-converge
+```
+
+`implement` 和 `converge` 需要反复执行，直到收敛报告为 `Converged`。缺陷修复和想法评估是 bundled extensions，先安装再在同一聊天里调用：
+
+```bash
+specify extension add bug
+specify extension add assess
+```
+
+```text
+/speckit-bug-assess "Submitting an empty password crashes the login form." slug=login-crash
+/speckit-bug-fix slug=login-crash
+/speckit-bug-test slug=login-crash
+
+/speckit-assess-intake "Let users work offline and sync when they reconnect." slug=offline-mode
+/speckit-assess-research slug=offline-mode
+/speckit-assess-decide slug=offline-mode
+```
+
+其他代理的集成键和调用语法不同，README 指向单独的 integrations 文档。项目文件落在 `.specify/` 下，例如缺陷报告在 `.specify/bugs/<slug>/`，评估产物在 `.specify/assessments/<slug>/`。
+
+## 值得注意的设计
+
+三个入口各有明确终态，让「完成」可判定。SDD 以收敛检查收尾；缺陷修复输出 `verified`、`partial` 或 `failed`，只有 `verified` 才算修好；想法评估输出 `go`、`needs-clarification` 或 `kill`。README 还强调，带理由地停下也是有效结果，避免为了交付而交付。
+
+定制被拆成多层机制：integration 负责连接代理，extension 增加命令、质量门或完整流程，preset 调整模板与术语，workflow 负责自动化和门禁，bundle 打包整套团队配置，catalog 负责发现组件。项目级 override 可以只覆盖一个模板，artifact inventory 则用于查看某条命令、模板或脚本到底由哪一层提供。这种分层使团队不必 fork 整套流程就能做局部改造。
+
+目录搜索结果被明确标注为「不是审计或背书」。`specify extension search`、`specify preset search`、`specify workflow search` 和 `specify bundle search` 可以发现社区组件，但 README 要求安装或运行前先审查源码。这一提醒把目录发现和供应链信任分开处理。
+
+## 边界与风险
+
+社区 catalog 中的扩展、preset 和 workflow 由外部作者提供，README 明确不为其安全性背书，运行前需要自行审查。CLI 需要 Python 3.11+ 与 uv，流程又依赖代理能够执行对应技能，因此代理集成的支持范围直接决定可用性，README 正文没有逐一列出所有代理的差异，只给出文档入口。
+
+流程本身有学习成本：技能要逐条执行并在每步审查结果，评估和修复还会生成多份 Markdown 产物。如果团队没有评审习惯，这些步骤容易退化成形式。README 未说明各代理集成的最低版本、长期支持政策或升级兼容承诺，升级前应阅读对应版本的文档。许可证为 MIT。
+
+## 来源
+
+GitHub：[github/spec-kit](https://github.com/github/spec-kit)（README sha a4ea4f520add）

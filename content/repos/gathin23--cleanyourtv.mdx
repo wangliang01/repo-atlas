@@ -1,0 +1,56 @@
+---
+repo: "Gathin23/cleanyourtv"
+title: "用 ADB 关掉 Android TV 的广告预装，再换上一个 572 KB 的极简桌面"
+summary: "CleanYourTV 通过电视自带的 ADB 和 pm disable-user 禁用遥测与推广包，再安装一个约 572 KB 的原生桌面；不 root、不拆机、不卸载，并保留一键恢复。"
+banner: "https://raw.githubusercontent.com/Gathin23/cleanyourtv/HEAD/docs/focus-2-up-netflix.png"
+categories: ["运维"]
+verdict: watch
+featuredAt: 2026-11-24
+readmeSha: "42c80c6146c7cfbce25378965b377736c9c21367"
+readmeFetchedAt: "2026-11-24"
+sources: [github]
+---
+
+## 它是什么
+
+CleanYourTV 不是应用商店里的成品 App，而是一套给 Android TV 与 Google TV 用的去广告、去预装工具集。它利用电视自带的调试桥，先备份已安装包与设置，再用 `pm disable-user` 停用厂商遥测、广告服务、内容推荐行和预装杂项，最后安装一个原生启动器并设为默认桌面。README 的核心承诺是：不需要 root，不需要拆机接线，不卸载任何东西，改主意时有一条命令恢复。
+
+它面向愿意在电脑上动手的电视用户，也照顾不写代码的人。仓库提供一段写给编码助手的 PROMPT.md，助手会自行发现电视上的预装项、逐步征求确认、构建并安装启动器。没有编码助手时，同一套脚本可以手动运行；没有电脑时，README 列出了几个由独立开发者基于这些电视清单构建的社区 App。
+
+## 怎么上手
+
+电脑需要与电视处于同一 Wi-Fi，并且有 shell、Python 3、17 到 22 之间的完整 JDK，以及 Android SDK platform 34 和 build-tools 34。电视端在设置里连按 Build 七次打开开发者选项，再启用 USB debugging，有 Network/ADB debugging 开关的话也一并打开，并保持电视开机。
+
+装好前置条件后，可以按 README 的手动流程执行：
+
+```bash
+python3 -m venv tools/venv && tools/venv/bin/pip install -r tools/requirements.txt
+export TV_HOST=192.168.1.50
+
+tools/venv/bin/python -I tools/tv.py --probe
+tools/disable.sh examples/xiaomi-mi-tv-4a/debloat.txt
+tools/restore.sh examples/xiaomi-mi-tv-4a/debloat.txt
+launcher/build-and-install.sh
+```
+
+`TV_HOST` 换成电视的实际 IP。更省事的方式是克隆仓库后把 PROMPT.md 粘给 Claude Code、Codex、Gemini CLI 等助手，并填入电视型号，由它完成备份、清理、构建、安装和截图核对，README 称大约十五分钟。Windows 下每个脚本都有对应的 PowerShell 版本，例如 `launcher\build-and-install.ps1` 和 `tools\disable.ps1`。
+
+## 值得注意的设计
+
+最关键的设计是「只禁用，不卸载」。所有改动都通过 Android 自带的 `pm disable-user` 完成，等价于设置里的停用应用。执行前脚本会把电视当时的状态记录到 `~/.cleanyourtv/`，`tools/restore.sh` 再按记录回放，原本就被用户停用的包不会被误启用，Home 也会回到原来的组件。这使整个操作具备可逆性，而不是一次性刷机。
+
+第二个设计是 Home 守卫。脚本只停用自己认识的五个原厂启动器，并在清单包含当前 Home 所有者、且没有其他应用能响应 HOME 时跳过该条目，避免把电视变成没有桌面可启动的状态。在 Google TV 上还要处理 setupwraith 抢走 Home 的情况，README 专门说明了先检查 Wi-Fi 网络归属再停用它的原因。
+
+第三个设计是极简启动器本身。它用纯 Java 编写，约 572 KB，面向 1 GB 内存的电视，没有模糊、视频、网络权限或后台服务，最低支持 Android 8.0。桌面布局、壁纸和主题由一份 `config.json` 通过 Wi-Fi 推送，不需要重新构建。仓库还附带纯 Python 的 ADB 客户端 `tools/tv.py`，在原厂 `adb` 被拦截时仍能执行 shell、推送、拉取和截图。
+
+## 边界与风险
+
+支持范围写得很清楚：只适用于 Android TV 和 Google TV。Fire TV 只能做去预装那一半，因为 Fire OS 不会把 Home 交给第三方启动器，2015 年的 Fire TV Box 连这一半也会失败。部分中国市场的 TCL 机型拒绝安装任何启动器。Samsung Tizen、LG webOS、Roku、Vizio 和 Hisense VIDAA 没有 ADB，完全不在支持范围，README 建议改用系统设置关闭追踪。
+
+风险主要在 ADB 与系统包两点。网络 ADB 在 5555 端口上是明文传输，某些固件下局域网内任何设备都能拿到 shell，因此用完后必须关闭调试、撤销授权、重启电视，并用仓库的 `tools/adb-closed.py` 确认端口已关闭。停错系统包可能让电视功能异常，所以清单要小批量应用并随时准备恢复；最坏情况下可以进恢复菜单做恢复出厂设置。固件更新会把停用的包带回来，需要用 `tools/check.py` 对比并按需修复。
+
+仓库不提供预编译 APK，需要自己用脚本构建；也没有给出对电视保修的影响承诺，README 只提醒修改电视软件可能影响保修或支持。项目采用 MIT 许可证，内置字体使用 SIL Open Font License。README 对安全、恢复、远程协助和固件更新都有专门文档，但具体机型的兼容性仍取决于贡献者提交的清单。
+
+## 来源
+
+GitHub：[Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv)（README sha 42c80c6146c7）

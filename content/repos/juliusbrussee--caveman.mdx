@@ -1,0 +1,50 @@
+---
+repo: "JuliusBrussee/caveman"
+title: "让编程 Agent 少说少读并按任务自动选模型的省 Token 工具"
+summary: "面向编程 Agent 的省 Token 工具：把回答改写成精简的穴居人句式，压缩日志、JSON 和测试输出再喂给模型，还能按任务难度自动挑模型。支持 Claude Code、Codex、Gemini CLI 等 30 多种 Agent，在本机使用你自己的密钥和订阅登录。"
+banner: "https://raw.githubusercontent.com/JuliusBrussee/caveman/HEAD/docs/assets/caveman-logo-banner.png"
+categories: ["推理优化", "Agent 框架"]
+verdict: watch
+featuredAt: 2026-11-24
+readmeSha: "70767a9ada4fce466e6d5343e298509176c7093f"
+readmeFetchedAt: 2026-11-24
+sources: [github]
+---
+
+## 它是什么
+
+Caveman 的核心主张是「why many token when few do trick」：让 Agent 少说、少读，但代码和人话的含义保持不变。4.0 版把它拆成六个可独立开关的部分：Say less 用 `/caveman`、`/ultracave`、`/megacave` 三种精简程度改写回复；Read less 在模型读到日志、CSV、JSON、YAML 和测试输出之前先压缩；Auto 为每个请求选择模型和推理强度；Blocks 把 Agent 反复重写的脚本沉淀到仓库里复用；Waste fixes 分析 token 花在哪里；Browse 把网页抓取结果压缩后再交给 Agent。它面向已经在用 Claude Code、Codex、OpenCode 等编程 Agent、希望降低账单或上下文占用的人，安装后普通的 `claude` 命令也会保持精简模式。
+
+## 怎么上手
+
+README 给出的一行安装需要 Node.js 22.13 及以上：
+
+```bash
+npx @caveman-ai/cli@latest
+```
+
+安装器会找到本机的 Agent 和登录信息，展示将要改动的内容，确认后生效，支持 macOS、Linux 和 Windows。如果只想要精简回答、不需要代理，可以只安装 skill：
+
+```bash
+npx skills add JuliusBrussee/caveman -g
+```
+
+Claude Code 用户还可以通过插件市场安装：
+
+```bash
+claude plugin marketplace add JuliusBrussee/caveman && claude plugin install caveman@caveman
+```
+
+Gemini CLI 使用 `gemini extensions install` 添加仓库地址；Windows 的一行脚本要求 PowerShell 5.1 以上，README 给出的脚本固定在 v4.2.0。安装后用 `caveman status` 查看哪些部分开启，`caveman off browse` 单独关闭某一项；Auto 需要免费账号，先运行 `caveman login`，可选地用 `caveman providers add openai` 增加自有模型的供应商。
+
+## 值得注意的设计
+
+回复风格被写成一套规则而不是随口模仿：先给结论，再给原因和下一步；句子受 ASD-STE100 受控英语约束，最多 20 个词、使用主动语态；`not`、`never`、`no`、`only` 等否定词不能省，数字和单位保持精确；代码、命令、路径和报错逐字符保留。另一条关键决定是绝不改写用户的 prompt，README 引用 Adobe Research 的结论说明改写用户输入反而会让回答变差。输入侧压缩发生在模型读取之前，原始文件仍留在磁盘上，Agent 需要时可以取回；README 承认 HTML 目前还没有压缩器。Blocks 把 code mode 下写过的脚本按仓库保存，附带 `json-peek`、`test-summary`、`grep-defs` 等八个预置块；中间件则把同样的压缩接进 Vercel AI SDK、LangChain、OpenAI 或 Anthropic 的调用。
+
+## 边界与风险
+
+许可证是 Apache-2.0，覆盖整个仓库，但 Caveman 名称和石头标志是商标。README 里的节省数据大多来自项目自己的测量，其中 Auto 的结论被标注为「interim」，质量差距尚未分辨，HTML 压缩没有结果，Blocks 仍以 v0.1.0-rc 预发布、只支持 Python 且没有沙箱，「Waste fixes」也标注为尚未测量；这些数字应按作者自述看待，而不是独立基准。Auto 需要登录，启用后会把最近一次提问、上一次提问、上一条回复的结尾、工具名和 token 数发到 Caveman Cloud，免费计划可能保留数据用于改进路由。CLI 默认发送使用统计，可用 `caveman telemetry off` 或 `DO_NOT_TRACK=1` 永久关闭；单独安装的 skill 本身不发送数据，但 `/caveman-compress` 会把待压缩文件发给所配置的模型供应商。README 还提醒，按请求计费的服务（如 GitHub Copilot）不会因为回答变短而省钱。
+
+## 来源
+
+GitHub：[JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman)（README sha 70767a9ada4f）

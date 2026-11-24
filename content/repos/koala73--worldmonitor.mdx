@@ -1,0 +1,55 @@
+---
+repo: "koala73/worldmonitor"
+title: "把新闻、冲突、金融与基础设施信号汇成实时全球态势图"
+summary: "实时全球情报仪表盘，聚合新闻、地缘政治、金融、航班、网络与气候数据，提供 Web、Tauri 桌面、终端面板、CLI、SDK 和 MCP 多种入口。适合需要持续跟踪全球事件的分析师、研究者和代理开发者。"
+banner: "https://raw.githubusercontent.com/koala73/worldmonitor/HEAD/docs/images/worldmonitor-7-mar-2026.jpg"
+categories: ["数据与情报"]
+verdict: recommend
+featuredAt: 2026-11-24
+readmeSha: "db41eddaa99d7ec938f0602eb3fc1fd3595070ab"
+readmeFetchedAt: "2026-11-24"
+sources: [github]
+---
+
+## 它是什么
+
+World Monitor 是一个实时全球情报仪表盘，把 AI 聚合的新闻、地缘政治监测和基础设施跟踪放进同一个态势界面。README 列出的能力包括按地区和主题组织的新闻源与 AI 简报、3D 地球与平面地图、军事与经济及灾害信号的跨流关联、面向 31 个 Tier-1 国家的 Country Instability Index、金融雷达、本地 Ollama 推理、多语言与 RTL 界面，以及从同一代码库生成的 world、tech、finance、commodity、happy、energy 六个站点变体。它面向需要持续观察全球事件的分析人员、研究者和想把情报接进脚本或代理的开发者。
+
+## 怎么上手
+
+最快的方式是用 Docker 自托管完整栈，脚本会克隆仓库、生成密钥、启动服务并灌入公开数据：
+
+```bash
+curl -fsSL https://www.worldmonitor.app/install.sh | bash
+```
+
+完成后打开 [http://localhost:3000](http://localhost:3000)。API key 是可选的；脚本支持 `--dir`、`--port`、`--no-seed`、`--no-build` 等参数。本地开发要求 Node.js 24（仓库 `.nvmrc` 固定了版本），旧发行版自带的 Node 18/npm 9.2.0 会在 `npm install` 时报 `Invalid comparator: file:vendor/braces`：
+
+```bash
+git clone https://github.com/koala73/worldmonitor.git
+cd worldmonitor
+npm install
+npm run dev
+```
+
+开发服务器同样在 3000 端口，可用 `.env.local` 里的 `DEV_PORT` 覆盖。应用无需环境变量即可运行，但部分特性数据源需要凭据，清单在 `.env.example`。终端用户可以直接运行 `npx worldmonitor` 打开同一套实时数据的 TUI，README 说明它不需要 API key，并支持鼠标与配色主题。变体开发用 `npm run dev:tech`、`dev:finance`、`dev:commodity`、`dev:happy`、`dev:energy`。
+
+## 值得注意的设计
+
+地图层由两套引擎共享同一份目录。3D 地球使用 globe.gl 与 Three.js，平面地图使用 deck.gl 与 MapLibre GL，但地图图层目录是共用的。这意味着同一批数据层可以在两种视图间切换，而不是为每种视图维护两套渲染逻辑。README 把这一点列为「dual map engine」，并强调共享 catalog。
+
+分析层不只做信息展示，还做信号收敛。Country Instability Index 提供 31 个 Tier-1 国家的 CII v14 分数、区间和近 24 小时变动，跨流关联则把军事、经济、灾害和升级信号放在一起看。这些指标和算法的细节没有写在 README 正文，而是指向完整文档，阅读时应把指数理解为一个有版本号的模型输出，而不是原始事实。
+
+单一代码库支撑多种交付形态。六个站点变体来自同一份代码，桌面端是一个 Tauri 2 二进制，安装后可在应用内切换变体，没有按变体拆分的下载包；终端面板与 CLI 发布为 npm 包；此外还有 REST API、Python/Ruby/Go SDK、MCP server 和面向代理的发现文件。缓存采用 Redis（Upstash）、三级缓存、CDN 与 service worker 的组合，适合这种多入口、强时效的数据产品。
+
+## 边界与风险
+
+代码采用 AGPL-3.0-only，商业或 SaaS 使用需要遵守 copyleft 与源码开放义务；如果需要闭源专有使用或官方品牌授权，要单独获得商业或商标许可。World Monitor 的名称和 wordmark 指向官方站点，README 明确要求不要把自己的 fork 包装成官方网站。版权归作者 Elie Habib 所有。
+
+自托管的一行安装脚本通过 `curl | bash` 执行，生产环境应先阅读脚本与 `SELF_HOSTING.md`，并注意脚本默认会克隆、生成密钥和灌数据。README 未说明各上游数据源的准确性保证、更新频率 SLA 或断供后的降级策略，只说明会聚合带署名的来源并提供数据源目录；关键决策不应只依赖这个面板。部分特性数据源需要额外凭据，README 没有逐一列出哪些功能在没有 key 时会缺失。
+
+环境要求偏严格：Node 24 是本地开发的硬前提，README 特意提醒 Debian 12 和 Raspberry Pi OS 的旧 Node 会导致安装失败。桌面端虽有 Windows、macOS 和 Linux 构建，README 未说明各平台的功能差异或签名策略；终端面板与 CLI 被标为稳定，但它们的版本节奏与 Web 端分开，由 `cli-v*` 标签发布。许可证为 AGPL-3.0-only，商业授权是另一条路径。
+
+## 来源
+
+GitHub：[koala73/worldmonitor](https://github.com/koala73/worldmonitor)（README sha db41eddaa99d）

@@ -1,0 +1,40 @@
+---
+repo: "sybil-solutions/inference-optimisation-skill"
+title: "把本地大模型推理调优写成可复现流程"
+summary: "面向本地 LLM 服务的推理优化 Agent Skill：先算理论上限，再逐项改动、交错对照测量，并用长上下文与并发稳定性门槛验收结果。"
+categories: ["推理优化", "运维"]
+verdict: recommend
+license: "MIT"
+featuredAt: 2026-11-24
+readmeSha: "6bee1ade28f1cecb98458019fb4c8b790938d77b"
+readmeFetchedAt: 2026-11-24
+sources: [github]
+---
+
+## 它是什么
+
+这是一个 Agent Skill，目标是把本地 LLM 服务器的推理速度「爬山」过程标准化，适用于任意硬件和量化方式。它覆盖单用户与并发解码、投机解码、prefill、KV cache 容量、启动时间和首 token 延迟，并要求在内存上限内工作，每个结果都要通过完整上下文稳定性检查。它既能被 Claude Code 等加载 `SKILL.md` 的 Agent 使用，也能让任意模型按 `PROMPT.md` 手动执行。README 强调它记录的是实际得到加速的做法，不是一份参数清单。
+
+## 怎么上手
+
+Claude Code 用户级安装：
+
+```bash
+git clone https://github.com/sybil-solutions/inference-optimisation-skill
+mkdir -p ~/.claude/skills
+cp -r inference-optimisation-skill/skills/inference-optimisation ~/.claude/skills/
+```
+
+之后直接用自然语言提要求，例如「在 40 GiB 上限下为 :8000 上的模型爬升 decode 和 prefill」，或问「这台机器上该模型的理论最大 tok/s 是多少」。其他 Agent 可以指向 `skills/inference-optimisation/SKILL.md`，或把 `PROMPT.md` 作为任务提示。不用 Agent 时，README 给出脚本流程：先跑 `ceiling.py` 算上限，复制 config 并改 `base_url` 和 model，用 `bench.py run` 跑一次，再用 `queue.sh base cand base` 做交错 A/B，最后用 `bench.py show` 看账本。
+
+## 值得注意的设计
+
+流程的骨架是「先算理论上限」：用 bytes/token 除以带宽、FLOPs/token 除以峰值的一半、KV 容量等估算 decode、prefill、TTFT、启动和 KV 的最大值，再判断某个目标是否已经超过物理上限。之后每次只改一个变量，用串行、可脱离终端的队列交错运行 control、candidate、control，取中位数，只有同时赢过两侧对照、且没有任何指标回退超过 3% 才接受，结果写入 `ledger.jsonl`。通过后再过两关：精确匹配 needles 的长上下文检索，以及并发满 KV soak；最后固定一个干净构建，跑六项验收门槛才发布。配套脚本保持引擎无关：`bench.py` 面向任何 OpenAI 兼容服务，token 数取服务端 usage 而非流式分片；`mem.sh` 会算上 cgroup 看不到的统一内存驱动占用；参考文档按需加载，分别讲上限计算、测量陷阱、杠杆、各引擎坑和发布。
+
+## 边界与风险
+
+README 中的加速数字都注明是在特定硬件、模型、量化和引擎上测得，不能直接套到别的组合；方法本身也提示单次测量有 ±5–10% 噪声，必须交错对照。它需要一台已经跑起来的 OpenAI 兼容推理服务，脚本依赖 Python 与 bash，整个优化过程要在内存上限下反复跑基准，耗时不会短。仓库给的是流程、参考文档和测量工具，不是自动调参器，实际收益取决于技术栈和硬件。六项验收门槛也意味着「跑得快」不等于「可以发布」，还要通过稳定性与可复现性检查。README 没有给出所支持引擎版本之外的兼容范围承诺。
+
+## 来源
+
+GitHub：[sybil-solutions/inference-optimisation-skill](https://github.com/sybil-solutions/inference-optimisation-skill)（README sha 6bee1ade28f1）

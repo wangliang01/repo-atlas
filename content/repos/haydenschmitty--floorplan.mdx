@@ -1,0 +1,54 @@
+---
+repo: "haydenschmitty/floorplan"
+title: "让 Claude 或 Codex 把代码库画成可对话的应用地图"
+summary: "Claude Code 或 Codex 插件，扫描代码与跨仓库请求后生成带通俗命名、健康检查和最近改动标记的交互地图。适合用 AI 搭应用、但不熟悉代码细节的构建者。"
+banner: "https://raw.githubusercontent.com/haydenschmitty/floorplan/HEAD/docs/images/screens.png"
+categories: ["架构"]
+verdict: watch
+featuredAt: 2026-11-24
+readmeSha: "bc1b6116407a8594f24a4d00e1441b04529b96c3"
+readmeFetchedAt: "2026-11-24"
+sources: [github]
+---
+
+## 它是什么
+
+Floorplan 是 Claude Code 和 Codex 的插件。它让 Agent 读代码库，然后画出一张可交互的地图：每个部分、文件和网络请求都有通俗英文名，彼此之间的连接也会标出来。README 面向三类人：用 AI 搭出应用但读不动代码的构建者、需要快速上手项目的团队，以及想看清 AI 每次改了什么的人。它能在同一个地图里处理单仓库、monorepo 和并排放置的多个仓库，还能从 PRD 或规格生成尚未写代码的「蓝图」。项目当前版本 0.11.0，Node 18+，零依赖，MIT 许可证，README 强调运行在已有的 Claude 或 ChatGPT 计划上，不需要 API key。
+
+## 怎么上手
+
+前置条件是 Node.js 18+，以及已登录的 Claude Code 或 Codex。Claude Code 下安装：
+
+```bash
+claude plugin marketplace add haydenschmitty/floorplan
+claude plugin install floorplan@floorplan
+```
+
+Codex 也可以用命令行安装：
+
+```bash
+codex plugin marketplace add haydenschmitty/floorplan
+codex plugin add floorplan@floorplan
+```
+
+或者在 Codex 应用的 Plugins 里添加 marketplace，来源填 `haydenschmitty/floorplan`，再安装 Floorplan。装完开新会话，直接说「Make me a floorplan of this app」，Codex 里也可以输入 `$floorplan`。前后端分处两个仓库时，打开同时包含两者的上级目录。之后用「Update the floorplan」增量更新。地图会自己打开，并先播放一段简短导览。README 建议即使使用 Claude 桌面应用也装上 Claude Code CLI，因为地图的 Ask 栏要靠它读取真实代码；Codex 桌面应用已自带所需能力。
+
+## 值得注意的设计
+
+它把工作明确拆成机械部分和语义部分。普通 Node 脚本负责发现仓库、解析十余种语言的代码、把前端请求匹配到服务端 endpoint、计算地图布局；Claude 或 Codex 只负责判断「应用由哪些部分组成」并用平实语言描述每个文件。README 用一张流程图表达这个管线，并强调脚本零依赖。这种分工让扫描结果可重复，同时把最需要理解力的命名交给模型。
+
+跨仓库连接是另一个重点。它会跟随 import，并把前端发出的每个网络请求匹配到真正响应它的服务端 endpoint，即使两者在不同仓库。README 列出的支持面很宽：Express、Fastify、Koa、Hono、NestJS、Next.js、Firebase、Supabase、Flask、FastAPI、Django、Gin、Echo、chi、Actix、Axum、Spring、ASP.NET Core、Laravel、Serverless Framework、Bun.serve 等，前端侧覆盖 Next.js、React Router、Vue、SvelteKit、Remix、Nuxt、Astro、Expo、Angular、TanStack、Shopify 和 Inertia。
+
+产物是本地的 `floorplan/` 目录，核心是 `floorplan/index.html`，另有 `architecture.json` 和 `descriptions/` 可手工编辑。地图由本地小服务提供，只接受本机连接；布局引擎和字体内置，离线可用。更新时只重读变化的文件，已打开的地图会自行刷新。健康检查覆盖代码里的密钥、公开可读的 Supabase 表、开放的 Firebase 规则、可伪造的 Stripe webhook、无鉴权 endpoint 等 AI 建站常见问题，并给出可粘贴的修复提示；README 特意说明它是 check，不是 audit。
+
+## 边界与风险
+
+0.11.0 仍是 0.x 版本，README 未给出稳定性承诺或向后兼容政策。首次建图要对每个文件和 endpoint 做描述，小应用几分钟，大项目更久，费用按所用的 Claude 或 ChatGPT 计划计算；README 说大项目会拆给并行 helper，增量更新则只读变化部分。健康检查只能覆盖 README 列出的模式，不能替代完整安全审计，而且它只显示密钥位置、不显示密钥值。
+
+数据方面，扫描、地图和本地服务都在本机运行，地图不上传；但在 Claude 应用里打开地图时，Claude 会把地图的名称、描述和结构上传到私有 claude.ai 账户，上传前会询问。Ask 栏通过 Claude Code CLI 或 Codex 使用用户自己的账号，模型能读代码但不能改代码。插件只写 `floorplan/`，在 Claude Code 中经确认还会写一段到 `CLAUDE.local.md`；README 说两者都不会提交，也不碰 `.gitignore`、`CLAUDE.md` 或源码。
+
+README 未说明支持的操作系统矩阵、浏览器兼容范围、多人协作时的冲突处理，也未说明 Floorplan Cloud 的具体形态与收费。隐私章节称没有分析或追踪，唯一可能外发的是用户主动登记的候补邮箱。维护者规模与响应节奏同样没有在 README 中说明。
+
+## 来源
+
+GitHub：[haydenschmitty/floorplan](https://github.com/haydenschmitty/floorplan)（README sha bc1b6116407a）

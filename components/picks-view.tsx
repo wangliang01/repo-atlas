@@ -2,18 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { PickRow } from "@/components/pick-row";
-import { ProfileCard } from "@/components/profile-card";
 import { RailList } from "@/components/rail-list";
-import { ShellStrip, SiteShell } from "@/components/site-shell";
+import { SiteShell } from "@/components/site-shell";
+import { formatDate } from "@/lib/date";
 import {
   DEFAULT_FILTER,
+  categoriesOf,
   filterPicks,
   pickCategories,
   risingRepos,
   sameDay,
+  type PickDetailInfo,
   type PickFilter,
 } from "@/lib/picks";
-import type { Profile } from "@/lib/profile";
 import type { PickEntry } from "@/lib/schema";
 
 /** 一屏先放 12 条，剩下的滚到底再追加。26 条时正好两屏半 */
@@ -21,19 +22,19 @@ const PAGE_SIZE = 12;
 
 type PicksViewProps = {
   entries: PickEntry[];
-  profile: Profile;
-  updatedAt: Date;
   /** 这份快照的同步日期，用来判断谁是新上榜 */
   syncedAt: Date;
+  /** repo（小写）→ 站内详情页信息 */
+  details: Record<string, PickDetailInfo>;
 };
 
-export function PicksView({ entries, profile, updatedAt, syncedAt }: PicksViewProps) {
+export function PicksView({ entries, syncedAt, details }: PicksViewProps) {
   const [filter, setFilter] = useState<PickFilter>(DEFAULT_FILTER);
   const [limit, setLimit] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const categories = pickCategories(entries);
-  const visible = filterPicks(entries, filter);
+  const categories = pickCategories(entries, details);
+  const visible = filterPicks(entries, filter, details);
   const rising = risingRepos(entries);
   const risingCount = rising.size;
 
@@ -78,7 +79,6 @@ export function PicksView({ entries, profile, updatedAt, syncedAt }: PicksViewPr
           }))}
         />
       }
-      right={<ProfileCard profile={profile} updatedAt={updatedAt} variant="rail" />}
     >
       {/* 掘金把排序/筛选放在白卡顶部当标签行，滚动时吸附在 header 下面 */}
       <div className="sticky top-[60px] z-30 flex items-center gap-4 rounded-t-[4px] border-b border-line bg-surface/95 px-5 backdrop-blur">
@@ -100,14 +100,25 @@ export function PicksView({ entries, profile, updatedAt, syncedAt }: PicksViewPr
         </button>
 
         <p aria-live="polite" className="ml-auto text-micro text-muted tabular-nums">
-          {visible.length} 个
+          {visible.length} 个 · {formatDate(syncedAt)} 同步
         </p>
       </div>
 
       <ul>
-        {shown.map((entry) => (
-          <PickRow key={entry.repo} entry={entry} hot={rising.has(entry.repo)} fresh={fresh.has(entry.repo)} />
-        ))}
+        {shown.map((entry) => {
+          const detail = details[entry.repo.toLowerCase()];
+          return (
+            <PickRow
+              key={entry.repo}
+              entry={entry}
+              hot={rising.has(entry.repo)}
+              fresh={fresh.has(entry.repo)}
+              href={detail ? `/picks/${detail.slug}` : undefined}
+              summaryZh={detail?.summary}
+              categories={detail?.categories ?? categoriesOf(entry, details)}
+            />
+          );
+        })}
       </ul>
 
       {visible.length === 0 ? (
@@ -126,10 +137,6 @@ export function PicksView({ entries, profile, updatedAt, syncedAt }: PicksViewPr
           </button>
         </div>
       ) : null}
-
-      <ShellStrip>
-        <ProfileCard profile={profile} updatedAt={updatedAt} variant="strip" />
-      </ShellStrip>
     </SiteShell>
   );
 }

@@ -1,0 +1,62 @@
+---
+repo: "heygen-com/hyperframes"
+title: "用 HTML 写视频，再让无头浏览器逐帧渲染成 MP4"
+summary: "HeyGen 开源的 HTML 原生视频框架：把 HTML、CSS、媒体和可寻址动画当作合成，CLI 或编码 Agent 可预览并确定性渲染成 MP4；Apache 2.0，适合把视频生产放进代码流水线。"
+banner: "https://static.heygen.ai/hyperframes-oss/readme/2026-11/hero-studio-intro-v1.webp"
+categories: ["视频剪辑"]
+verdict: recommend
+featuredAt: 2026-11-24
+readmeSha: "c1712141abd3b94426fd29eb00145b0bbd493167"
+readmeFetchedAt: "2026-11-24"
+sources: [github]
+---
+
+## 它是什么
+
+HyperFrames 是 HeyGen 开源的一套 HTML 原生视频框架，定位是“写 HTML，渲染视频，为 Agent 而建”。开发者把一段视频定义成一个 HTML 合成，用数据属性标注时间、时长和轨道，动画则由 GSAP、CSS、Lottie、Three.js、Anime.js、WAAPI 或自定义适配器驱动；渲染器用无头 Chrome 逐帧 seek，再用 FFmpeg 编码成 MP4，同样输入得到同样输出。它面向希望用代码、CI 或 AI 编码 Agent 程序化生产视频的开发者与内容团队，不要求 React，也没有专有 timeline 格式。项目以 Apache 2.0 发布，README 强调没有按次渲染费或商用门槛。除开源框架外，HeyGen 还提供 Studio 桌面应用和托管服务，但两者与开源部分要分开看。
+
+## 怎么上手
+
+使用编码 Agent 是 README 推荐的方式，先安装 skills：
+
+```bash
+npx skills add heygen-com/hyperframes     # 在 picker 里选 Core Skills
+# 或非交互式安装：
+npx hyperframes skills update
+```
+
+Claude Code 用户也可以走插件市场：
+
+```bash
+claude plugin marketplace add heygen-com/hyperframes
+claude plugin install hyperframes@hyperframes
+```
+
+不依赖 Agent、直接命令行建项目则是：
+
+```bash
+npx hyperframes init my-video
+cd my-video
+npx hyperframes preview      # 浏览器实时预览
+npx hyperframes render       # 渲染为 MP4
+```
+
+运行要求是 Node.js 22+ 和 FFmpeg。云端渲染用 `hyperframes cloud render`，自建分布式渲染可以部署到 AWS Lambda。若要把仓库完整 clone 下来开发，注意黄金回归基线用 Git LFS 存放，约 240 MB 的 `output.mp4`，需要先安装 Git LFS；只取源码可以设置 `GIT_LFS_SKIP_SMUDGE=1` 跳过。技能装好后，README 建议先读 `/hyperframes`，它包含渲染契约和工作循环。
+
+## 值得注意的设计
+
+合成模型非常薄：一个 `div#stage` 带 `data-composition-id`、`data-start`、`data-width`、`data-height`，每个视频、标题或音频元素带 `data-start`、`data-duration`、`data-track-index`。动画库把自己注册到 `window.__timelines`，渲染器按时间点 seek 后逐帧截取。因为合成就是普通 `index.html`，没有构建步骤，浏览器里能直接播放和预览，Agent 也只需要写 HTML，不必理解专有工程格式。
+
+确定性来自渲染路径而不是运行时录制。README 说明渲染器在无头 Chrome 中逐帧定位，再由 FFmpeg 编码，因此同一输入产生同一视频，适合 CI、回归测试和自动渲染。这一点与基于 wall-clock 播放再录屏的方案不同，也是它和 Remotion 对比时强调的差异之一。
+
+包结构把职责拆成可替换的层次：`@hyperframes/core` 管类型、解析器、生成器、linter、运行时和帧适配器；`@hyperframes/engine` 用 Puppeteer 与 FFmpeg 做可寻址的页面转视频；`@hyperframes/producer` 负责完整捕获、编码和混音流水线；此外还有浏览器编辑器 studio、可嵌入的 `<hyperframes-player>` Web Component、WebGL 着色器转场和 AWS Lambda SDK。围绕框架还发布了 9 个 skills 和约 450 个可安装的现成区块，覆盖转场、字幕、图表、地图和 3D。
+
+## 边界与风险
+
+开源的是框架，不是 HeyGen 的托管模型。README 中提到的 Studio 免费计划、每月 25 美元的 Pro、积分以及 HeyGen Video 1、Seedance 2.5、Lyria 3 Pro 等模型属于商业服务，和 Apache 2.0 的渲染引擎不是同一件事，选型时要分开评估。云端渲染和 Lambda 渲染也需要额外的云账号、费用和部署配置。
+
+README 对技术细节的覆盖偏营销：它没有给出浏览器与操作系统支持矩阵，没有说明字体、媒体解码器或 GPU 差异对“确定性”的影响，也没有公开渲染吞吐和并发基准。Node 22+ 与 FFmpeg 之外的系统要求、支持政策、发布节奏都属于 README 未说明的内容。仓库迭代很快，skills 注册表可能落后 `main` 数小时，README 建议用 `npx hyperframes skills update` 对齐 CLI 版本；社区 skills 由第三方维护，使用前需要自行审查。示例和模板中可能含第三方素材，各自许可以仓库文件为准，不能默认都按 Apache 2.0 处理。
+
+## 来源
+
+GitHub：[heygen-com/hyperframes](https://github.com/heygen-com/hyperframes)（README sha c1712141abd3）

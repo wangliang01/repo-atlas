@@ -20,6 +20,8 @@ blog.wlv587.top {
   encode zstd gzip
   # 已经发出去的 /projects 链接不能死；Next 的 redirects 在 output: export 下用不了
   redir /projects / 308
+  # 精选已经并进首页；只拦精确的 /picks，/picks/<slug> 详情页保留
+  redir /picks / 308
   # 导出产物是 notes/foo.html，要能按 /notes/foo 访问
   try_files {path}.html {path} {path}/index.html
   file_server

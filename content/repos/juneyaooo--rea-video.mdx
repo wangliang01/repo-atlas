@@ -1,0 +1,50 @@
+---
+repo: "JuneYaooo/rea-video"
+title: "逐镜头判断视频是实拍、AI 生成还是代码做出来的"
+summary: "面向 AI Agent 的视频拆解工具：把视频按镜头切开，结合画面、音频和元数据判断每段是实拍、AI 生成还是代码动效，并给出重拍方案；输出人读的 HTML/PDF 报告和 Agent 分层读取的 VIDEO.md。适合想学习并复刻短视频结构的人。"
+banner: "https://raw.githubusercontent.com/JuneYaooo/rea-video/HEAD/docs/cases/demo.gif"
+categories: ["视频剪辑"]
+verdict: watch
+featuredAt: 2026-11-24
+readmeSha: "64a51599ab9d4ffbd65ecd174b281c55cc49a592"
+readmeFetchedAt: 2026-11-24
+sources: [github]
+---
+
+## 它是什么
+
+rea-video 做的是「反向拆解视频」：不是生成一个看起来相似的视频，而是逐镜头判断画面究竟是实拍、AI 生成还是用代码和模板做出来的，再说明怎样重做。覆盖的类型包括实拍口播与产品演示、AI 文生图/图生视频、数字人头像、3D 与动画、代码动效、屏幕录制，以及混合剪辑；除了视觉来源，还会整理字幕与样式文字、贴纸与画中画、剪辑点节奏、人声与音乐、音效落点，以及需要自己补拍或截图的素材。它主要面向 Claude Code、Codex 这类能执行命令的 Agent，Agent 负责安装 CLI 并跑完整流程。每次拆解产出两份东西：给人看的 `report.html` 或 PDF，以及给 Agent 分层读取的 VIDEO.md 包。
+
+## 怎么上手
+
+需要 ffmpeg 和 Python 3.10+。最直接的方式是在 Claude Code、Codex 或其他能运行命令的 Agent 里说：
+
+```text
+Install https://github.com/JuneYaooo/rea-video, then break down this video: /path/to/video.mp4
+```
+
+也可以把仓库装成 Agent 插件，插件只负责把 skill 加进去，第一次拆解时 Agent 仍会安装 CLI：
+
+```bash
+# Codex
+codex plugin marketplace add JuneYaooo/rea-video
+codex plugin add rea-video@rea-video
+
+# Claude Code
+claude plugin marketplace add JuneYaooo/rea-video
+claude plugin install rea-video@rea-video
+```
+
+不接视频模型也能用：工具会离线分析原始文件，Agent 若能看图还会自行复核不确定的镜头。想让判定更准并得到每个镜头的反推 prompt，可以把 Gemini 或 Doubao 的端点和密钥交给 Agent。输出 VIDEO.md 后，可用 `pip install videomd` 再执行 `videomd check out/ref` 校验；需要英文报告时运行 `rea-video prefs lang en`。
+
+## 值得注意的设计
+
+流程被拆成四步：先切镜头并把音轨分离成人声、音乐和音效，再从三个通道收集证据，然后做判定，最后按目标视频模型的能力规划重拍。证据分三类：用帧率、传感器噪声、整幅画面是否像一块平面移动、元数据里的 AIGC 标签来测量；看手部、文字和物理规律；听 BPM、调性和唱腔与说话的差别。判定时硬证据优先于「看起来像」，冲突项会标记出来交给 Agent 目视复核，这种分工在 README 的案例里被反复强调。VIDEO.md 是为 Agent 设计的开放格式：从几百 token 的卡片、概览与地图、每镜头一行的时线，一直到每镜头一个文件，逐层展开；每个文件都标注自身大小，并把「屏幕上看到的」与「工具推断的」分开，避免模型一次吞下几十万 token。重拍由配套的 capsule-cinema 接管，默认按 MiniMax H3 的规格生成，代码类镜头则写成 Remotion 工程。
+
+## 边界与风险
+
+README 没有许可证章节，仓库采用什么授权需要到仓库根目录另行确认，这是使用和二次分发前最需要补齐的信息。README 的准确率来自项目自己的评测集，工具离线模式在原始文件上表现较好，但平台下载的视频经过二次压缩会抹掉噪声证据，需要视频模型或 Agent 目视复核才能回到高准确率；案例也说明同一素材重跑可能得到不同结果。自动重拍只完成一部分：AI 镜头可以自动生成并放回原时间线，实拍镜头仍要按拍摄方案自己拍，代码镜头由 Agent 写成 Remotion 项目。它一次只处理一个视频，多集短剧要转到 rea-toon。能力表、评测结果和 Agent skill 目前是中文，英文只覆盖报告、CLI 帮助和部分文档。README 还明确要求不得直接搬运他人的画面、音乐、角色或肖像，并提醒遵守平台的 AI 内容标注规则；项目另附声明，提醒警惕冒用其名义的加密货币代币。
+
+## 来源
+
+GitHub：[JuneYaooo/rea-video](https://github.com/JuneYaooo/rea-video)（README sha 64a51599ab9d）

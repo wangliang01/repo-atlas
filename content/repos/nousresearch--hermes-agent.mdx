@@ -1,0 +1,51 @@
+---
+repo: "NousResearch/hermes-agent"
+title: "把技能、记忆和定时任务攒起来的常驻型 Agent"
+summary: "Nous Research 的开源 Agent，内置技能生成、记忆整理、会话检索和定时任务，可通过 Telegram、Discord、Slack 等渠道远程使用，也能跑在 VPS、Docker、SSH 或无服务器沙箱里。适合希望 Agent 长期在线并积累经验的人。"
+banner: "https://raw.githubusercontent.com/NousResearch/hermes-agent/HEAD/assets/banner.png"
+categories: ["Agent 框架", "记忆与上下文"]
+verdict: recommend
+featuredAt: 2026-11-24
+readmeSha: "830be257308736e48f25ac4f2d097888b3a63a2c"
+readmeFetchedAt: 2026-11-24
+sources: [github]
+---
+
+## 它是什么
+
+Hermes Agent 由 Nous Research 开发，定位是「会自我改进」的 Agent。它的学习闭环包括：在复杂任务后自动创建技能、在使用中继续改进技能、周期性提醒自己把知识写进记忆、用 FTS5 搜索过去的会话并让 LLM 做摘要，以及通过 Honcho 建立跨会话的用户模型；技能格式兼容 agentskills.io 开放标准。交互入口有两个：一个带多行编辑、斜杠命令补全和历史记录的终端 TUI，以及一个能同时连接 Telegram、Discord、Slack、WhatsApp、Signal 和邮件的消息网关。它面向不想把 Agent 绑在笔记本上的人，可以跑在便宜的 VPS、GPU 集群或无服务器环境中，也能用定时任务在无人值守时生成日报、备份和审计。
+
+## 怎么上手
+
+Linux、macOS 和 WSL2 使用官方安装脚本：
+
+```bash
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+```
+
+Windows 原生环境使用 PowerShell：
+
+```powershell
+iex (irm https://hermes-agent.nousresearch.com/install.ps1)
+```
+
+安装器会把 Python 3.14、Node.js、npm、pnpm、ripgrep、FFmpeg 和 Python 依赖交给它的包管理组件处理；原生 Windows 安装在 `%LOCALAPPDATA%\hermes`，WSL2 则安装在 `~/.hermes`。Android/Termux 另有签名的 APT 仓库，README 要求按 Termux 指南安装而不是运行桌面脚本。安装完成后重新加载 shell 并启动：
+
+```bash
+source ~/.bashrc
+hermes
+```
+
+常用命令包括 `hermes model` 选择供应商、`hermes tools` 配置工具、`hermes gateway` 启动消息网关、`hermes setup` 运行完整向导、`hermes doctor` 排查问题。想省去逐个收集 API Key，可以运行 `hermes setup --portal` 登录 Nous Portal，一次接通模型、搜索、图像、TTS 和云浏览器。
+
+## 值得注意的设计
+
+学习闭环不是单一功能，而是技能、记忆和检索三条线互相配合：技能是过程性记忆，任务完成后由 Agent 自行沉淀；记忆通过周期性提示保持更新；会话检索用 FTS5 加 LLM 摘要解决跨会话回忆，Honcho 负责更长期的人物建模。执行侧提供六种终端后端：local、Docker、SSH、Modal、Daytona 和 Vercel Sandbox，另有 Singularity/Apptainer 等插件后端；Modal 与 Daytona 支持无服务器持久化，环境闲置时休眠、需要时唤醒。消息侧把多个平台收进同一个 gateway 进程，并支持语音备忘录转录和跨平台对话延续；此外还有内置 cron 调度器，可把结果投递到任意已接入的平台。需要并行时，Agent 可以生成隔离子 Agent，也可以用 Python 脚本通过 RPC 调工具，把多步流程压成不占上下文的一轮。
+
+## 边界与风险
+
+许可证是 MIT，README 明确欢迎贡献，并提供开发与 PR 流程文档。原生 Windows 已受支持，但 README 用较大篇幅说明杀毒软件可能把随附的 `uv.exe` 误报为恶意程序，并给出用 GitHub attestation 校验和把整个目录加入白名单的步骤，部署前需要评估这一运维成本。README 未给出最低内存、磁盘或 GPU 要求，也没有说明自带遥测策略；模型与工具调用的费用由所用供应商或 Nous Portal 订阅承担。消息渠道需要自行准备 Bot 凭证并运行 `hermes gateway setup`，安全方面另有命令审批、私聊配对和容器隔离的文档。技能与记忆会保存在本地配置目录，迁移或清理前应先了解这些文件的位置。从 OpenClaw、Claude Code、Codex 或 Cursor 导入设置时，README 提示 API Key 只有在显式传入 `--migrate-secrets` 时才会迁移。
+
+## 来源
+
+GitHub：[NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)（README sha 830be2573087）

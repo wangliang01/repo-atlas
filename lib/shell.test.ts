@@ -55,15 +55,16 @@ test("移动端有可展开的导航，不是只能看到 logo", () => {
   assert.ok(/sm:hidden/.test(header), "移动端导航面板没有 sm:hidden 限定");
 });
 
-test("导航恰三项：首页 / 精选 / 笔记，没有已删除的 /projects", () => {
+test("导航两项：首页 / 笔记，精选已并入首页", () => {
   const header = read("components/site-header.tsx");
   const start = header.indexOf("const NAV");
   const block = header.slice(start, header.indexOf("];", start));
 
-  assert.equal((block.match(/href:/g) ?? []).length, 3, "导航不是三项");
-  for (const href of ['"/"', '"/picks"', '"/notes"']) {
+  assert.equal((block.match(/href:/g) ?? []).length, 2, "导航不是两项");
+  for (const href of ['"/"', '"/notes"']) {
     assert.ok(block.includes(href), `导航缺 ${href}`);
   }
+  assert.equal(block.includes('"/picks"'), false, "导航里还有已并入首页的 /picks");
   assert.equal(block.includes("/projects"), false, "导航里还留着 /projects");
 });
 

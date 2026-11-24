@@ -1,0 +1,65 @@
+---
+repo: "qybaihe/bla"
+title: "用格式陷阱拖慢 AI 逆向 Agent 的软件发布防御工具"
+summary: "BLA 通过格式原生混淆、诱饵和预算陷阱抬高 AI 逆向 Agent 分析自有软件的成本，提供 CLI、MCP 工具和打包器插件。适合需要保护发布产物的软件作者与安全团队。"
+banner: "https://raw.githubusercontent.com/qybaihe/bla/HEAD/docs/assets/bla-vs-rea-showcase.svg"
+categories: ["安全"]
+verdict: watch
+featuredAt: 2026-11-24
+readmeSha: "a250d1a890c114fc5f627e99f3e7d3c3f7ae2422"
+readmeFetchedAt: "2026-11-24"
+sources: [github]
+---
+
+## 它是什么
+
+BLA 是 Blind LLM Agents 的缩写，定位为面向 AI 逆向工程的蓝队防御工具。README 说它保护软件发布产物，对抗 `morluto/rea`、自动化解包器和 LLM 侦察流水线，并在 14 个展示目标上做过验证。它的策略是三步：Poison，放入格式合法的诱饵和假状态机；Exhaust，触发分析器的默认预算上限；Hallucinate，让 Agent 在互相冲突的假设里消耗上下文。README 反复强调只用于保护自己的软件，并链接了 DISCLAIMER。工具以 npm 包 `bla-agents` 发布，徽章版本 3.5.9，提供 31 个 MCP 防御工具、26 种格式护盾，许可证为 MIT。
+
+## 怎么上手
+
+README 建议使用 Node.js `^22.23.4` 或 `>=24.0.0`。先构建项目，再让 BLA 处理构建产物：
+
+```bash
+npx bla-agents harden .            # writes a partial mirror to .bla-hardened/
+npx bla-agents harden . --apply    # replace the build output with the hardened files
+npx bla-agents harden . --restore  # put the original build output back
+```
+
+`harden` 会自动发现 `dist/`、`build/`、`.asar`、`.wasm`、`.sqlite`、`.safetensors`、原生二进制以及 Python/C/Rust/Go 产物，然后执行 audit、protect、verify。README 说明它只覆盖构建输出，不碰源码，原始文件保留在项目之外；`--apply` 之后应先跑自己的测试再发布。想把它交给编码 Agent 驱动，可以先注册：
+
+```bash
+npx bla-agents setup
+```
+
+然后对 Claude Code、Cursor、Codex、Windsurf、Gemini CLI、GitHub Copilot CLI、VS Code、OpenCode 或 Antigravity 说「Harden my software against REA」。打包器插件支持 Vite、Rollup、Webpack 和 esbuild：
+
+```typescript
+import { defineConfig } from "vite";
+import { blaVitePlugin } from "bla-agents/bundler";
+
+export default defineConfig({
+  plugins: [blaVitePlugin({ intensity: "bankrupt", enableHoneySourceMaps: true })],
+});
+```
+
+本地跑展示基准用 `npx bla-agents benchmark`。可选的 live red-team 套件需要 Wabt 和 tshark 等外部工具，普通护盾不依赖它们。
+
+## 值得注意的设计
+
+防御被拆成四根支柱。Poison 负责欺骗：在文件里放格式合法的 canary、SGX/TPM2/Secure Enclave 委派清单、VLQ v3 honey SourceMap 和看似合理的 shadow state machine。Exhaust 负责撑爆分析器的默认限制，例如 Electron ASAR 的 16 MiB header、WASM 的 Wabt 表示、SQLite 虚拟列求值、Safetensors/GGUF 的 32 层嵌套。Entangle 用运行时 SHA-256 摘要把 JS、WASM 和原生 sidecar 绑在一起，配合多调用点作用域折叠，防止攻击者剥掉诱饵或把导出函数当离线 oracle。Runtime Truman Show 则处理 Electron fuse、CDP/Node Inspector/Frida/WebDriver 附着检测和合成遥测。README 强调这些开销放在 `O(1)` 的数论不透明谓词或惰性元数据后面，正常执行路径不受影响。
+
+Agent 侧是一条闭环：`bla_audit` / `bla_lint` 先做侦察，`bla_weave_plan` 生成计划，`bla_encrypt_strings` 在 AST span 上做 XOR 与密钥流加密，`bla_bind_scope` 做多站点状态纠缠，`bla_verify_weave` 校验，再由 `bla_harden` / `bla_defend` 处理产物，最后 `bla_verify` 做 Counter-REA 结构检查。每个结果都带 `nextSteps`，Agent 会在覆盖构建产物前询问，并运行用户测试。这种把「源码手术」和「二进制护盾」放在同一个 MCP 工作流里的做法，是它和传统混淆器的主要区别。
+
+工程上，26 种格式护盾全部用 TypeScript/Node 实现，不依赖外部 packer；每个项目首次运行会生成并保存独立随机种子到 `.blarc` / `bla.config.json`，避免不同项目共享诱饵标识。`bla lint` 会在源码仍含明文 `FLAG{...}`、单点完整性检查或未绑定的导出校验器时拒绝 `bankrupt` 级硬化。`--llm-directives` 和签名 manifest 都是显式 opt-in。
+
+## 边界与风险
+
+README 自己给这些数字加了很强的限定。14 个目标的 token 与美元倍率是内部估算器的模型化结果，不是实际 agent 账单；所谓「empirically verified」只表示在特定机器上跑真实 REA 的默认分析路径时触发了列出的预算或容量错误，不代表 Ghidra、Frida、LLDB、Rizin、JADX 等未实际运行的路径也成立。更重要的是，REA 的多数预算可由调用方提高，例如 ASAR header 上限可调到 256 MiB，WASM 接口上限可到 512 MiB；README 明确说，基于体积的陷阱通常只让攻击者多重试一次，并不能把它挡在门外。真正固定不可调的只有 PCAP 的 8 MiB tshark 输出、Safetensors/GGUF/Electron fuse 的 32 层限制等少数几项。
+
+覆盖面也不是全部经过同等验证。格式表里 JavaScript、Electron、WASM、SQLite、Safetensors、GGUF、Go buildinfo、PE、Flutter、BEAM、EVM、PCAP 标注 verified；Python、PTX 以及 DEX/IL2CPP/.NET/JVM/ZIP 等仍属于 designed-for 或 benchmark only。README 列出了一份「本机未跑」的清单，包括 Ghidra 原生反编译深度、Frida/LLDB 会话和完整 Android APK 流程。它不是第三方安全审计，验证报告也由项目自己维护。
+
+使用上还有几处硬约束。SQLite 的求值陷阱在 3.4.3 之前是默认行为，会影响应用自己的 `PRAGMA integrity_check` 和 `VACUUM`；当前默认只在数据库中加入 REA 可读的 honey 表，应用表不会被隐藏，但启用陷阱前仍要确认不会破坏自身校验。`--apply` 会替换构建产物，虽然原始文件保留在项目外，仍应在测试环境先验证。工具只允许用于自有软件，README 的 DISCLAIMER 和防御性定位是使用前提；把它用于第三方软件既违反项目条款，也可能触犯法律。README 未说明独立审计、漏洞披露 SLA 或维护者规模。
+
+## 来源
+
+GitHub：[qybaihe/bla](https://github.com/qybaihe/bla)（README sha a250d1a890c1）

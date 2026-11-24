@@ -1,0 +1,44 @@
+---
+repo: "KKKKhazix/agent-autoloop"
+title: "让命令行 Agent 在后台自己接活的中台"
+summary: "零运行时依赖的本地自动化中台：用 rules.json 把定时任务、Issue、告警等事件派给已登录的命令行 Agent，需要拍板时再通过飞书或桌面通知找你。"
+categories: ["Agent 框架", "办公"]
+verdict: recommend
+license: "MIT"
+featuredAt: 2026-11-24
+readmeSha: "427361fd7165bd8cc8b8c3df307146bf5dabad72"
+readmeFetchedAt: 2026-11-24
+sources: [github]
+---
+
+## 它是什么
+
+Agent Autoloop 解决的是「人守终端」的问题：平时用 Claude Code、Codex 这类 Agent，关掉窗口事情就断了。它把任务调度做成一个零外部依赖的内核，把事件来源、Agent、通知通道和交付流水线拆成可插拔插件。装在一台 Windows、macOS 或 Linux 电脑上，不买云服务器、不开放公网端口；接新 Agent 只需一行配置，不要求 SDK 或改 Agent 源码；没有后台界面，要你拍板时把卡片推到飞书、钉钉、企微、Slack、Discord 或桌面通知。
+
+## 怎么上手
+
+需要 Node 24 或更新、Git，以及一个已登录的命令行 Agent；macOS 和 Linux 还需要 curl，不需要 GitHub 账号。Windows PowerShell：
+
+```powershell
+irm https://raw.githubusercontent.com/KKKKhazix/agent-autoloop/main/install.ps1 | iex
+```
+
+macOS / Linux：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/KKKKhazix/agent-autoloop/main/install.sh | sh
+```
+
+安装和 `update` 都取通过全部检查的最新 Release。装好后运行 `agent-autoloop try` 走一遍「提问、退出等回复、拍板、接着干完」；交互终端直接输数字，非交互终端用 `agent-autoloop answer 1 2`，再用 `agent-autoloop status` 看后续。日常在 `~/.agent-autoloop/rules.json` 的 `rules` 里写清「什么事、交给谁、在哪个目录干」，支持 cron 和 source/types 事件；改完几秒生效，可用 `check`、`rules explain`、`emit --dry-run` 验证。
+
+## 值得注意的设计
+
+内核保持确定性：不读系统时钟、不用随机数、不向外发请求，同样的输入得到同样的结果。四个机制分别是：挂起零消耗，等你回复时进程退出、状态存库，不占进程也不花 Token；事件溯源，所有状态由只追加日志算出，日志和索引同事务落盘，进程被强杀也不丢已确认记录，还能从日志重建；指令数据分离，Issue 标题等外部文字只作为资料落文件，不拼进提示词，事件里携带 `cwd`、`agent`、`access` 会被拒收；跳数熔断，Agent 交回的事件最多再派 8 层，经过人工提问也不清零。Agent 侧只有一个约定：在最后一条回复里用 `agent-autoloop` 代码块提交 `ask`、`notice`、`resolve`、`later` 或 `events`，中台据此发卡片或续接会话。
+
+## 边界与风险
+
+平台要求写得很明确：Node 24 以上、Git、已登录的 CLI Agent，macOS 和 Linux 需要 curl。Webhook 类事件源需要能被外部访问，文字通道靠回答链接拍板时还要把 `hub.publicUrl` 配成手机能打开的地址。README 自己承认：飞书以外的四种 Webhook 模板只在本地模拟服务验证过，GitLab Webhook 没连过真实实例；其他 Agent 的接入命令整理自官方文档、未逐个跑过；整机断电下的持久性没有单独测过。历史变大后状态汇总会变慢，110 万条事实首次全量重建需要 43.1 秒。它直接调用本机已登录工具，模型额度算在你自己的账号下；高频自动化场景 README 建议改用 API Key，并声明与厂商无隶属关系。README 另附 SECURITY.md 说明安全边界。
+
+## 来源
+
+GitHub：[KKKKhazix/agent-autoloop](https://github.com/KKKKhazix/agent-autoloop)（README sha 427361fd7165）

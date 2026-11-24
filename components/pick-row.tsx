@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { formatDate } from "@/lib/date";
 import { formatStars } from "@/lib/format";
 import { formatPerDay } from "@/lib/picks";
@@ -10,36 +11,51 @@ type PickRowProps = {
   hot: boolean;
   /** 今天第一次上榜 */
   fresh?: boolean;
+  /** 站内详情页；没有详情时卡片只展示，不跳 GitHub */
+  href?: string;
+  /** 详情页里的中文一句话；没有就退回 GitHub 原文 */
+  summaryZh?: string;
+  /** 人工分类，替代原来的 topics 标签 */
+  categories?: string[];
 };
 
 /**
  * 掘金式条目：标题 / 两行描述 / meta 一行（头像 + 仓库 + 语言 + 标签），
  * 右侧一列放星数与涨速当扫描锚点。原来右下角那个大衬线数字跟着衬线一起没了。
  */
-export function PickRow({ entry, hot, fresh = false }: PickRowProps) {
+export function PickRow({ entry, hot, fresh = false, href, summaryZh, categories = [] }: PickRowProps) {
+  const titleClass = "break-words text-body font-semibold leading-6 text-ink";
+  const summary = summaryZh ?? entry.description;
   return (
     <li className="relative border-b border-line transition-colors duration-150 last:border-b-0 hover:bg-surface-2">
       <div className="flex gap-4 px-5 py-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             {/* 链接只包名字，再用 after 铺满整行：整行可点，但可访问名只有一个项目名 */}
-            <a
-              href={`https://github.com/${entry.repo}`}
-              rel="noopener"
-              target="_blank"
-              className="break-words text-body font-semibold leading-6 text-ink after:absolute after:inset-0 after:content-[''] hover:text-accent-ink"
-            >
-              {entry.name}
-            </a>
+            {href ? (
+              <Link
+                href={href}
+                className={`${titleClass} after:absolute after:inset-0 after:content-[''] hover:text-accent-ink`}
+              >
+                {entry.name}
+              </Link>
+            ) : (
+              <span className={titleClass}>{entry.name}</span>
+            )}
             {fresh ? (
               <span className="shrink-0 rounded-[2px] bg-accent-soft px-1.5 py-0.5 text-micro font-medium text-accent-ink">
                 新上榜
               </span>
             ) : null}
+            {!href ? (
+              <span className="shrink-0 rounded-[2px] bg-surface-2 px-1.5 py-0.5 text-micro text-muted">
+                整理中
+              </span>
+            ) : null}
           </div>
 
-          <p lang="en" className="mt-1 line-clamp-2 text-small text-muted">
-            {entry.description}
+          <p lang={summaryZh ? undefined : "en"} className="mt-1 line-clamp-2 text-small text-muted">
+            {summary}
           </p>
 
           {entry.why ? (
@@ -80,12 +96,12 @@ export function PickRow({ entry, hot, fresh = false }: PickRowProps) {
             </span>
 
             <span className="ml-auto flex shrink-0 gap-1.5">
-              {entry.topics.slice(0, 3).map((topic) => (
+              {categories.slice(0, 3).map((category) => (
                 <span
-                  key={topic}
+                  key={category}
                   className="hidden rounded-[2px] bg-surface-2 px-1.5 py-0.5 sm:inline"
                 >
-                  {topic}
+                  {category}
                 </span>
               ))}
             </span>

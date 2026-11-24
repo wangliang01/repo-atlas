@@ -6,7 +6,7 @@
 
 P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能拿出手。
 
-> 首页、项目详情、笔记列表、笔记详情、精选都能点开，404 有正经页面。P0 完成；P1 先做了「精选」——不再是 HelloGitHub 搬运，改成从 GitHub 抓的 AI 项目（T-010）；T-011 把导航收成 首页 / 精选 / 笔记 三项，三页统一成掘金式三栏；T-012 把视觉语言整体换成掘金那套（灰底白卡 + 蓝主色 + 无衬线）；T-013 把首页的前提从「作品集」换成「证据页」；T-014 又砍掉两块——站点自述和三条代写评测都是假的，首页只剩身份卡 + 8 个真实仓库 + 笔记。
+> 首页、项目详情、笔记列表、笔记详情、精选都能点开，404 有正经页面。P0 完成；P1 先做了「精选」——不再是 HelloGitHub 搬运，改成从 GitHub 抓的 AI 项目（T-010）；T-011 把导航收成 首页 / 精选 / 笔记 三项，三页统一成掘金式三栏；T-012 把视觉语言整体换成掘金那套（灰底白卡 + 蓝主色 + 无衬线）；T-013 把首页的前提从「作品集」换成「证据页」；T-014 又砍掉两块——站点自述和三条代写评测都是假的，首页只剩身份卡 + 8 个真实仓库 + 笔记。T-022 换掉按总星数取 top-N 的发现逻辑，改成滚动窗口查询 + 分桶配额；T-023 把精选并进首页，30 个项目全部有站内中文详情页，左栏改按行业/用途分类；T-024 首页进一步减到「分类 + 列表」，个人信息、口号、最近在写和笔记区块全撤，代码块统一成深色 GitHub Dark。
 
 ## 进行中
 
@@ -45,6 +45,9 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 | T-019 | 部署上线 `blog.wlv587.top`：`output: "export"` 静态导出交给已有的 Caddy 容器发文件 | `5ecddd8` | `node --test` 79/79；typecheck 0；lint 0 error；build 9 页全 `○`/`●`；线上 `/` `/notes` `/notes/llmops-token-context` `/picks` 全 200，`/projects` 308、`/notes/does-not-exist` 404；CSS `Cache-Control: public, max-age=31536000, immutable`；首页 `imgBroken: 0`；1440/375 零溢出；`wlv587.top` 200 / `omni` 307 / `tv` 404（本来就如此）三个老站点未受影响；内存增量为零（没有 Node 进程） |
 | T-020 | 精选定时任务在 GitHub Actions 上真正跑起来，并顺手修掉「推送成功却报失败」 | `b828092` / `fbd8bb6` | workflow 文件在 master 上但 `total_count: 0`，改一行再推 10 秒内变 `active`（纯索引问题，不是权限/YAML/分支）；run `45027679239` 19 秒 success 但日志谎报「推送失败」——`execFileSync` 在 `stdio: "inherit"` 时返回 `null`，`.trim()` 抛错被 catch 吞掉，改成 `(out ?? "").trim()` 后 run `45027856326` 正确打印「已推送」；CI 部署 run `45028362303` 46 秒 success，线上 `/picks` HTML 里查到该版 `473510` / `395030` / `323847`；部署后 6 条路由状态码未退化；`node --test` 79/79（308 断言从 `next.config.ts` 改查 `deploy/Caddyfile`） |
 | T-021 | 推 master 自动部署：新增 `deploy.yml`，ssh key 引导收进 `deploy.sh` | `623400e` | 推 `623400e` 后 `deploy` workflow 自动被触发（`event: push`），run `45028771030` success；线上 `/srv/blog/index.html` mtime `21:41:34 +0800` 与该 run 的构建时间一致，`Last-Modified` 也是同一时刻；5 条路由状态码未退化（`/` `/notes` `/notes/llmops-token-context` `/picks` 200、`/projects` 308）；`bash -n scripts/deploy.sh` 通过；`node --test` 79/79 |
+| T-022 | 精选发现换成「9 条滚动窗口查询 + 分桶配额」，不再永远同一批 26 个 | 未提交 | 30 条里 11 条 fresh（30 天内新建）、19 条 anchor；19 个仓库首次上榜写入 `history.json`；查询矩阵 7/7、选择 8/8 测试绿；同步脚本按 `trendScore` 倒序落盘，保留人工 `why` |
+| T-023 | 30 个精选全部补中文站内详情页；分类改为行业/用途单轴 | 未提交 | 30 篇 `content/repos/*.mdx` 全部过 schema，固定五节；`readmeSha` 与 `.cache/readme` 逐条一致；首页 30 个 `/picks/<slug>` 链接、0 个「整理中」；左栏 14 个非空分类，「视频剪辑」筛选实测 5 条；`/picks` 308 → `/`；`node --test` 108/108；`tsc` 0；build 41 页（30 个详情页全 `●`）；`check:alt` 20/20 |
+| T-024 | 首页减负 + 详情页对齐掘金：banner、右栏三卡、深色代码块 | 未提交 | 首屏直接从分类 + 列表开始（身份卡、可见口号、最近在写、笔记区块、右栏个人卡全撤）；代码块 `#0d1117`、注释 `#8b949e`（约 6:1）；详情页左文章卡（标题 → meta → banner → 正文）+ 右三张卡：项目信息（头像/结论/Stars·语言·收录/许可证/GitHub 按钮/sha）、目录（滚动高亮）、相关推荐（同分类星数 top4）；banner 取自 README 首图，24/30 篇有、24 条 URL 全部 HEAD 200，其余不渲染；GitHub 链接在 meta 行；`node --test` 108/108；`tsc` 0；build 41 页；`/picks` 308；浅/暗色截图确认 |
 
 ### P0 验收（SPEC「验收标准」9 条，2026-11-22 跑）
 

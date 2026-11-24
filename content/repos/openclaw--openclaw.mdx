@@ -1,0 +1,68 @@
+---
+repo: "openclaw/openclaw"
+title: "把个人 AI 助手接进你常用的聊天软件，状态留在本机"
+summary: "OpenClaw 是运行在自己设备上的开源 AI 助手，用一个 Gateway 连接 Discord、iMessage、Slack、Telegram、WhatsApp 等渠道，并提供 macOS、iOS、Android、Windows、Linux 客户端。"
+banner: "https://raw.githubusercontent.com/openclaw/openclaw/main/docs/assets/openclaw-banner-dark.png"
+categories: ["Agent 框架", "浏览器与 RPA"]
+verdict: recommend
+featuredAt: 2026-11-24
+readmeSha: "d4a9d8094ad39c2b54ce8a643e4ce499bbd650f2"
+readmeFetchedAt: "2026-11-24"
+sources: [github]
+---
+
+## 它是什么
+
+OpenClaw 是一个开源的个人 AI 助手，运行在自己的电脑或服务器上，出现在你已经在用的聊天渠道里。README 列出的渠道包括 Discord、iMessage、Slack、Teams、Telegram、WhatsApp 以及另外二十多个，同时提供 macOS、iOS、Android、Windows 和 Linux 原生应用。一个 Gateway 既能当笔记本上的个人助手，也能作为多人共享的 multiplayer claw，差别只在配置。
+
+它适合希望把助手放进日常聊天、又不愿把状态和凭据交给托管服务的人。README 强调状态、记忆和凭据都在自己的硬件上，模型与 Agent 运行时是可替换的插件，Claude、Codex 和本地模型都可以接。项目由独立的 OpenClaw Foundation 托管，README 声明没有付费层、托管服务或代币。
+
+## 怎么上手
+
+安装器支持 macOS、Linux 和 Windows，会在需要时准备受支持的 Node.js 运行时：
+
+```bash
+# macOS / Linux / WSL2
+curl -fsSL https://openclaw.ai/install.sh | bash
+```
+
+```powershell
+# Windows PowerShell
+iwr -useb https://openclaw.ai/install.ps1 | iex
+```
+
+已经自己管理 Node.js 的，可以直接装 npm 包。要求 Node 24.16.0+（24.x）或 26.1.0+，README 建议至少用 24.22.1+ 或 26.12.1+：
+
+```bash
+npm install -g openclaw@latest --allow-scripts=openclaw
+```
+
+全新安装时安装脚本会自动进入引导。如果用的是 npm、pnpm 或 Bun 直接安装，需要手动运行：
+
+```bash
+openclaw onboard --install-daemon
+openclaw gateway status
+openclaw dashboard
+```
+
+引导会验证模型访问、创建工作区并配置 Gateway，最后一条命令打开 Control UI，在里面发一条消息即可确认助手可用。渠道配置和排错在官方 Getting started 文档里。
+
+## 值得注意的设计
+
+第一个设计是 Gateway 作为本地控制平面。会话、工具、事件和渠道连接都归它管理，Control UI、CLI 和 TUI 都是连到 Gateway 的客户端。这样换聊天渠道或换前端不需要动核心，多人共享时也只是同一套 Gateway 的不同配置。README 把「可信网关、不可信执行、策略由代码执行」单独作为架构论点，说明安全边界是设计的一部分。
+
+第二个设计是渠道与设备节点的分层。Channels 负责把助手接到 WhatsApp、Telegram、Slack、Discord、Signal、iMessage 等消息服务，Companion apps 和 nodes 则补上语音、Canvas、摄像头、屏幕和本地设备操作。工具、skills 和 plugins 再扩展助手能做的事，新能力通常做成基于 plugin SDK 的插件并通过 ClawHub 分发。
+
+第三个设计是可替换的模型与运行时。模型提供商既可以是托管的也可以是本地的，Agent 运行时也是插件。README 明确说换模型或换 Agent 不需要改其他部分。这与把状态和凭据留在本机的目标配套：迁移的是执行端，不是数据归属。
+
+## 边界与风险
+
+README 把入站消息定义为不可信输入。能收私信的渠道默认要求未知发送者配对，用 `openclaw pairing approve <channel> <code>` 批准。主会话的工具默认直接在宿主机上运行，除非额外配置 sandboxing，因此连接其他用户或把 Gateway 暴露到公网之前，必须阅读安全指南、暴露 runbook 和 sandboxing 文档。
+
+遥测方面，README 说默认只为每日版本检查访问网络，匿名功能统计需要主动开启，设置 `update.checkOnStart: false` 可以同时关闭两者。提示词会发给你配置的模型提供商和聊天平台，启用诊断导出时还会发给对应的接收方，这些都需要按自己的数据政策评估。
+
+开发仓库是 pnpm workspace，根目录直接跑 `npm install` 不受支持，需要 `pnpm install`、`pnpm build` 和 `pnpm ui:build`。安装器覆盖三大桌面平台，但 README 没有给出 Gateway 在每种系统上的完整功能差异或最低硬件要求，只链接到平台文档。项目采用 MIT 许可证，第三方代码说明在 THIRD_PARTY_NOTICES.md。多人模式和远程暴露属于高风险用法，README 只给出原则和文档入口，没有在主页展开完整威胁模型。
+
+## 来源
+
+GitHub：[openclaw/openclaw](https://github.com/openclaw/openclaw)（README sha d4a9d8094ad3）

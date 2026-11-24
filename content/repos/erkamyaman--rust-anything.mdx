@@ -1,0 +1,74 @@
+---
+repo: "erkamyaman/rust-anything"
+title: "把应用逐块改写成 Rust，并用录制回放证明行为一致"
+summary: "rust-anything 先录制原程序在大量输入下的真实行为，再让编码 Agent 逐块写 Rust，用 diff 与 gate 校验每一块，适合整应用迁移或只搬走最慢的热路径。"
+banner: "https://raw.githubusercontent.com/erkamyaman/rust-anything/HEAD/docs/assets/prettier.gif"
+categories: ["后端", "架构"]
+verdict: recommend
+featuredAt: 2026-11-24
+readmeSha: "3d667a8189eef44b63d617fd17d94b58c906b708"
+readmeFetchedAt: "2026-11-24"
+sources: [github]
+---
+
+## 它是什么
+
+rust-anything 是一个面向已有应用的 Rust 迁移工具链，同时提供 CLI、MCP 服务和给编码 Agent 用的 skill。它不翻译代码，而是先记录原程序的行为，再让 Agent 或人一段段写 Rust，每写完一块都要对录制结果回放，全部匹配并通过 gate 才允许继续。覆盖 Node.js 的 TypeScript/JavaScript、Python、C、Go、Ruby、Java、Kotlin、PHP、PowerShell 和 C#，目标可以是整个 CLI、HTTP 服务、库，也可以只是性能热点。
+
+它适合想把现有服务或工具迁到 Rust、但担心行为漂移的团队。README 把价值说得很直接：Agent 猜不准的是时间花在哪里、先搬哪一块、桥接层怎么保持原 API、以及怎样算搬完，rust-anything 提供的正是这些约束，而不是替你写代码。
+
+## 怎么上手
+
+最直接的方式是从 crates.io 安装，然后让 setup 注册到本机已有的编码 Agent：
+
+```bash
+cargo install rust-anything
+rust-anything setup
+```
+
+没有 Rust 工具链时，GitHub Release 提供 macOS、Linux 和 Windows 的预编译二进制；JavaScript 项目也可以用 npm 安装同一份二进制：
+
+```bash
+npm install -g rust-anything
+```
+
+在 Claude Code 中还可以作为插件安装 MCP 服务与 skill，前提是 CLI 已在 PATH 上：
+
+```bash
+/plugin install rust-anything --marketplace erkamyaman/rust-anything
+```
+
+`setup` 会向 Claude Code、Codex、Cursor、Gemini CLI 和 OpenCode 添加 MCP 服务，并把工作流 skill 放到对应目录；修改已有文件前会生成 `.rust-anything.bak` 备份，`--remove` 可以撤销。手动流程通常是这样一条链：
+
+```sh
+rust-anything profile . -- node bench.mjs
+rust-anything bridge . src/fuzzy.ts --batch fuzzyScore:text
+# 编写 src/port.rs，或交给 Agent
+rust-anything record rust/fuzzy-rs && rust-anything build rust/fuzzy-rs
+rust-anything diff rust/fuzzy-rs
+rust-anything fuzz rust/fuzzy-rs --time 60 --keep
+rust-anything bench rust/fuzzy-rs
+rust-anything gate rust/fuzzy-rs
+```
+
+只想搬走慢函数时，可以直接让 `go` 分析一次运行并自动挑出最外层值得迁移的函数，例如 `rust-anything go --agent claude -- python3 app.py`。不加 `--agent` 时它会写一份 TASK.md 然后停下，等人接手。
+
+## 值得注意的设计
+
+核心机制是「录制即契约」。`record` 会在生成的边界输入、语义陷阱和用户自己的输入上运行原程序，保存返回值与抛出的异常；`diff` 重放全部用例，`gate` 作为完成门槛。这样迁移的验收标准不是「看起来一样」，而是一组可重复执行的具体行为。`app record --effects` 还会记录邮件、Webhook 之类的副作用，README 用「输出相同但发了两封欢迎邮件」的例子说明为什么只看输出不够。
+
+第二个机制是桥接层生成。`bridge` 会生成 Rust crate 和一层保持原 API 的包装，调用方不需要改业务代码。底层按语言选择 napi-rs、PyO3、wasm-bindgen、JNI、FFI 或 P/Invoke，例如 TypeScript 走 napi-rs 或 wasm-bindgen，Python 走 PyO3，Java/Kotlin 走 JNI，PHP、PowerShell 和 C# 走 JSON 调度。热路径还可以生成 batch 包装，把整批数据一次送进 Rust，避免每个小调用都跨语言。
+
+第三个机制是渐进式收口。每一块通过回放后可以单独启用或关闭，`disable` 能按字节级回到原实现；当整个应用都通过且没有 fallback 时，`app lift` 把它变成纯 Rust 应用，原项目不被修改。README 还提供 `report` 生成 REPORT.md 和卡片，便于在 pull request 里说明迁移结果。
+
+## 边界与风险
+
+README 反复强调，它只能捕获录制覆盖到的行为。未覆盖的分支、时序、并发和外部依赖变化都可能漏掉，文档专门有一节 What it can't catch。`record` 和 `app record` 会真实执行原代码，每个用例都可能写文件、连数据库或访问网络，因此必须在项目副本、测试数据库和无生产凭据的环境里运行。
+
+性能收益有条件。README 指出，每个小函数调用一次 Rust 通常比 JIT 还慢，工具要找的是值得搬的循环或批量路径；PHP、C# 和 PowerShell 每次调用都要跨 JSON，约 1 微秒到数毫秒不等，小函数反而更慢。C 的收益主要在安全性而非速度，README 给出的 libavutil 案例也只是接近 C 的性能。PHP 和 C# 目前还没有 `shadow`，部分语言特性会留在原语言并附带原因。
+
+平台与工程约束方面，Android 的 JNI 构建需要 NDK、Rust target 和 adb 设备，Activity、Compose 和 XML UI 不在迁移范围。项目采用 MIT 许可证，README 明确说用户仓库里的移植代码归用户所有。文档覆盖安装、打包、整应用迁移、真实案例和 FAQ，但具体迁移成本仍取决于项目自身的可录制程度。
+
+## 来源
+
+GitHub：[erkamyaman/rust-anything](https://github.com/erkamyaman/rust-anything)（README sha 3d667a8189ee）

@@ -1,0 +1,62 @@
+---
+repo: "pingdotgg/t3code"
+title: "把本机编码 Agent 收进一个可远程操控的界面"
+summary: "在本机运行 Claude Code、Codex 等编码 Agent，并通过桌面、网页和手机共用同一套线程界面；可以在工位开工，在手机上批准下一步。"
+banner: "https://github.com/pingdotgg/t3code/raw/main/.github/readme/hero.webp"
+categories: ["Agent 框架", "前端"]
+verdict: recommend
+featuredAt: 2026-11-24
+readmeSha: "b3ad8bae49b70ae2043b2e274ac8b8b7923e02b8"
+readmeFetchedAt: "2026-11-24"
+sources: [github]
+---
+
+## 它是什么
+
+T3 Code 自称是 coding agents 的开源 control plane。它不是新的模型或 Agent，而是在本机运行你已经装好、已经登录的编码 Agent，再提供一个统一界面。README 列出的支持范围包括 Claude Code、Codex、Cursor、OpenCode、Grok Build、Antigravity、Kiro、Pi、Muse Code、fx，以及任何走 ACP 的 Agent。桌面端、网页端和 iOS/Android 客户端看到的是同一批线程，因此可以在电脑上开一个线程，出门后用手机批准下一步。README 明确说不转售 token，驱动的是用户自己的订阅。
+
+## 怎么上手
+
+前置条件是至少有一个已安装并登录的 Agent，例如 Claude Code 执行 `claude auth login`，或 Codex 执行 `codex login`。桌面端可从官网下载，也可以用包管理器安装：
+
+```bash
+brew install --cask t3-code
+```
+
+```powershell
+winget install T3Tools.T3Code
+```
+
+命令行安装会得到 `t3` 命令，运行后启动 server 并打开 web app：
+
+```bash
+curl -fsSL https://t3.codes/install.sh | sh
+```
+
+Windows PowerShell：
+
+```powershell
+irm https://t3.codes/install.ps1 | iex
+```
+
+不想安装可以先试 `npx t3@latest`。手机端从 App Store 或 Google Play 安装，再按 remote access 文档连回本机。装好后新建线程，选一个已登录的 Agent 即可开始；线程中可切换模型，也可以让 Claude 把任务交给 Codex。README 未说明 Node 版本、macOS 最低版本等前置要求。
+
+## 值得注意的设计
+
+架构上，它是「一个本机 server，多种客户端」的控制面。Agent 实际运行在用户机器上，桌面、网页、iOS、Android 只是同一 server 的客户端，所以线程状态一致；远程访问支持局域网、Tailscale 或 T3 Connect。这与把 Agent 会话托管到云端的做法不同，README 把「不转售 token、驱动已有订阅」作为卖点。
+
+Agent 接入依赖 ACP，也兼容各家自己的 CLI 登录态。README 的说法是：只要机器上配好了某个 Agent，T3 Code 就能控制它；同一线程里可以换模型，也可以把任务从一个 Agent 交给另一个。具体 provider 的配置步骤在单独的 provider 文档里，不在主 README。
+
+Git 集成按线程隔离：每个线程可以在自己的 worktree 里工作，先看 diff，再用一个按钮完成 commit、push 和开 PR。这样多个 Agent 并行改代码时，改动不会挤在同一个工作区。README 还把性能当作功能来对待，称掉帧会被当作 bug 处理。
+
+## 边界与风险
+
+MIT 只覆盖源代码，不覆盖 T3 Tools 的商标、品牌和外观，包括 T3 Code 名称、字标、logo 和应用图标。README 对 fork 的要求很强硬：公开分支必须替换品牌，必须明确声明非官方，暗示官方身份会被追责。想基于它做商业发行，需要先读 TRADEMARK.md。
+
+它是一个客户端和编排层，实际能力受底层 Agent 限制。用户仍需自行安装并登录 Claude Code、Codex 等工具，也要承担各自的订阅费用；如果这些 CLI 改了认证或接口，集成可能需要跟着更新。远程访问意味着把能执行命令的 Agent 暴露给其他设备，README 链接了权限模式与远程访问文档，但主 README 未说明默认监听地址、认证方式和传输加密等细节。
+
+README 未说明版本号、发布节奏、系统要求和遥测策略，也未展开 [app.t3.codes](https://app.t3.codes) 这类网页客户端的托管方式与数据路径。贡献政策写明审阅能力有限，小而聚焦的修复更容易合并，新功能需要先通过讨论。整体更像一个快速迭代的产品仓库，而不是接口稳定的基础库。
+
+## 来源
+
+GitHub：[pingdotgg/t3code](https://github.com/pingdotgg/t3code)（README sha b3ad8bae49b7）

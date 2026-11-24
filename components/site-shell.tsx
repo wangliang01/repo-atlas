@@ -8,15 +8,20 @@ import type { ReactNode } from "react";
 const SHELL_CLASS =
   "grid grid-cols-1 gap-4 md:grid-cols-[180px_minmax(0,1fr)] md:gap-5 xl:grid-cols-[180px_minmax(0,1fr)_260px]";
 
+/** 没有右栏时把那一列真正去掉，不然 feed 会在 260px 空白旁边收窄 */
+const SHELL_NO_RIGHT_CLASS =
+  "grid grid-cols-1 gap-4 md:grid-cols-[180px_minmax(0,1fr)] md:gap-5";
+
 type SiteShellProps = {
   left: ReactNode;
-  right: ReactNode;
+  /** 右栏是可选的：首页只放精选，不再塞个人信息 */
+  right?: ReactNode;
   children: ReactNode;
 };
 
 export function SiteShell({ left, right, children }: SiteShellProps) {
   return (
-    <div data-shell className={SHELL_CLASS}>
+    <div data-shell className={right ? SHELL_CLASS : SHELL_NO_RIGHT_CLASS}>
       {/*
         aside 不能加 self-start：那样它会被收缩到内容高度，里面的 sticky 元素
         没有可移动的空间，滚起来就跟着走了（实测 railTop = -351）。
@@ -37,9 +42,11 @@ export function SiteShell({ left, right, children }: SiteShellProps) {
         {children}
       </div>
 
-      <aside data-shell-right className="hidden min-w-0 xl:block">
-        <div className="sticky top-[76px] space-y-3">{right}</div>
-      </aside>
+      {right ? (
+        <aside data-shell-right className="hidden min-w-0 xl:block">
+          <div className="sticky top-[76px] space-y-3">{right}</div>
+        </aside>
+      ) : null}
     </div>
   );
 }

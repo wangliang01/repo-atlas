@@ -1,0 +1,44 @@
+---
+repo: "vercel-labs/ui"
+title: "把界面交互拆成跨框架原语的 UI 行为库"
+summary: "Vercel Labs 的实验性 UI 行为库，把键盘导航、焦点、选择、弹窗和拖放等交互逻辑收进框架无关的 core，再由 React、Vue、Svelte、Solid 和 Web Components 适配层渲染。"
+banner: "https://raw.githubusercontent.com/vercel-labs/ui/HEAD/assets/behaviors-light.svg"
+categories: ["前端", "图像与设计"]
+verdict: watch
+featuredAt: 2026-11-24
+readmeSha: "53fc2804ad0414606f605252faacc05cd3c95563"
+readmeFetchedAt: 2026-11-24
+sources: [github]
+---
+
+## 它是什么
+
+UI SDK 不是一个现成组件库，而是一组「行为」原语。README 把键盘导航、焦点、选择、关闭、弹窗、拖放以及它们所需的 ARIA 都放在 `@ui-sdk/core` 里，再提供 React、Vue、Svelte、Solid 和 Web Components 五种适配。每个界面组件都由这些行为组合出来：先定义 primitive，再由适配层把它映射成框架里的 parts。README 的示意图把环境选择器拆成 `createPopup`、`createSelection`、`createTypeahead` 三个行为，说明它想提供的是可组合的交互能力，而不是某一套视觉风格。项目目前处于 beta，文档地址是 ui-sdk.dev。
+
+## 怎么上手
+
+README 只给出 npm 安装命令，没有标注具体的 Node 版本要求。先安装 core 和对应框架的适配包：
+
+```bash
+npm install @ui-sdk/react @ui-sdk/core
+```
+
+把 `@ui-sdk/react` 换成 `@ui-sdk/vue`、`@ui-sdk/svelte`、`@ui-sdk/solid` 或 `@ui-sdk/web` 即可切换框架。README 还建议给编码 Agent 装上配套 skill：
+
+```bash
+npx skills@latest add vercel-labs/ui --skill ui-sdk
+```
+
+接着用 `definePrimitive` 定义状态、api 和 slots，例如示例中的搜索框；然后在框架侧调用 `createParts`，把 input、clear 等 part 绑定到具体元素，再像普通组件一样使用。五种框架的 parts 名称一致，Web Components 则通过 `createParts` 注册自定义元素，并可用 `wrappedButton`、`wrappedChild` 指定内部目标。README 给出的搜索框示例包含输入、清空和焦点恢复三部分，可以作为自己写 primitive 的起点；更完整的说明在 ui-sdk.dev/docs。
+
+## 值得注意的设计
+
+核心抽象是 primitive：`state()` 保存状态，`api()` 暴露方法，`slots()` 声明各插槽的 attrs、事件、显隐条件和 bind。示例里的 `createFocusRecovery` 会在相关元素被移除后把焦点还给输入框，说明行为层负责的是这类容易漏掉的交互细节，而不是样式。适配层只做一件事：用 `createParts` 把 part 映射到元素或组件，因此同一份 primitive 能在五种框架里复用。映射写法因框架而异：React、Vue、Svelte、Solid 传元素名，Web Components 传 tag 与 target。README 还明确说这些代码不需要人手工学，「Agent 会写」，也就是说设计目标是把行为定义交给 Agent 生成、人只做组合与审阅。
+
+## 边界与风险
+
+README 把 beta 状态写得很清楚：框架、API、文档和行为都可能在上线前变化，并受 Vercel beta 条款约束。它没有承诺跨浏览器兼容范围，也没有给出完整的可访问性说明，只说 core 带上所需的 ARIA。README 中没有许可证信息，使用前需要到仓库确认授权。整套工作流依赖 Agent 生成 primitive，如果团队没有相应的 Agent 能力或审阅流程，仍然要自己理解 primitive 的契约。项目也没有公布版本节奏或支持政策，README 里同样没有测试覆盖、浏览器兼容矩阵或迁移指南，beta 期间升级前应先读发布说明。
+
+## 来源
+
+GitHub：[vercel-labs/ui](https://github.com/vercel-labs/ui)（README sha 53fc2804ad04）
