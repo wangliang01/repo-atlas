@@ -53,7 +53,7 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 | T-027 | 修正 Grill Me 来源为 `mattpocock/skills` | `666bbae` | 删除 `RobMitt/grill-me-skill` 详情页与头像；新增 `mattpocock/skills` 页，写清 `/grill-me`、`grilling`、`/grill-with-docs` 的关系；首页与台账同步替换；`node --test` 110/110；`pnpm typecheck` 0；`pnpm lint` 0 error；`pnpm build` 通过 |
 | T-028 | 加深 42 篇新收录详情页 | `666bbae` | 42 篇正文 1,203–1,531 字，固定五节，README 说法与编辑判断分开写；新增守卫测试：`sources: [github, toutiao]` 的页面正文 ≥1000 字且出现「README」与「编辑判断 / README 未说明」；73 篇详情页的 frontmatter 与 README sha 逐字节比对未变；`node --test` 110/110；`pnpm typecheck` 0；`pnpm lint` 0 error（2 条既有 warning）；`pnpm build` 通过 |
 | T-029 | 旧 30 篇加深到 1500–2000 字，新页补 README 配图 | `462e581` | 旧 30 篇正文 1,513–1,871 汉字，全部五节，README 与编辑判断分离；新 42 篇里 20 篇补了 `banner`，24 条旧 banner + 20 条新 banner 全部 GET 返回图片；徽章、赞助商 logo、应用图标、wordmark、非图片嵌入一律跳过，无图页面不渲染占位；测试扩展：旧页 ≥1500 汉字、全站必须出现「README」与「编辑判断 / README 未说明」；`node --test` 110/110；`pnpm typecheck` 0；`pnpm lint` 0 error（2 条既有 warning）；`pnpm build` 通过，73 页里 44 页有 banner |
-| T-030 | 详情页目录改「五问式」，73 篇全量迁移 | 未提交 | 目录固定五问、来源不进目录；73 篇正文 1,500–1,997 汉字、六节逐字一致；schema 旧标题兼容已删；测试改为全站六节 + ≥1500 汉字；frontmatter 与 README sha 逐字节比对未变；构建产物 73 页目录均为 5 项、正文 6 个 H2；`node --test` 111/111；`pnpm typecheck` 0；`pnpm lint` 0 error（2 条既有 warning）；`pnpm build` 通过 |
+| T-030 | 详情页目录改「五问式」，73 篇全量迁移 | `e90c7ae` | 目录固定五问、来源不进目录；73 篇正文 1,500–1,997 汉字、六节逐字一致；schema 旧标题兼容已删；测试改为全站六节 + ≥1500 汉字；frontmatter 与 README sha 逐字节比对未变；构建产物 73 页目录均为 5 项、正文 6 个 H2；`node --test` 111/111；`pnpm typecheck` 0；`pnpm lint` 0 error（2 条既有 warning）；`pnpm build` 通过 |
 
 ### P0 验收（SPEC「验收标准」9 条，2026-11-22 跑）
 
