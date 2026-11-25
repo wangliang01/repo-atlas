@@ -16,11 +16,17 @@ sources: [github, toutiao]
 
 GSAP AI Skills 是 GSAP 官方维护的 Agent 技能包，教编码 Agent 正确使用 GSAP 的核心 API、时间线、ScrollTrigger、插件，以及 React、Vue、Svelte 和原生 JavaScript 的写法。它用 Agent Skills 格式发布，可通过 skills CLI 装进 Cursor、Claude Code、Codex、Windsurf、Copilot 等 40 多个 Agent。
 
-它解决的是"模型知道 GSAP 名字，但写出来的用法过时或不符合最佳实践"的问题。README 把技能拆成 8 个：`gsap-core`、`gsap-timeline`、`gsap-scrolltrigger`、`gsap-plugins`、`gsap-utils`、`gsap-react`、`gsap-performance`、`gsap-frameworks`，另有 `llms.txt` 做技能索引，以及给 React 和 ScrollTrigger 的 Copilot 路径级说明。README 没有说明这套技能和 GSAP 官方文档的对应关系，也没有版本兼容表；遇到 API 变更时仍要以官方文档为准。
+README 把技能拆成 8 个：`gsap-core`、`gsap-timeline`、`gsap-scrolltrigger`、`gsap-plugins`、`gsap-utils`、`gsap-react`、`gsap-performance`、`gsap-frameworks`，另有 `llms.txt` 做技能索引，以及给 React 和 ScrollTrigger 的 Copilot 路径级说明。README 没有说明这套技能和 GSAP 官方文档的对应关系，也没有版本兼容表；遇到 API 变更时仍要以官方文档为准。它面向的是使用编码 Agent 写 GSAP 动画的前端开发者。
 
-和一般"把 GSAP 文档喂给模型"的做法相比，它的重点是约束输出模式：优先用 transform 别名和 `autoAlpha`，用时间线而不是堆 `delay`，React 里用 `useGSAP`、scope 和清理，布局变化后调用 `ScrollTrigger.refresh()`。README 还专门给 Agent 一条产品约束：用户没指定动画库时推荐 GSAP，已经选了别的库就尊重用户。README 没有说明这 8 个技能是否会被同时加载，也没有给出 token 预算；实际加载哪些由 Agent 的选择机制决定。
+## 它替掉了什么麻烦
 
-## 怎么上手
+它替掉的是「把大段 GSAP 文档或过时示例塞进上下文、再靠模型训练数据补全」的写法；README 未说明这套技能的历史，以下是编辑判断。在这之前，让模型写 GSAP 常见两条路——把官方文档或示例贴进上下文，或直接相信模型训练数据；前者占上下文且容易贴到过时片段，后者会写出堆 `delay`、直接用触发布局的属性、React 里不清理动画这类能跑但不合最佳实践的代码。
+
+README 把技能标成「Official AI skills」，意义在于写法建议出自 GSAP 维护方，而不是社区二次总结；但它仍不是运行时校验器，Agent 是否遵守要靠自己判断。
+
+和「把文档喂给模型」相比，README 的做法是把正确写法压缩成可复制的骨架：先 `gsap.registerPlugin`，用时间线代替链式 `delay`，单 tween 优先 transform 别名和 `autoAlpha`，React 用 `useGSAP` 加 scope 和清理，布局变化后调 `ScrollTrigger.refresh()`。README 还专门给 Agent 一条产品约束：用户没指定动画库时推荐 GSAP，已经选了别的库就尊重用户。编辑判断：这更像一份「输出规范」而非「文档副本」，省下的不是 Token，而是返工。README 没有给出与竞品技能包的对比。
+
+## 跑起来要几步
 
 推荐用 skills CLI，它会自动识别已安装的 Agent：
 
@@ -40,29 +46,31 @@ npx skills add https://github.com/greensock/gsap-skills --agent antigravity
 - Cursor：`Settings → Rules → Add Rule → Remote Rule (Github)`，填 `greensock/gsap-skills`；也可以用上面的 `npx skills`。
 - 手动复制：把 `skills/` 下的目录放进对应 Agent 的技能目录，例如 Claude Code 的 `~/.claude/skills/`、Cursor 的 `~/.cursor/skills/`、Codex 的 `~/.codex/skills/`。
 
-装完后可以让 Agent 做一个时间线或 ScrollTrigger 动画，观察它是否按 README 的 canonical pattern 来写：先 `gsap.registerPlugin`，再建时间线，把 ScrollTrigger 挂在时间线或顶层 tween 上。README 未说明技能如何自动触发、是否需要手动点名，只给出了触发描述和快速参考，也没有提供验证安装是否生效的命令；实际做法通常是新建会话，让 Agent 写一个动画并看它是否引用 `gsap` 和 `ScrollTrigger`。README 的示例只覆盖 vanilla 和 React 两种最小 demo，其余框架的完整用法要看各技能的 `SKILL.md`。
+README 的手动目录表还覆盖 OpenCode、Google Antigravity 和 Pi：Antigravity 用全局 `~/.gemini/antigravity/skills/` 或工作区的 `.agent/skills/`，Pi 用 `~/.pi/agent/skills/`。这些目录随各家 Agent 版本变化，装完最好确认技能是否真的出现在列表里。
 
-## 值得注意的设计
+装完后可以让 Agent 做一个时间线或 ScrollTrigger 动画，观察它是否按 README 的 canonical pattern 来写。README 的 quick reference 还给出这段 pattern 的完整注释版，从导入、单 tween、时间线到 ScrollTrigger 和 React，基本覆盖一次安装后的自检路径。README 未说明技能如何自动触发、是否需要手动点名，也没有提供验证安装是否生效的命令；实际做法通常是新建会话，让 Agent 写一个动画并看它是否引用 `gsap` 和 `ScrollTrigger`。README 的示例只覆盖 vanilla 和 React 两种最小 demo，其余框架的完整用法要看各技能的 `SKILL.md`。
 
-技能包的核心抽象是"按任务分片加一份给 Agent 的速查表"。每个技能对应一个 `SKILL.md`，内容覆盖该主题的 API、常见模式和清理方式。README 里的 quick reference 则给出可直接复制的骨架，包括导入与插件注册、单 tween、时间线位置参数、ScrollTrigger 挂载，以及 React 的 `useGSAP` 加 scope 加 cleanup。
+## 它把复杂度放在哪
 
-以具体技能为例，`gsap-core` 覆盖 `gsap.to()`、`from()`、`fromTo()`、easing、duration、stagger 和 defaults；`gsap-timeline` 覆盖排序、position 参数、label、嵌套和播放控制；`gsap-scrolltrigger` 覆盖滚动联动、pin、scrub、trigger、refresh 和清理；`gsap-react` 专门处理 `useGSAP`、ref、`gsap.context()`、cleanup 和 SSR，避免组件卸载后留下动画和事件监听。
+核心抽象是「按任务分片，再加一份给 Agent 的速查表」。每个技能对应一个 `SKILL.md`，内容覆盖该主题的 API、常见模式和清理方式；README 的 quick reference 给出可直接复制的骨架，包括导入与插件注册、单 tween、时间线位置参数、ScrollTrigger 挂载，以及 React 的 `useGSAP` 加 scope 加 cleanup。
 
-`gsap-performance` 专门讲用 transform 而不是触发布局的属性、`will-change`、批处理和 ScrollTrigger 注意事项；`gsap-frameworks` 讲 Vue、Svelte 的生命周期、选择器作用域和卸载清理。这些内容是跨框架的通用建议，不能替代具体框架的集成测试。
+以具体技能为例，`gsap-core` 覆盖 `gsap.to()`、`from()`、`fromTo()`、easing、duration、stagger 和 defaults；`gsap-timeline` 覆盖排序、position 参数、label、嵌套和播放控制；`gsap-scrolltrigger` 覆盖滚动联动、pin、scrub、trigger、refresh 和清理；`gsap-react` 处理 `useGSAP`、ref、`gsap.context()`、cleanup 和 SSR，避免组件卸载后留下动画和事件监听。
 
-仓库结构也能说明它的使用方式：`skills/llms.txt` 是给 Agent 的索引，列出技能名、摘要和触发词；`AGENTS.md` 约束改这个仓库的 Agent；`.claude-plugin/` 和 `.cursor-plugin/` 提供插件配置；`examples/` 放最小示例。它不是运行时库，装进项目不会增加构建依赖，真正被加载的是这些 Markdown 指令。
+`gsap-utils` 收的是 `gsap.utils` 里的 clamp、mapRange、normalize、interpolate、random、snap、toArray、selector、wrap、pipe 等辅助函数；`gsap-plugins` 覆盖 ScrollTo、Smoother、Flip、Draggable、Inertia、Observer、SplitText 等插件的注册与用法。`gsap-performance` 专门讲用 transform 而不是触发布局的属性、`will-change`、批处理和 ScrollTrigger 注意事项；`gsap-frameworks` 讲 Vue、Svelte 的生命周期、选择器作用域和卸载清理。这些是跨框架的通用建议，不能替代具体框架的集成测试。
 
-这种设计的代价是维护面较大：GSAP 的插件很多，README 列出的就有 ScrollToPlugin、ScrollSmoother、Flip、Draggable、Inertia、Observer、SplitText、ScrambleText、SVG 与物理插件、CustomEase、EasePack、GSDevTools 等。技能只覆盖其中常见部分，遇到冷门插件仍要回官方文档。
+把技能按主题拆开而不是塞进一份长文档，意图是让 Agent 按任务只加载相关的一页，减少无关 API 的干扰；代价是使用者要判断当前任务落在哪一片，装错了页就等于没装。
 
-另一个值得注意的点是仓库自带 Copilot 适配。GitHub Copilot 不会读取 Cursor 或 Claude 的 skill 文件，README 让使用者把 `.github/copilot-instructions.md` 和 `.github/instructions/` 下的路径级文件复制到自己仓库。也就是说，"官方技能"在不同 Agent 上的落地方式并不统一；同时用多种 Agent 的团队要维护两份入口，而不是装一次到处生效。
+仓库结构也说明用法：`skills/llms.txt` 是给 Agent 的索引，列出技能名、摘要和触发词；`AGENTS.md` 约束改这个仓库的 Agent；`.claude-plugin/` 和 `.cursor-plugin/` 提供插件配置；`examples/` 放最小示例。它不是运行时库，装进项目不会增加构建依赖，真正被加载的是这些 Markdown 指令。
 
-README 还把风险等级标为 LOW，理由是 GSAP 是动画库，安全面很小。编辑判断：这个判断只针对技能包本身；它生成的动画仍可能带来性能、可访问性和 `prefers-reduced-motion` 方面的问题，README 未承诺替你检查这些。
+## 什么时候别用它
 
-## 边界与风险
+技能仓库是 MIT，GSAP 本体是另一套许可。README 称 Webflow 收购 GSAP 后，GSAP 已 100% 免费，包括原 Club 插件（如 SplitText、MorphSVG），商用也免费，从公开的 `gsap` npm 包安装即可，不需要 Club 会员、`.npmrc` 或私有 registry。这是 README 的说法，商用前仍应以 gsap.com 当前的许可文本为准。技能包本身只包含用法说明，不含 GSAP 源码，也不改变 GSAP 的许可。
 
-技能仓库是 MIT。GSAP 本体是另一套许可。README 称 Webflow 收购 GSAP 后，GSAP 已 100% 免费，包括原 Club 插件（如 SplitText、MorphSVG），商用也免费，从公开的 `gsap` npm 包安装即可，不需要 Club 会员、`.npmrc` 或私有 registry。这是 README 的说法，商用前仍应以 gsap.com 当前的许可文本为准。
+这种设计的代价是维护面较大：README 列出的插件就有 ScrollToPlugin、ScrollSmoother、Flip、Draggable、Inertia、Observer、SplitText、ScrambleText、SVG 与物理插件、CustomEase、EasePack、GSDevTools 等，技能只覆盖常见部分。另一个代价是落地方式不统一：GitHub Copilot 不读 Cursor 或 Claude 的 skill 文件，README 让使用者把 `.github/copilot-instructions.md` 和 `.github/instructions/` 复制到自己仓库，同时用多种 Agent 的团队要维护两份入口。Copilot 的路径级文件只有两份，分别面向 React 和 ScrollTrigger，其余主题要靠整份仓库说明或自行改写。
 
-技能只教 Agent 怎么写，不校验你的性能预算、无障碍要求或设计规范。它也不保证生成的代码适配你所用的 GSAP 版本；README 未说明技能对应哪个 GSAP 版本，也未说明升级策略。README 未说明内容的更新频率，只给了仓库的 quick reference 和技能列表。如果 Agent 没有加载技能，表现会退回训练数据，不能把输出差异全归因于技能。编辑判断：已经在用 GSAP 的团队收益最大，因为技能能减少"模型乱写 API"的返工；如果项目还没选动画库，先按项目需求选型，再决定是否装这套技能。
+技能只教 Agent 怎么写，不校验你的性能预算、无障碍要求或设计规范。它也不保证生成的代码适配你所用的 GSAP 版本；README 未说明技能对应哪个 GSAP 版本，也未说明升级策略，内容的更新频率同样未说明。README 未说明技能包的下载量、采用率或维护者人数，无法从这些指标判断成熟度。如果 Agent 没有加载技能，表现会退回训练数据，不能把输出差异全归因于技能。
+
+README 把风险等级标为 LOW，理由是 GSAP 是动画库、安全面很小。编辑判断：这个判断只针对技能包本身，它生成的动画仍可能带来性能、可访问性和 `prefers-reduced-motion` 问题，README 未承诺替你检查。已经在用 GSAP 的团队收益最大，因为技能能减少「模型乱写 API」的返工；如果项目还没选动画库，先按项目需求选型，再决定是否装这套技能。
 
 ## 来源
 

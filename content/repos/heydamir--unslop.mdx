@@ -15,15 +15,25 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-unslop 是一个给 Claude Code、Codex 和 Google Antigravity 用的 Skill，目标是把"vibecoded、一眼 AI"的界面改成有设计感的界面。它先找 slop：紫色渐变、发光、emoji 标签、喊叫式文案、间距不齐；再从产品本身定方向，然后像设计师做 redline 一样一屏一屏修。
+unslop 是一个给 Claude Code、Codex 和 Google Antigravity 用的 Skill，目标是把「vibecoded、一眼 AI」的界面改成有设计感的界面。它先找 slop：紫色渐变、发光、emoji 标签、喊叫式文案、间距不齐；再从产品本身定方向，然后像设计师做 redline 一样一屏一屏修。
 
-它面向没有专职设计师、又不想直接接受模型默认审美的开发者。支持 Next.js、React、Vue、Svelte、Tailwind 和纯 HTML/CSS，覆盖 dashboard、应用和落地页；如果手上只有一个线上链接，也能对 live site 工作。
+它面向没有专职设计师、又不想直接接受模型默认审美的开发者。README 说它支持 Next.js、React、Vue、Svelte、Tailwind 和纯 HTML/CSS，覆盖 dashboard、应用和落地页；如果手上只有一个线上链接，也能对 live site 工作。
 
-和"让模型再生成一版"相比，它的差别是流程：先审计、再提方向、再分轮修改，而不是直接换一套配色。README 说如果屏幕本来就不错，它会告诉你，并只提几个小改进，而不是硬重做。README 把这类界面问题称为 slop，并强调目标不是统一成某种极简风，而是让界面"有自己的性格"；这套判断能否落地，取决于产品和团队对方向的认同。
+README 把这类界面问题称为 slop，并强调目标不是统一成某种极简风，而是让界面「有自己的性格」。如果屏幕本来就不错，README 说它会告诉你，并只提几个小改进，而不是硬重做。README 建议先在仓库 `examples` 里的两个 vibecoded 屏幕上试用，再判断它的方向是否符合你的产品。
 
-## 怎么上手
+## 它替掉了什么麻烦
 
-Claude Code 推荐按插件安装：
+它替掉的是「看见 AI 味只能重生成或手动救」的循环。README 没有交代这件事过去的标准做法；README 只提到作者 Damir Sokolovsky 先在 X 上做「Unslopping series」，编辑判断：这套方法大概率先以公开案例系列出现，再被整理成可安装的 Skill。
+
+编辑判断：在此之前，开发者面对模型生成的紫色渐变、发光和喊叫式文案，通常有两条路。一条是让模型「再生成一版」，但同一类模型容易换一套相似的套路，改十次仍在同一个审美区间里打转；另一条是自己逐屏调 CSS，能改对局部，却缺少一份可复用的检查清单。unslop 的切入点是把审美判断拆成固定流程：先列出每一处 slop 及其位置，再从产品提炼方向，最后按顺序分轮修改。
+
+和同类方案的差别，README 没有点名其他 Skill，也没有给出功能对比。编辑判断：与「一键换配色」的提示词相比，它的差异不在生成能力，而在审计和方向这两步——先让人在改代码前纠偏，再动手；代价是轮次更多。
+
+README 还给出另一种选择：不想自己跑流程，可以让作者在 3 天内改一个关键屏幕，并按你的技术栈实现。编辑判断：这把设计判断保留给人，把可重复的部分产品化；也说明它并不假装完全替代设计师。
+
+## 跑起来要几步
+
+最少一步：Claude Code 推荐按插件安装。
 
 ```bash
 claude plugin install unslop --marketplace heydamir/unslop
@@ -53,29 +63,29 @@ npm install -D playwright
 npx playwright install chromium
 ```
 
-story video 另需 `ffmpeg` 在 PATH 上。使用时在 Claude Code 输入 `/unslop`（重名时用 `/unslop:unslop`），Codex 输入 `$unslop`，或直接用自然语言描述。它不支持所有 Agent：README 只列了 Claude Code、Codex 和 Antigravity，并为各自给出不同安装路径，用 Cursor、Windsurf 等其他工具的人不能直接照搬。三者的入口不同，但核心流程一致。
+story video 另需 `ffmpeg` 在 PATH 上。使用时在 Claude Code 输入 `/unslop`（重名时用 `/unslop:unslop`），Codex 输入 `$unslop`，或直接用自然语言描述。安装前先确认入口：README 只列了 Claude Code、Codex 和 Antigravity，用 Cursor、Windsurf 等其他工具的人不能直接照搬。另有一条容易踩的坑：如果之前手动把 unslop 复制进 `~/.claude/skills/` 或项目的 `.claude/skills/`，要先删掉旧副本，否则 `/unslop` 会继续跑旧版而不是插件。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-流程被拆成五步，顺序固定：Audit 列出每一处 slop 及其位置；Direction 从产品里提炼角色、世界、一两个承载颜色的时刻和一个签名细节；Passes 按间距、颜色、图标、文案、字体、布局、细节、视觉、动效的顺序改；Visuals 用产品本身而不是"光亮的色块"；最后可选生成 story video。
+复杂度放在一条固定的五步流程上：Audit 列出每一处 slop 及其位置；Direction 从产品里提炼角色、世界、一两个承载颜色的时刻和一个签名细节；Passes 按间距、颜色、图标、文案、字体、布局、细节、视觉、动效的顺序改；Visuals 用产品本身而不是「光亮的色块」；最后可选生成 story video。
+
+Direction 这一步是整套设计的关键。README 说它要求 character、world、承载颜色的一个或两个时刻，以及一个签名细节，全部取自产品。编辑判断：这比「现代、简洁、高级」这类形容词更可执行，也让人能在改代码前判断方向是否对；方向仍由模型提出，但提出得足够具体，才有纠偏的抓手。
 
 Visuals 这一步涉及外部服务。README 说需要场景或物件时，可以通过 fal、Replicate、OpenAI images 或 Higgsfield 之类的图像服务生成；没有接服务时，它会提议以 MCP server 方式接入，并且在每次付费生成前展示 prompt、征求同意。dashboard 和应用通常不需要这一步。
 
-修改前先审计、先提方向，是它和"直接改 CSS"最大的不同。这样人可以在早期纠偏，而不是等改完才发现方向不对。代价是轮次更多，且方向本身仍由模型提出，README 没有说明它如何量化"改好了"。
+story video 是另一个输出物：README 说它会生成一段不到 10 秒的方形视频，内容是屏幕「自我去 slop」的过程。它依赖 Playwright 和 ffmpeg，属于可选能力，不装也能做界面修改。
 
-审计和方向之间还有一层产品理解。README 说 Direction 要给出 character、world、承载颜色的一个或两个时刻，以及一个签名细节，全部取自产品。这比"现代、简洁、高级"这类形容词更可执行，也让人能在改代码前判断方向是否对。
+README 未说明它如何量化「改好了」；编辑判断：流程把主观审美拆成可检查的步骤，但最终仍要人确认结果。
 
-story video 是另一个输出物：README 说它会生成一段不到 10 秒的方形视频，内容是屏幕"自我去 slop"的过程，可以直接发到社交平台。它依赖 Playwright 和 ffmpeg，属于可选能力，不装也能做界面修改。
+## 什么时候别用它
 
-安装范围也值得注意：Claude Code 的插件可以全局、项目本地或团队共享，`--scope project` 需要提交 `.claude/settings.json`，同事还要各自跑一次安装命令。README 特别提醒，如果之前手动把 unslop 复制进 `~/.claude/skills/` 或项目的 `.claude/skills/`，要先删掉旧副本，否则 `/unslop` 会继续跑旧版而不是插件。
+编辑判断：要求一次生成定稿、或没有人工做最终审美取舍的项目，不适合用它。审美规则是主观的：它能系统地移除常见的 AI 视觉套路，但不能保证老板、客户或目标用户喜欢新方向；README 也没有给出评估或验收方法。它更适合想摆脱「AI 味」、又愿意按流程迭代的团队。
 
-## 边界与风险
+它改的是现有屏幕的视觉、文案和间距，不处理设计系统迁移或组件库替换；跨页面的统一仍要人维护。方向本身仍由模型提出，轮次也比「直接改一版」更多。
 
-许可证是 CC BY 4.0。README 明确说可以商用、修改和分享，但要署名 Damir Sokolovsky（@heydamir）并链接回仓库。团队在合规审查时要把这条署名要求写进流程。
+许可证是 CC BY 4.0，README 明确说可以商用、修改和分享，但要署名 Damir Sokolovsky（@heydamir）并链接回仓库。团队在合规审查时要把这条署名要求写进流程。
 
-审美规则是主观的。它能系统地移除常见的 AI 视觉套路，但不能保证老板、客户或目标用户喜欢新方向。线上站点修改前应先备份或用版本控制；Playwright 抓取也可能被登录墙、反爬或动态渲染挡住，README 未说明它如何处理需要登录的页面。
-
-接入图像生成服务意味着把 prompt 和可能的素材发给第三方，且可能产生费用。README 承诺付费前询问，但实际账单和数据处理条款取决于你选的服务。它也不处理设计系统迁移或组件库替换，改的是现有屏幕的视觉、文案和间距；跨页面的统一仍要人维护。编辑判断：适合想摆脱"AI 味"、又愿意按流程迭代的团队；不适合要求一次生成定稿、或没有人工做最终取舍的项目。
+线上站点修改前应先备份或用版本控制；编辑判断：Playwright 抓取可能被登录墙、反爬或动态渲染挡住，README 未说明它如何处理需要登录的页面。接入图像生成服务意味着把 prompt 和可能的素材发给第三方，且可能产生费用；README 承诺付费前询问，但实际账单和数据处理条款取决于你选的服务。
 
 ## 来源
 

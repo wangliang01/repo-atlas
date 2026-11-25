@@ -14,13 +14,21 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-Orca 是一个编码 Agent 控制台。它解决的问题不是“再做一个 Agent”，而是把散落在终端、机器和聊天窗口里的多个 Agent 收进一个可观察、可接管的界面。路线是自带（bring your own）：用你自己的 Claude Code 或 Codex 订阅、自己的本地或远程机器、自己的工具，不转售模型。README 把它概括为 “Bots inside your agent IDE”。
+Orca 是一个编码 Agent 控制台，解决的问题不是「再做一个 Agent」，而是把散落在终端、机器和聊天窗口里的多个 Agent 收进一个可观察、可接管的界面。路线是自带（bring your own）：用你自己的 Claude Code 或 Codex 订阅、自己的本地或远程机器、自己的工具，不转售模型。README 把它概括为「Bots inside your agent IDE」。
 
-它面向已经在用 CLI Agent、并且经常同时推进多个任务的人或团队。核心组成有四块：桌面端（macOS、Windows、Linux）、手机端（iOS、Android）、Orca CLI，以及可配的远程执行环境（Remote Orca Server、SSH 主机、给单个 worktree 的云 VM）。在此之上是 Bots、worktree 并行、diff 审查、GitHub/Linear 集成，以及浏览器和桌面自动化。和终端复用器或 IDE 插件相比，它的差别在于把“任务来源（Slack/Linear/GitHub）—隔离工作区—Agent 执行—人工审查”连成一条链。
+它面向已经在用 CLI Agent、并且经常同时推进多个任务的人或团队。核心组成有四块：桌面端（macOS、Windows、Linux）、手机端（iOS、Android）、Orca CLI，以及可配的远程执行环境（Remote Orca Server、SSH 主机、给单个 worktree 的云 VM）。在此之上是 Bots、worktree 并行、diff 审查、GitHub/Linear 集成，以及浏览器和桌面自动化。和终端复用器或 IDE 插件相比，它的差别在于把「任务来源（Slack/Linear/GitHub）—隔离工作区—Agent 执行—人工审查」连成一条链。
 
 README 说它与任何 CLI Agent 兼容，只要能在终端里跑就能在 Orca 里跑，并列出 Claude Code、Codex、Grok、Cursor、GitHub Copilot 等一长串名字。这意味着它不绑定某一家模型或订阅，但也意味着实际体验会随 Agent CLI 本身而波动。README 还提供插件目录，主题、编辑器、语言和面板可以一键安装。
 
-## 怎么上手
+## 它替掉了什么麻烦
+
+它替掉的是「一个人盯着多个终端窗口来回切换」的工作方式：在 Orca 出现之前，同时推进几个 Agent 任务通常意味着开多个终端标签、记住每个任务在哪台机器、谁在等输入，离开工位就失去接管能力。README 没有交代这段历史，以上是根据功能清单反推的编辑判断，依据是 Bots、Mobile App、Run Anywhere 三节都在强调「通知—接管—换机器继续」这三个动作。
+
+痛点可以归成三条。第一是可观察性：会话散在各处，没有一个地方能同时看到哪些 Agent 在跑、哪些卡住等人。第二是隔离性：多个 Agent 改同一个仓库会互相踩，手动切分支、复制目录既慢又容易出错。第三是审查：Agent 交回的改动要靠人把 diff 贴进聊天框再描述问题。Orca 对这三条分别给了统一面板、worktree 和行级批注。编辑判断：这套组合更像「把零散操作收成流水线」，而不是发明了新能力。
+
+和同类方案的差别在闭环长度。README 没有点名任何竞品，也没有性能或功能对照表；它只说自己的路线是自带订阅、不转售模型。编辑判断：只做终端包装的工具停在「把 CLI 搬进界面」，Orca 则继续往后接了任务来源、隔离工作区和 PR 回路，代价是要接入的系统和权限更多。
+
+## 跑起来要几步
 
 桌面端从 orca.dev 下载，或直接取安装包：macOS 的 arm64/x64 `.dmg`、Windows `.exe`、Linux AppImage。包管理器方式如下，README 特别提醒 Homebrew 必须写全名，裸 `orca` 是 Plotly 的另一个 cask：
 
@@ -33,21 +41,21 @@ yay -S stably-orca-bin
 
 README 没有给出首次配置的逐步清单，但从功能描述可以推出顺序：先把你已有的 Agent（Claude Code、Codex 等）登录好，再在 Orca 里选择 Chat 或 Terminal 运行；要让 Agent 在笔记本合盖后继续跑，就配对 Remote Orca Server、SSH 主机或云 VM；要从 Slack、Linear、GitHub 触发，就建一个 Bot，让它修 bug 并回一个带测试的 PR，再回到 Orca 审查。
 
-手机端需要和桌面端配对，用来接收“Agent 需要你”的通知，并在聊天里回复。常见卡点包括安装名冲突（裸 `orca`）、RC 版与稳定版 cask 互斥，以及 CLI 的安装命令不在 README 正文里，需要跳转 CLI 文档。README 也没有说明桌面端的最低系统版本和远程服务器的部署步骤。
+手机端需要和桌面端配对，用来接收「Agent 需要你」的通知，并在聊天里回复。常见卡点包括安装名冲突（裸 `orca`）、RC 版与稳定版 cask 互斥，以及 CLI 的安装命令不在 README 正文里，需要跳转 CLI 文档。README 也没有说明桌面端的最低系统版本和远程服务器的部署步骤。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-隔离单位是 worktree，不是会话。每个 worker Agent 在自己的 worktree 里工作，互不干扰；一个协调者 Agent 可以把大任务拆开、启动多个 worker、再把结果收回来。worktree 可以跑在本机、SSH 主机，或单独的云 VM，所以“笔记本一睡 Agent 就停”不再是必然。代价是并行度越高，磁盘、机器和模型额度消耗越大。
+它把复杂度放在「隔离单位」和「控制面」两处。隔离单位是 worktree，不是会话：每个 worker Agent 在自己的 worktree 里工作，互不干扰；一个协调者 Agent 可以把大任务拆开、启动多个 worker、再把结果收回来。worktree 可以跑在本机、SSH 主机，或单独的云 VM，所以「笔记本一睡 Agent 就停」不再是必然。README 没有说明 worktree 的磁盘回收和并发上限，这两点决定了长期使用后的清理成本。
 
-审查回路围绕 diff 设计：可以在具体改动行上批注，把聚焦的反馈发回给 Agent；Git 集成能从 diff 起草 commit message 和 PR，再把失败的检查或 PR 评论送回 Agent 修。这个闭环减少了“复制报错到聊天框”的手工步骤，但也意味着 Agent 需要拿到仓库和 CI 的访问权，权限边界要提前划清。
+审查回路围绕 diff 设计：可以在具体改动行上批注，把聚焦的反馈发回给 Agent；Git 集成能从 diff 起草 commit message 和 PR，再把失败的检查或 PR 评论送回 Agent 修。这个闭环把「复制报错到聊天框」的手工步骤去掉了。
 
-Chat 与 Terminal 共享同一段对话上下文，可以在图形界面和原始 CLI 之间切换，这是它区别于“只做终端包装”的地方。Orca CLI 则把 Orca 自身变成 Agent 可调用的工具：创建 worktree、启动 worker、驱动浏览器和桌面应用、排定时任务。另一组设计让 Agent 能看自己的产物：Design Mode 点选页面元素复制 HTML、样式和选择器，Mobile Emulator 跑 iOS Simulator 或 Android 模拟器并让 Agent 点击输入，Computer Use 在缺少 CLI/API 时操作桌面应用。Bot 的 `SOUL.md`、`MEMORY.md` 是可直接阅读和编辑的 Markdown，降低了“黑盒记忆”的不透明感。
+Chat 与 Terminal 共享同一段对话上下文，可以在图形界面和原始 CLI 之间切换，这是它区别于「只做终端包装」的地方。Orca CLI 则把 Orca 自身变成 Agent 可调用的工具：创建 worktree、启动 worker、驱动浏览器和桌面应用、排定时任务。另一组设计让 Agent 能看自己的产物：Design Mode 点选页面元素复制 HTML、样式和选择器，Mobile Emulator 跑 iOS Simulator 或 Android 模拟器并让 Agent 点击输入，Computer Use 在缺少 CLI/API 时操作桌面应用。Bot 的 `SOUL.md`、`MEMORY.md` 是可直接阅读和编辑的 Markdown，降低了「黑盒记忆」的不透明感。
 
-Bots 还支持定时和触发：每个工作日早上 9 点、PR 打开、检查失败或 webhook 触发。Automations 可以按计划在任意仓库上跑提示词，例如夜间依赖升级、每周 triage、flaky test 清扫。这些能力把 Orca 从“手动开 Agent”推向“事件驱动的 Agent 队列”，但调度、重试和失败通知的具体规则，README 未说明。
+Bots 还支持定时和触发：每个工作日早上 9 点、PR 打开、检查失败或 webhook 触发。Automations 可以按计划在任意仓库上跑提示词，例如夜间依赖升级、每周 triage、flaky test 清扫。这些能力把 Orca 从「手动开 Agent」推向「事件驱动的 Agent 队列」，但调度、重试和失败通知的具体规则，README 未说明。
 
-## 边界与风险
+## 什么时候别用它
 
-许可证是 MIT。它不提供模型或额度，实际能力受你已有的 Claude Code、Codex 等订阅和 CLI 限制；README 提供用量查看和账号切换，但没有说明超出限额后的行为。
+它不适合想找托管模型服务或零配置云端 Agent 的团队——它不提供模型或额度，实际能力受你已有的 Claude Code、Codex 等订阅和 CLI 限制；README 提供用量查看和账号切换，但没有说明超出限额后的行为。许可证是 MIT。编辑判断：并行度越高，磁盘、机器和模型额度消耗越大，这是 worktree 隔离的直接代价。
 
 触发入口多是这类工具的主要风险：Slack、手机、webhook、定时任务、Computer Use 都能间接执行命令，暴露面比单机终端大。README 链接了 Bots 的安全文档，但正文没有给出威胁模型、沙箱边界或权限最小化方案，这些需要自行评估。README 提到会收集匿名使用数据，细节和退出方式在 telemetry 文档里；如果组织对遥测敏感，应先核对再部署。
 

@@ -15,15 +15,23 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-ego lite 是一个浏览器，不是给现有浏览器加一层桥。它要解决的是“Agent 做浏览器自动化时会抢走你的浏览器”这个问题：Agent 在同一个浏览器里的独立 Space 工作，你继续用自己的标签页，互不打断。
+ego lite 是一个浏览器，不是给现有浏览器加一层桥。它要解决的是「Agent 做浏览器自动化时会抢走你的浏览器」：Agent 在同一个浏览器里的独立 Space 工作，你继续用自己的标签页，互不打断。
 
 给谁用？已经在用 Claude Code、Codex、Cursor 等 Agent 做浏览器任务，又不想让 Agent 接管自己日常浏览器的人。它尤其适合需要登录态的场景：首次启动可以迁移 Chrome 数据，Agent 就能用上你的登录、cookies、扩展和书签。
 
-核心组成有两块。一块是 ego lite 桌面应用（macOS 和 Windows），负责浏览器本身和 Space 隔离；另一块是 `ego-browser` Skill，作为 Agent CLI 和浏览器之间的连接层。README 把它和 browser-use、agent-browser 这类“驱动另一个浏览器”的工具明确区分开：后者是桥，ego lite 是浏览器本身。
+核心组成有两块：ego lite 桌面应用（macOS 和 Windows），负责浏览器本身和 Space 隔离；以及 `ego-browser` Skill，作为 Agent CLI 和浏览器之间的连接层。README 把它和 browser-use、agent-browser 这类「驱动另一个浏览器」的工具明确区分开：后者是桥，ego lite 是浏览器本身。README 还拿它与浏览器扩展、内置浏览器（Claude/ChatGPT 自带）、云浏览器（Browserbase/Browser Use）、浏览器 CLI 与 AI 浏览器（Comet/Dia）做六列对照。
 
-## 怎么上手
+## 它替掉了什么麻烦
 
-装法有三种。直接下载应用：macOS 有 Apple Silicon 和 Intel 两个 `.dmg`，Windows 是 x64 `.exe`；打开安装后，ego lite 会把 `ego-browser` Skill 加到本机各个 Agent 的 skills 目录。只装 Skill 的话：
+它替掉的是「用一个桥去驱动另一个浏览器」的方案。README 称 browser-use、agent-browser 这类工具需要另开一个浏览器、你的浏览器数据很少能完整带过去、连接不稳定，最后人和 Agent 会抢同一个浏览器的控制权。
+
+编辑判断：这几种痛点是连着的——桥要找一个可驱动的浏览器，登录态就得靠导出或重新登录；连接断了任务要重来；共享同一个窗口时，人一动鼠标就可能打断自动化。ego lite 的答案是「从设计上给两个使用者共用」：Agent 有自己的 Space，你保留自己的标签页，登录态由浏览器本体继承。
+
+和扩展、内置浏览器、云浏览器、AI 浏览器的差别，README 用一张对照表列出：能否配合任意 Agent、能否用你的登录态、是否抢浏览器、能否并行、是否免费、数据是否本地。编辑判断：这些维度由项目自己挑选，结论也应这样看。
+
+## 跑起来要几步
+
+两步：先把应用和 Skill 装上，然后在 Agent CLI 里发一句自然语言。装法有三种。直接下载应用：macOS 有 Apple Silicon 和 Intel 两个 `.dmg`，Windows 是 x64 `.exe`；打开安装后，ego lite 会把 `ego-browser` Skill 加到本机各个 Agent 的 skills 目录。只装 Skill 的话：
 
 ```bash
 npx skills add citrolabs/ego-lite
@@ -39,27 +47,29 @@ ego-browser follow @ego_agent on x.com for me
 
 预期结果是 Agent 在自己的 Space 里打开页面、读一份 Snapshot（页面转成的结构化文本）、执行动作并回报，你自己的标签页不动。常见卡点：Linux 目前不支持，只在 roadmap 上；只装 Skill 不装应用跑不起来；Windows 只提供 x64 安装包；应用本体是单独下载安装的，不走包管理器。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-Space 隔离是第一个关键设计。每个 Agent 有自己的隔离 Space，可以同时跑多个任务；你能看到哪个 Space 在跑，也能随时接管或停止。README 举的例子是 Claude Code 在 10 个 Space 里并行补充 10 个线索，同时 Codex 在另外 5 个 Space 里抓竞品站点。代价是并行任务在同一个浏览器里运行，Agent 能碰到你的真实登录态；隔离的是工作区，不是账号权限。README 未说明 Space 的数量上限或资源占用。
+复杂度放在 Space 隔离和「用代码而不是 CLI 调浏览器」这两层上。每个 Agent 有自己的隔离 Space，可以同时跑多个任务；你能看到哪个 Space 在跑，也能随时接管或停止。README 举的例子是 Claude Code 在 10 个 Space 里并行补充 10 个线索，同时 Codex 在另外 5 个 Space 里抓竞品站点。
 
-第二个设计是“用代码而不是 CLI 调浏览器”。ego lite 把能力包成 JavaScript 函数（`snapshot`、`fill`、`click`、`wait`、`navigate`、`capture`），Agent 写一段 JS 一次执行，而不是“调两个命令、看结果、再调两个”。README 称这样复杂任务更快、成功率高、工具调用和成本更低；这是项目自测，见下面的基准说明。
+第二层是调用方式。ego lite 把能力包成 JavaScript 函数（`snapshot`、`fill`、`click`、`wait`、`navigate`、`capture`），Agent 写一段 JS 一次执行，而不是「调两个命令、看结果、再调两个」。README 称这样复杂任务更快、成功率高、工具调用和成本更低；这是项目自测，见下面的基准说明。
 
-第三个设计是 Snapshot。README 称它对页面结构的处理是目前最强的，靠的是在浏览器引擎内部做定制，能处理深层嵌套 iframe。对纯文本模型来说，Snapshot 就是“眼睛”，它的质量直接决定后续动作准不准。README 的对比表按“能否配合任意 Agent、能否用你的登录态、是否抢浏览器、能否并行、是否免费、数据是否本地”等维度比较；编辑判断：这些维度由项目自己选择，结论也应这样看。
+第三层是 Snapshot。README 称它对页面结构的处理是目前最强的，靠的是在浏览器引擎内部做定制，能处理深层嵌套 iframe。对纯文本模型来说，Snapshot 就是「眼睛」，它的质量直接决定后续动作准不准。
 
-README 还提到一个尚未上线的能力：把成功动作沉淀成可复用工具和工作流，让类似任务越用越快；README 标为 coming soon，当前不能算进可用特性。
+README 还提到一个尚未上线的能力：把成功动作沉淀成可复用工具和工作流，让类似任务越用越快；README 标为 coming soon，当前不能算进可用特性。README 未说明 Space 的数量上限或资源占用。
 
-## 边界与风险
+Real-World Bench 的评分口径是：31 个任务由同一个 Agent（pi）、同一个模型（gpt-5.6-sol，thinking effort max）驱动，同一个评分方按每任务 rubric 打分，只有满足全部要求才算 full success。README 未给出完整任务清单和 rubric 细则。
 
-许可证要分清。README 说“仓库内容”是 MIT，但 ego lite 浏览器是“单独的、免费下载”的产品。编辑判断：仓库开源不等于浏览器开源，二次分发或审计前要确认浏览器的授权状态。
+## 什么时候别用它
+
+想把日常浏览器完全交给 Agent、或要求浏览器本体开源可审计的团队，不适合用它。许可证要分清。README 说「仓库内容」是 MIT，但 ego lite 浏览器是「单独的、免费下载」的产品。编辑判断：仓库开源不等于浏览器开源，二次分发或审计前要确认浏览器的授权状态。
 
 平台边界清楚：macOS（Apple Silicon 和 Intel）和 Windows x64 可用，Linux 在 roadmap。README 没有说明 Linux 的时间表，也未说明是否有移动端或企业集中管理方案，企业 SSO、代理配置和离线安装也没有涉及，浏览器占用的磁盘或内存同样未说明。
 
 继承登录态是它最大的便利，也是最大的风险。Agent 能碰到的账号数据和你自己一样多；自动化仍可能误点、发错内容或触发平台风控。编辑判断：高价值账号应与自动化用的浏览器身份隔离，或至少限制 Agent 的可操作范围。
 
-性能声明来自项目自测。README 的 Real-World Bench 是 31 个真实网站任务，同一个 Agent（pi）、同一个模型（gpt-5.6-sol）、同一个评分方，README 称 ego-browser 比另外四个工具快 47% 到 63%，并在速度、成功率、成本上领先。这是厂商自己的基准，任务集和评分细则没有在 README 里完整展开。README 未说明独立第三方复现结果。
+性能声明来自项目自测。README 的 Real-World Bench 是 31 个真实网站任务，同一个 Agent（pi）、同一个模型（gpt-5.6-sol）、同一个评分方，README 称 ego-browser 比另外四个工具快 47% 到 63%，并在速度、成功率、成本上领先。这是厂商自己的基准，任务集和评分细则没有在 README 里完整展开，README 未说明独立第三方复现结果。
 
-隐私方面，README 说浏览数据留在本机，数据收集刻意保持很窄，只收集类似“是否设为默认浏览器”的产品信号。但浏览器本体是单独下载的，README 未说明其数据收集的实现细节和可审计程度。
+隐私方面，README 说浏览数据留在本机，数据收集刻意保持很窄，只收集类似「是否设为默认浏览器」的产品信号。但浏览器本体是单独下载的，README 未说明其数据收集的实现细节和可审计程度。社区入口有 Discord、GitHub Discussions 和 X 三个，README 未说明是否有付费或企业版本。
 
 ## 来源
 

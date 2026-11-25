@@ -19,11 +19,17 @@ OpenTalking 是一个开源的实时数字人编排框架。它不只做口型�
 
 给谁用？想私有部署数字人产品的团队，场景包括电商直播、陪伴角色、新闻播报、医疗导诊和文旅讲解（README 的演示视频就是这几类）。也适合先验证产品链路、再按 GPU 和画质要求接真实模型的开发者。
 
-核心分成两层。编排层是 API、Worker 和前端；合成后端可以是 `mock`、`local`、`direct_ws` 或远程的 OmniRT。模型侧支持 QuickTalk、Wav2Lip、MuseTalk、FlashTalk、FlashHead、FasterLivePortrait 等。WebUI 用来选形象、配音色、配 LLM/STT/TTS 和驱动模型、看连接状态，并在同一页验证对话、字幕和音视频播放。
+核心分成两层。编排层是 API、Worker 和前端；合成后端可以是 `mock`、`local`、`direct_ws` 或远程的 OmniRT。模型侧支持 QuickTalk、Wav2Lip、MuseTalk、FlashTalk、FlashHead、FasterLivePortrait 等。WebUI 用来选形象、配音色、配 LLM/STT/TTS 和驱动模型、看连接状态，并在同一页验证对话、字幕和音视频播放。README 把这套能力描述为「数字人生产栈」，而不只是一个模型包装。
 
-和“一个脚本跑到底”的 demo 相比，它的差别是分层和可插拔：编排层和合成后端可以独立部署，先跑 Mock 再接真实模型。
+## 它替掉了什么麻烦
 
-## 怎么上手
+它替掉的是「把 LLM、语音、口型和 WebRTC 分别拼起来」这件事。README 没有交代此前行业怎么搭；编辑判断：常见做法是拿一个口型模型 demo 起步，再自己补会话状态、TTS、字幕和播放，任何一段换供应商都要重接线，而且没有 GPU 或权重时根本跑不到产品链路。
+
+README 说它覆盖数字人对话产品的核心路径，把前端、会话、LLM、STT、TTS、打断、字幕、WebRTC 和模型调用放在一个项目里。编辑判断：和「一个脚本跑到底」的 demo 相比，它的差别是分层和可插拔：编排层和合成后端可以独立部署，先跑 Mock 再接真实模型。这个先后顺序很关键，因为真实模型要权重和 GPU，README 把 Mock 定位成验证 API、TTS 和 WebRTC 的入口。
+
+同类方案的差别，README 未给出横向对比。它只在致谢里提到 LiveTalking、SoulX-FlashTalk、OmniRT、aiortc 等项目，说明站在这些项目之上；编辑判断：具体谁更全、谁更实时，README 没有给依据。
+
+## 跑起来要几步
 
 README 给两条路径：Compshare 镜像和自部署。想先不装依赖、不下载模型权重，可以用已发布的镜像，实例开放 `5173` 端口即可看到 WebUI，镜像里包含 OpenTalking、OmniRT、QuickTalk 运行环境和模型文件。
 
@@ -52,49 +58,29 @@ bash scripts/start_unified.sh --mock --api-port 8210 --web-port 5280
 
 停止服务用 `bash scripts/quickstart/stop_all.sh`。Mock 模式用内置静态帧，但 LLM 回复、流式 TTS、字幕事件和 WebRTC 播放仍走完整链路，所以可以用它验证 API、TTS 和浏览器播放是否通。
 
-Mock 跑通后再接真实模型。本地 QuickTalk 需要设好模型根目录和设备：
-
-```bash
-export DIGITAL_HUMAN_HOME="${DIGITAL_HUMAN_HOME:-$HOME/digital-human}"
-export OPENTALKING_MODEL_ROOT="${OPENTALKING_MODEL_ROOT:-$DIGITAL_HUMAN_HOME/models}"
-export OPENTALKING_TORCH_DEVICE=cuda:0
-export OPENTALKING_QUICKTALK_ASSET_ROOT="$OPENTALKING_MODEL_ROOT/quicktalk"
-export OPENTALKING_QUICKTALK_WORKER_CACHE=1
-bash scripts/start_unified.sh --backend local --model quicktalk --api-port 8210 --web-port 5280
-```
-
-远程高质量路径则指向 OmniRT：
-
-```bash
-bash scripts/start_unified.sh \
-  --backend omnirt \
-  --model flashtalk \
-  --api-port 8210 \
-  --web-port 5280 \
-  --omnirt http://<gpu-server>:9000
-```
+Mock 跑通后再接真实模型。本地 QuickTalk 需要设好模型根目录和设备，启动参数是 `--backend local --model quicktalk`；远程高质量路径则指向 OmniRT，启动参数是 `--backend omnirt --model flashtalk --omnirt http://<gpu-server>:9000`。README 把权重下载、目录布局、镜像和排障放在文档里，正文只留启动入口。
 
 常见卡点：真实模型要下权重、要 GPU，README 的模型表给出大致显存门槛（Wav2Lip 约 8 GB、MuseTalk 约 12 GB、QuickTalk 推荐 RTX 3090/4090）；完全本地的语音链路里，CosyVoice 跑在单独的 sidecar venv；README 把 Windows/WSL2 一键部署列为 roadmap 项，说明它还不是成熟路径。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-最值得关注的是编排层和合成后端解耦。`mock`、`local`、`direct_ws`、`omnirt` 是不同后端，前端和会话逻辑不需要跟着换。这让团队可以先用 Mock 把 API、TTS、字幕和 WebRTC 跑通，再按显存和画质换模型，而不是一开始就被权重和驱动环境卡住。
+复杂度放在「编排层与合成后端解耦」和「供应商可插拔」上。`mock`、`local`、`direct_ws`、`omnirt` 是不同后端，前端和会话逻辑不需要跟着换。这让团队可以先用 Mock 把 API、TTS、字幕和 WebRTC 跑通，再按显存和画质换模型，而不是一开始就被权重和驱动环境卡住。
 
-第二个设计是供应商可插拔。LLM、STT、TTS 是独立配置，LLM 走 OpenAI 兼容接口，因此可以把 `OPENTALKING_LLM_BASE_URL` 指向任意兼容服务；README 提到 DashScope、小米 MiMo、本地 SenseVoice、CosyVoice、IndexTTS 等路径。代价是配置面变大，每个供应商的 key、模型和健康检查都要自己管。
+LLM、STT、TTS 是独立配置，LLM 走 OpenAI 兼容接口，因此可以把 `OPENTALKING_LLM_BASE_URL` 指向任意兼容服务；README 提到 DashScope、小米 MiMo、本地 SenseVoice、CosyVoice、IndexTTS 等路径。代价是配置面变大，每个供应商的 key、模型和健康检查都要自己管。
 
-第三个设计是把产品侧能力放进同一项目：形象和音色资产库、知识库（LightRAG）、记忆（BM25 / mem0 / SQLite）、多会话状态、字幕事件和打断控制。README 的更新记录显示这些是逐步加进来的，说明项目在往“可运营的数字人工作台”走，而不只是一个推理脚本。字幕事件和打断控制也列在核心路径里；README 只给了名字，没有展开这两者的实现机制。
+第三个设计是把产品侧能力放进同一项目：形象和音色资产库、知识库（LightRAG）、记忆（BM25 / mem0 / SQLite）、多会话状态、字幕事件和打断控制。README 的更新记录显示这些是逐步加进来的，说明项目在往「可运营的数字人工作台」走，而不只是一个推理脚本。字幕事件和打断控制也列在核心路径里；README 只给了名字，没有展开这两者的实现机制。
 
 模型选择上有明确的资源梯度。README 给了一张表：`mock` 不需要 GPU；QuickTalk 推荐 RTX 3090/4090；Wav2Lip 至少 8 GB；MuseTalk 至少 12 GB；FlashTalk-14B 和 FlashHead-1.3B 需要多卡或 NPU；FasterLivePortrait 面向单卡实时人像贴回和视频克隆。README 还给了一个消费级参考：QuickTalk 在 RTX 3090 上输出 720x900 / 25fps，约占 3.8 GiB 显存，约 35 fps。
 
-## 边界与风险
+## 什么时候别用它
 
-许可证是 Apache-2.0。真实效果高度依赖 GPU、模型权重和网络，README 的演示视频不等于你的环境；编辑判断：实时性、口型和音画同步需要在自己的硬件和网络下实测，README 未给出延迟、成功率基准、并发会话数或长期运行的资源占用。
+没有相应 GPU、又不愿处理模型部署的人，不适合用它。许可证是 Apache-2.0。真实效果高度依赖 GPU、模型权重和网络，README 的演示视频不等于你的环境；编辑判断：实时性、口型和音画同步需要在自己的硬件和网络下实测，README 未给出延迟、成功率基准、并发会话数或长期运行的资源占用。
 
-合规是这类项目绕不开的边界。数字人、换脸和声音克隆涉及肖像权、声音权和平台政策；README 的 roadmap 里仍列着“licensed voices and synthetic-content labeling”，说明授权音色和合成内容标识还没完成。商用前要单独评估。
+合规是这类项目绕不开的边界。数字人、换脸和声音克隆涉及肖像权、声音权和平台政策；README 的 roadmap 里仍列着 licensed voices and synthetic-content labeling，说明授权音色和合成内容标识还没完成。商用前要单独评估。
 
 运维成本不低。自部署要 Python 3.11 环境、Node、FFmpeg、模型权重和 GPU；完全本地语音链路还有 CosyVoice 的独立 sidecar venv；生产部署涉及 Docker、分布式和远程 GPU。README 把 Windows/WSL2 一键部署列为未完成项，脚本也以 `.sh` 和 `.venv` 为主，编辑判断：Unix 环境更顺，Windows 用户要有心理准备。
 
-第三方服务方面，README 推荐了 Atlas Cloud 作为 OpenAI 兼容的推理入口，这是带推广链接的商业推荐，不是必需依赖。README 未说明各模型权重的许可证是否都允许商用，接入前要逐个确认。
+第三方服务方面，README 推荐了 Atlas Cloud 作为 OpenAI 兼容的推理入口，这是带推广链接的商业推荐，不是必需依赖。README 未说明各模型权重的许可证是否都允许商用，接入前要逐个确认。README 也未说明多会话并发的上限和隔离方式。
 
 不适合谁？想要开箱即用 SaaS、没有 GPU、或不愿处理模型部署的人。只想做口型同步、不需要会话和 WebUI 的人，也可以直接用更小的模型项目。
 

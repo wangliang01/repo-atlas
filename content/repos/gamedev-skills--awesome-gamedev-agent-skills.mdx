@@ -14,30 +14,38 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-awesome-gamedev-agent-skills 是一套给 AI 编码 Agent 的游戏开发能力包：79 个 Skill 覆盖 12 个引擎，外加一个路由器。你描述要做什么，路由器先识别引擎和任务，只加载匹配的 2 到 3 个 Skill，然后 Agent 才写代码。
+awesome-gamedev-agent-skills 是一套给 AI 编码 Agent 的游戏开发能力包：79 个 Skill 覆盖 12 个引擎，外加一个路由器。你描述要做什么，路由器先识别引擎和任务，只加载匹配的 2 到 3 个 Skill，然后 Agent 才写代码。README 的定位是「用你已经在用的引擎做游戏」，不是另起一套框架。
 
-给谁用？已经在用 Godot、Unity、Unreal、Roblox 或 Web 引擎做游戏，想让 Agent 少犯引擎 API 错误的人；也适合 game jam 和原型阶段，需要快速拿到可运行骨架的独立开发者。README 的定位是“用你已经在用的引擎做游戏”，不是另起一套框架。
+给谁用？已经在用 Godot、Unity、Unreal、Roblox 或 Web 引擎做游戏，想让 Agent 少犯引擎 API 错误的人；也适合 game jam 和原型阶段，需要快速拿到可运行骨架的独立开发者。
 
-核心组成分四层：引擎技能（Godot 16 个、Unity 9 个、Unreal 6 个、Ebitengine 1 个、Web 引擎 6 个、其他引擎 12 个）、跨引擎的学科技能 15 个（AI、程序化生成、存档、音频、着色器、手感等）、类型模板 9 个（平台跳跃、Roguelike、RPG 等）、工作流 5 个（game jam、快速原型、Steam/itch 发布、游戏文档），再加一个路由器。所有技能都是标准 `SKILL.md` 文件夹，同一份文件在 Claude Code、Cursor、Windsurf、Cline、Codex、Gemini CLI、GitHub Copilot、Kiro 等客户端里原生加载。
+核心组成分四层：引擎技能（Godot 16 个、Unity 9 个、Unreal 6 个、Ebitengine 1 个、Web 引擎 6 个、其他引擎 12 个）、跨引擎的学科技能 15 个（AI、程序化生成、存档、音频、着色器、手感等）、类型模板 9 个（平台跳跃、Roguelike、RPG 等）、工作流 5 个（game jam、快速原型、Steam/itch 发布、游戏文档），再加一个路由器。README 说所有技能都是标准 `SKILL.md` 文件夹，同一份文件在 Claude Code、Cursor、Windsurf、Cline、Codex、Gemini CLI、GitHub Copilot、Kiro 等客户端里原生加载。
 
 和零散提示词集合的差别是路由和版本固定。README 说每个 Skill 都按官方引擎文档编写，并钉到具体版本（Godot 4.7.2、Unity 6.3 LTS、Unreal 5.8、Phaser 4.2.1、three.js r187 等，检查日期 2026-11-11）。
 
-## 怎么上手
+## 它替掉了什么麻烦
 
-用 skills CLI，需要 Node.js 22.20 或更高：
+它替掉的是「把引擎文档整段塞给 Agent，或者自己从几十个 Skill 里挑该用哪个」这件事。README 没有交代出现之前的标准做法；编辑判断：过去让编码 Agent 写游戏代码，通常靠通用提示词、把相关文档贴进上下文，或者让模型凭记忆写 API，结果常见的是版本过期、Godot 3 和 4 的写法混用、Unity 与 Unreal 的概念串台；而如果已经有一堆 Skill，用户还得自己判断当前任务该加载哪几个。
+
+它的切入点是把「选技能」交给路由器。README 说路由器从项目文件识别引擎——`project.godot` 是 Godot，`*.uproject` 是 Unreal，认不出来就直接问——再从请求里识别任务（概念、类型或发布步骤），按「引擎基础 → 概念 → 类型胶水」的顺序加载。引擎选择是排他的，只选一个；学科、类型和工作流在上面叠加。
+
+和同类方案的差别，README 强调三件事：跨 12 个引擎、按官方文档钉版本、把评测方法和限制公开。编辑判断：这三点里最实际的是版本固定，它直接针对「Agent 写出上一个大版本的 API」这个高频问题；但 README 没有列举其他游戏开发 Skill 合集，也没有做横向对比。README 未说明这些 Skill 与引擎官方示例或社区教程的覆盖差异。
+
+## 跑起来要几步
+
+两步：装包，然后直接说任务。README 给的通用命令是：
 
 ```bash
 npx skills add gamedev-skills/awesome-gamedev-agent-skills
 ```
 
-先预览可以加 `--list`，装到所有项目加 `-g`，指定 Agent 用 `-a cursor`、`-a claude-code`、`-a gemini-cli` 等。Claude Code 也可以走插件市场：
+它需要 Node.js 22.20 或更高。先预览可以加 `--list`，装到所有项目加 `-g`，指定 Agent 用 `-a cursor`、`-a claude-code`、`-a gemini-cli` 等。Claude Code 也可以走插件市场：
 
 ```bash
 claude plugin marketplace add gamedev-skills/awesome-gamedev-agent-skills
 claude plugin install gamedev@awesome-gamedev-agent-skills
 ```
 
-只做一个引擎时，README 建议装“路由器 + 该引擎”的精简包：
+只做一个引擎时，README 建议装「路由器 + 该引擎」的精简包：
 
 ```bash
 claude plugin install router@awesome-gamedev-agent-skills
@@ -46,31 +54,33 @@ claude plugin install godot@awesome-gamedev-agent-skills
 
 引擎包还有 `unity`、`unreal`、`ebitengine`、`web-engines`、`other-engines`。手动安装就是把 `<name>/` 文件夹放进对应目录：Claude Code 是 `.claude/skills/`，Codex/Gemini/Copilot 是 `.agents/skills/`，Cursor 是 `.cursor/skills/`。
 
-装好后直接说任务，例如“add a double jump to my Godot player”。路由器会从 `project.godot` 认出 Godot，加载 `godot-2d-movement` 和 `platformer`，而不是把 79 个技能全部塞进上下文。预期结果是 Agent 拿到版本匹配的引擎约定和代码骨架。
+装好后直接说任务，例如「add a double jump to my Godot player」。预期结果是路由器加载 `godot-2d-movement` 和 `platformer`，Agent 拿到版本匹配的引擎约定和代码骨架，而不是把 79 个技能全部塞进上下文。
 
 常见卡点：装太多 Skill 会挤占描述预算。README 说 Agent 会在一个大小限制内列出每个 Skill 的描述，超出后部分描述会被截断，反而让路由器选不准；Claude Code 的限制是上下文窗口的 1%，可以用 `skillListingBudgetFraction` 调高，或用 `SLASH_COMMAND_TOOL_CHAR_BUDGET` 设字符数。另一个卡点是版本固定：引擎升级后 Skill 可能滞后，README 指向 `docs/VERSION-SUPPORT.md`。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-路由器是整个项目的核心抽象。它做三件事：从项目文件识别引擎（`project.godot` 是 Godot，`*.uproject` 是 Unreal，认不出来就直接问）；从请求里识别任务（概念、类型或发布步骤）；按“引擎基础 → 概念 → 类型胶水”的顺序加载匹配技能，并在你换话题时重新路由。引擎选择是排他的（只能一个），学科、类型和工作流是在上面叠加的。
+复杂度放在路由器的判定规则、四层技能分工和版本固定这三处。路由器是整个项目的核心抽象。它做三件事：从项目文件识别引擎；从请求里识别任务；按「引擎基础 → 概念 → 类型胶水」的顺序加载匹配技能，并在你换话题时重新路由。README 说完整的引擎指纹和任务到技能的映射都在 `router/SKILL.md` 里，引擎排他、其余三层叠加。
 
-第二层设计是技能分层。引擎技能教 API 和约定，学科技能教跨引擎的做法，类型技能只负责组合、不重新教基础，工作流技能管发布和项目管理。这种分工避免同一个知识点在多个 Skill 里重复，也让路由可以按需组合。README 明确说类型模板“never re-teach primitives”。
+第二层设计是技能分层。引擎技能教 API 和约定，学科技能教跨引擎的做法，类型技能只负责组合、不重新教基础，工作流技能管发布和项目管理。这种分工避免同一个知识点在多个 Skill 里重复，也让路由可以按需组合。README 明确说类型模板「never re-teach primitives」。
 
-第三层是版本固定和验证。README 说代码示例在 12 个引擎中的 10 个上跑过或编译过，366 个盲测提示里 98.7% 的请求加载了正确 Skill。项目还把结果、方法和限制放在 `evals/RESULTS.md`，版本支持放在 `docs/VERSION-SUPPORT.md`。编辑判断：这种把评测方法公开的做法比只给一个成功率更可信，但仍是项目自评。
+第三层是版本固定和验证。README 说代码示例在 12 个引擎中的 10 个上跑过或编译过，366 个盲测提示里 98.7% 的请求加载了正确 Skill。项目还把结果、方法和限制放在 `evals/RESULTS.md`，版本支持放在 `docs/VERSION-SUPPORT.md`。编辑判断：把评测方法公开比只给一个成功率更可信，但仍是项目自评；98.7% 衡量的是路由命中，不是生成代码的正确率。
 
-美术资产工作流是另一个差异点。`create-game-assets` 不是一次性生成图片，而是先锁定视觉目标、按家族生成、确定性地归一化输出，再放进游戏里检查；README 用“art direction, not one-off generations”概括。编辑判断：这类流程仍需要美术判断，README 也没有说明它覆盖哪些引擎的导入方式。
+美术资产工作流是另一个差异点。README 说 `create-game-assets` 不是一次性生成图片，而是先锁定视觉目标、按家族生成、确定性地归一化输出，再放进游戏里检查，并用「art direction, not one-off generations」概括。编辑判断：这类流程仍需美术判断，README 也没有说明它覆盖哪些引擎的导入方式。
 
-## 边界与风险
+代价是路由和分层都依赖描述质量。README 说 agents 列出所有技能描述时有预算上限，超出会截断；装全套 79 个技能反而可能让路由器选不准。编辑判断：这套设计更适合「一个项目主用一个引擎」，而不是在同一台机器上频繁切换多个引擎。
 
-许可证是 Apache-2.0，README 指向 `NOTICE` 说明归属和商标。商用前按 Apache-2.0 的要求保留版权与 NOTICE 声明。
+## 什么时候别用它
 
-评测数据来自项目自己。98.7% 是“加载了正确 Skill”的比例，不等于生成的代码一定正确；“10/12 个引擎跑过或编译过”也说明还有两个引擎没有真实工具链验证。README 没有给出独立第三方复现。编辑判断：把命中率当路由质量的参考，不要当代码正确率。
+它不适合把 Agent 生成代码当成免审查交付的人，也不适合做通用软件工程或主机平台深度打包的团队。许可证是 Apache-2.0，README 指向 `NOTICE` 说明归属和商标。商用前按 Apache-2.0 的要求保留版权与 NOTICE 声明。
+
+评测数据来自项目自己。98.7% 是「加载了正确 Skill」的比例，不等于生成的代码一定正确；「10/12 个引擎跑过或编译过」也说明还有两个引擎没有真实工具链验证。README 没有给出独立第三方复现。编辑判断：把命中率当路由质量的参考，不要当代码正确率。
 
 编辑判断：版本固定是双刃剑。钉到 Godot 4.7.2、Unity 6.3 LTS、Unreal 5.8 等具体版本，能减少 API 过期错误，但引擎升级后需要维护者跟进；README 未说明更新频率和旧版本支持策略。
 
 上下文预算也是实际约束。技能越多，描述列表越长，超出限制后部分描述会被截断，路由器就更难选准；README 给了调整参数，但需要用户自己判断装全套还是精简包。README 未说明每个 Skill 的 token 消耗或模型要求。
 
-覆盖范围有边界。它面向 12 个引擎的游戏开发，不是通用软件工程；素材生成仍需美术判断，发布工作流覆盖 SteamPipe 和 itch/butler 的上传，README 没有展开法务、评级和商店运营。README 未说明对主机平台、移动端打包深度或自定义引擎的支持。
+覆盖范围有边界。它面向 12 个引擎的游戏开发，不是通用软件工程；素材生成仍需美术判断，发布工作流覆盖 SteamPipe 和 itch/butler 的上传，README 没有展开法务、评级和商店运营。README 未说明对主机平台、移动端打包深度或自定义引擎的支持。编辑判断：如果项目已经深度定制引擎或使用私有构建链，这些按公开版本编写的约定可能不适用，应先在只读任务上验证。
 
 ## 来源
 

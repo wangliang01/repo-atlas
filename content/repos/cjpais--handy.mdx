@@ -18,39 +18,47 @@ Handy 是一个完全离线的桌面语音转文字应用：按一个可配置�
 
 给谁用？三类人最合适：对隐私敏感、不想把会议或口述内容交给云服务的用户；需要无障碍输入的人；以及想要一个可改、可扩展的听写工具的开发者和高级用户。README 把定位概括为免费、开源、私密、简单。
 
-核心组成：Tauri 桌面应用（README 称它是 Rust 基础的框架）、Silero VAD 静音过滤、可选的 Whisper 或 Parakeet 本地模型，以及把结果注入当前应用的粘贴层。录音方式支持按住说话和点按切换，也有仅按住、仅切换两种模式。和云听写服务的差别是离线、免费、可扩展；和纯命令行方案相比，它多了系统级快捷键、历史记录、设置界面和托盘常驻。
+核心组成：Tauri 桌面应用（README 称它是 Rust 基础的框架）、Silero VAD 静音过滤、可选的 Whisper 或 Parakeet 本地模型，以及把结果注入当前应用的粘贴层。录音方式支持按住说话和点按切换，也有仅按住、仅切换两种模式。README 说它覆盖 Windows、macOS 和 Linux。
 
-## 怎么上手
+## 它替掉了什么麻烦
 
-从 Releases 页面或官网下载安装包。也可以走包管理器：
+它替掉的是「云听写服务加付费墙」这套默认路径。README 说 Handy 的诞生就是为了补上一个真正开源、可扩展的语音转文字工具的空白，并把定位写成 Free、Open Source、Private、Simple；README 还在 Related Projects 里把 Handy CLI 标为「最初的 Python 命令行版本」。编辑判断：这说明它先是一个本地 CLI，再发展成带快捷键、历史记录、设置界面和托盘常驻的桌面应用。
+
+编辑判断：在此之前，想在各处输入框里口述，常见选择是订阅云服务或使用系统自带听写；前者把音频交出去且要付费，后者往往不可改、不可扩展。它的差别是整条链路都在本机：按快捷键说话、松开、转写、粘贴到当前应用，音频不发云端；和纯命令行方案相比，它把输入入口做成系统级快捷键，并常驻托盘。
+
+## 跑起来要几步
+
+最少一步：从 Releases 页面或官网下载安装包；也可以走包管理器：
 
 - macOS：`brew install --cask handy`。README 注明 Homebrew cask 不由 Handy 开发者维护。
 - Windows：`winget install cjpais.Handy`。README 注明 winget 包也不由开发者维护。
 - Debian/Ubuntu：`sudo apt install ./Handy_*.deb`。README 明确说不要用 `dpkg -i`，除非依赖已经装好；如果已经用了，运行 `sudo apt --fix-broken install`。
 
-安装后启动 Handy，授予麦克风和辅助功能权限，在设置里配快捷键和模型，然后按住快捷键说话、松开，文字就会出现在当前输入框。模型需要下载；如果处在代理或受限网络，可以按 README 的手动安装步骤把 `.bin` 或 `.gguf` 放进 models 目录，不要改文件名，重启后生效。
+安装后启动 Handy，授予麦克风和辅助功能权限，在设置里配快捷键和模型，然后按住快捷键说话、松开，文字就会出现在当前输入框。模型需要下载；如果处在代理或受限网络，可以按 README 的手动安装步骤把 `.bin` 或 `.gguf` 放进 models 目录，不要改文件名，重启后生效。README 还说它会读取共享的 Hugging Face 缓存里已有的模型，不必先把文件搬过来。
+
+想确认下载的安装包没被篡改，可以按 README 的步骤验证签名：产物用 Tauri 的 updater 签名格式，公钥在 `src-tauri/tauri.conf.json` 的 `plugins.updater.pubkey`，用 `minisign` 验证，README 明确说不要用 `gpg`。
 
 常见卡点大多来自平台差异：macOS 上蓝牙耳机麦克风可能让播放音质暂时下降；含 `fn`/Globe 的快捷键只在 Apple 键盘上有效，这是硬件限制；Windows 上无法往以管理员身份运行的应用里粘贴，转写会存进历史；Linux 的 Wayland 支持有限，需要 `wtype` 或 `dotool` 之类的输入工具。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-本地管线是第一个设计点：先用 Silero VAD 过滤静音，再把有效音频交给模型。这样既不把静音送进模型，也减少无意义的计算。模型有两类选择：Whisper Small/Medium/Turbo/Large，有 GPU 时可用 GPU 加速；Parakeet V3 面向 CPU 优化，并支持自动语言检测。代价是模型文件不小，README 列出的下载体积从 487 MB 到 1600 MB，首次使用要等下载。
+复杂度放在本地管线、转写 hook 和 CLI/信号入口这三层。本地管线是第一个设计点：先用 Silero VAD 过滤静音，再把有效音频交给模型。这样既不把静音送进模型，也减少无意义的计算。模型有两类选择：Whisper Small/Medium/Turbo/Large，有 GPU 时可用 GPU 加速；Parakeet V3 面向 CPU 优化，并支持自动语言检测。
 
 第二个设计是转写 hook。macOS 和 Linux 上可以放一个可执行文件在 `hooks/transcription`，Handy 把 LLM 后处理后的文本写到它的 stdin，再粘贴它的 stdout；尾部一个换行会被去掉，空输出就什么都不粘贴。hook 失败或超过 30 秒，就粘贴原文。README 还提醒 hook 拿不到你 shell 的 `PATH`，从 Dock 或 Finder 启动时只有 `/usr/bin:/bin:/usr/sbin:/sbin`，所以要用绝对路径。编辑判断：这是很实用的 Unix 过滤器式扩展，但环境差异容易踩坑。
 
 第三个设计是 CLI 和信号入口。Handy 支持 `--toggle-transcription`、`--toggle-post-process`、`--cancel` 控制已运行实例，也支持 `--start-hidden`、`--no-tray` 等启动参数，方便接到 Wayland 桌面环境或自定义快捷键。README 特别说明 Linux 上旧的 `SIGUSR1` 监听已移除，因为 WebKitGTK 自己用这个信号做垃圾回收，会造成幻听录音；还绑着 `pkill -USR1` 的用户要删掉。
 
-发布产物用 Tauri 的 updater 签名格式，公钥在 `src-tauri/tauri.conf.json` 的 `plugins.updater.pubkey`，README 给了用 `minisign` 验证的步骤，并明确不要用 `gpg`。README 列出的 Raycast 扩展可以启停录音、浏览历史、管理词典、切换模型和语言。
+README 列出的 Raycast 扩展可以启停录音、浏览历史、管理词典、切换模型和语言。编辑判断：这些入口共同把 Handy 从「一个听写窗口」变成可被系统和其他工具调用的输入组件。
 
-## 边界与风险
+## 什么时候别用它
 
-许可证是 MIT，但 README 单独声明 Handy 的名称、logo、图标和品牌资源不开源；非官方分支、重写和再分发必须用自己的品牌，不能暗示官方背书。编辑判断：代码可以自由改，但“Handy”这个品牌不能带走。
+编辑判断：平台支持不齐、需要企业级权限审计、或要求多设备同步与团队管理的团队，不适合直接把它铺开。平台支持是三套不同的成熟度：Windows 和 macOS 相对完整；Linux 上 Wayland 只是有限支持，还需要额外安装输入工具、`gtk-layer-shell`，并且录音浮层默认关闭以免抢焦点。README 为 Linux 的启动崩溃、Hyprland 浮层空白、Vulkan 覆盖层冲突分别给了排查步骤，编辑判断：这些问题并不罕见。
 
-平台支持是三套不同的成熟度。Windows 和 macOS 相对完整；Linux 上 Wayland 只是有限支持，还需要额外安装输入工具、`gtk-layer-shell`，并且录音浮层默认关闭以免抢焦点。README 为 Linux 的启动崩溃、Hyprland 浮层空白、Vulkan 覆盖层冲突分别给了排查步骤，编辑判断：这些问题并不罕见。
+隐私方面，音频不出本机是核心卖点；但编辑判断：辅助功能权限通常意味着能控制其他应用的输入，hook 又会执行你放的任意可执行文件，企业环境应先做安全评审。README 未说明模型准确率的基准数据；编辑判断：口音、专业词和嘈杂环境会影响结果，但 README 没有给出量化数据，也没有说明对中文等非英语语言的表现。
 
-隐私方面，音频不出本机是核心卖点；但辅助功能权限能读写其他应用的输入，hook 又会执行你放的任意可执行文件，企业环境应先做安全评审。README 未说明模型准确率的基准数据；编辑判断：口音、专业词和嘈杂环境会影响结果，但 README 没有给出量化数据，也没有说明对中文等非英语语言的表现。
+已知问题还包括：标准粘贴方式在系统负载高时可能粘贴到之前的剪贴板内容，README 提供了实验性的 Reliable Paste 和粘贴延迟设置；大模型在 CPU 上的速度 README 未给出具体数字。模型文件也不小，README 列出的下载体积从 487 MB 到 1600 MB，首次使用要等下载。README 未说明是否有多设备同步、团队管理或企业部署方案；编辑判断：从定位看，这些也不像它的目标。
 
-已知问题还包括：标准粘贴方式在系统负载高时可能粘贴到之前的剪贴板内容，README 提供了实验性的 Reliable Paste 和粘贴延迟设置；大模型在 CPU 上的速度 README 未给出具体数字。README 未说明是否有多设备同步、团队管理或企业部署方案；编辑判断：从定位看，这些也不像它的目标。
+许可证是 MIT，但 README 单独声明 Handy 的名称、logo、图标和品牌资源不开源；非官方分支、重写和再分发必须用自己的品牌，不能暗示官方背书。编辑判断：代码可以自由改，但「Handy」这个品牌不能带走。
 
 ## 来源
 

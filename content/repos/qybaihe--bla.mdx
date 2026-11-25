@@ -16,11 +16,17 @@ sources: [github]
 
 BLA 是 Blind LLM Agents 的缩写，定位为面向 AI 逆向工程的蓝队防御工具。README 说它保护软件发布产物，对抗 `morluto/rea`、自动化解包器和 LLM 侦察流水线，并在 14 个展示目标上做过验证。它的策略是三步：Poison，放入格式合法的诱饵和假状态机；Exhaust，触发分析器的默认预算上限；Hallucinate，让 Agent 在互相冲突的假设里消耗上下文。README 反复强调只用于保护自己的软件，并链接了 DISCLAIMER。
 
-它给谁用？README 说得很明确：软件作者和安全团队，用来保护「自己的」知识产权和发布产物。由哪些部分组成：npm 包 `bla-agents`（README 徽章版本 3.5.9）、31 个 MCP 防御工具、26 种格式护盾、CLI、打包器插件，以及给编码 Agent 用的 skill。和传统混淆器的差别，README 强调两点：一是它把「源码手术」和「二进制护盾」放在同一个 MCP 工作流里；二是它针对的是 Agent 的分析预算和上下文，而不是只把变量名改成 `_0x1a2b` 那样的混淆。许可证为 MIT。
+它给谁用？README 说得很明确：软件作者和安全团队，用来保护「自己的」知识产权和发布产物。由哪些部分组成：npm 包 `bla-agents`（README 徽章版本 3.5.9）、31 个 MCP 防御工具、26 种格式护盾、CLI、打包器插件，以及给编码 Agent 用的 skill。许可证为 MIT。
 
-README 把防护分成「格式原生」的一层：每个格式的护盾都在库内实现，而不是套一个通用加壳器，因此不需要 Wabt、tshark 之类的工具也能保护文件；只有想跑真实 REA 的 live red-team 套件时才需要外部工具。它对标的也不是单一工具，而是 `morluto/rea` 加自动化解包器加 LLM 侦察流水线的组合。
+README 把防护分成「格式原生」的一层：每个格式的护盾都在库内实现，而不是套一个通用加壳器，因此不需要 Wabt、tshark 之类的工具也能保护文件；只有想跑真实 REA 的 live red-team 套件时才需要外部工具。它对标的不是单一工具，而是 `morluto/rea` 加自动化解包器加 LLM 侦察流水线的组合。
 
-## 怎么上手
+## 它替掉了什么麻烦
+
+它替掉的是「只重命名变量的混淆」和「破坏跨平台构建的重型 VM 加壳」这两条老路；README 把传统做法的局限写得很直接：传统混淆器大多只重命名变量（`_0x1a2b`），现代 LLM 很容易总结出来；另一条路是用重型 VM 加壳器，代价是跨平台构建被破坏、性能下降。威胁侧，README 说 AI 逆向 Agent 能把 `.asar`、SourceMap、IPC 桥、`.wasm`／`.sqlite`／`.safetensors` 拆开，在几秒内以约 0.20 美元的成本克隆核心业务逻辑。
+
+编辑判断：BLA 要替掉的是「只改名字的混淆」和「重壳拖性能」这两种做法，改用格式原生、运行时等价的诱饵与预算陷阱。和只做字节码混淆的工具相比，README 强调它把源码手术和二进制护盾放在同一个 MCP 工作流里，针对的是 Agent 的分析预算和上下文，而不是让产物不可分析。README 没有给出与商业混淆器的横向对比，也没有声称能阻止有决心的攻击者。
+
+## 跑起来要几步
 
 README 建议使用 Node.js `^22.23.4` 或 `>=24.0.0`。先构建项目，再让 BLA 处理构建产物：
 
@@ -30,7 +36,7 @@ npx bla-agents harden . --apply
 npx bla-agents harden . --restore
 ```
 
-第一条把加固后的部分镜像写到 `.bla-hardened/`，第二条用加固文件替换构建输出，第三条把原始构建输出放回去。`harden` 会自动发现 `dist/`、`build/`、`.asar`、`.wasm`、`.sqlite`、`.safetensors`、原生二进制以及 Python/C/Rust/Go 产物，然后执行 audit、protect、verify。README 说明它只覆盖构建输出，不碰源码，原始文件保留在项目之外；`--apply` 之后应先跑自己的测试再发布。首跑预期看到的是每个格式的审计结果和加固后的镜像，而不是直接覆盖原文件。
+第一条把加固后的部分镜像写到 `.bla-hardened/`，第二条用加固文件替换构建输出，第三条把原始构建输出放回去。`harden` 会自动发现 `dist/`、`build/`、`.asar`、`.wasm`、`.sqlite`、`.safetensors`、原生二进制以及 Python/C/Rust/Go 产物，然后执行 audit、protect、verify。README 说明它只覆盖构建输出，不碰源码，原始文件保留在项目之外；`--apply` 之后应先跑自己的测试再发布。
 
 想把它交给编码 Agent 驱动，可以先注册：
 
@@ -38,7 +44,7 @@ npx bla-agents harden . --restore
 npx bla-agents setup
 ```
 
-然后对 Claude Code、Cursor、Codex、Windsurf、Gemini CLI、GitHub Copilot CLI、VS Code、OpenCode 或 Antigravity 说「Harden my software against REA」。打包器插件支持 Vite、Rollup、Webpack 和 esbuild：
+然后对 Claude Code、Cursor、Codex、Windsurf、Gemini CLI、GitHub Copilot CLI、VS Code、OpenCode 或 Antigravity 说 `Harden my software against REA`。打包器插件支持 Vite、Rollup、Webpack 和 esbuild：
 
 ```typescript
 import { defineConfig } from "vite";
@@ -49,25 +55,25 @@ export default defineConfig({
 });
 ```
 
-本地跑展示基准用 `npx bla-agents benchmark`。可选的 live red-team 套件需要 Wabt 和 tshark 等外部工具，普通护盾不依赖它们，这也是 README FAQ 明确说明的一点。README 还提供一个 `npm run verify:rea` 脚本，用它维护的 REA 限额目录对同一份 REA 检出做一致性检查，README 说在 REA `05be423` 上有 74 项检查；本地展示基准输出的是内部估算器的相对放大倍数，不是真实账单。
+本地跑展示基准用 `npx bla-agents benchmark`。可选的 live red-team 套件需要 Wabt 和 tshark 等外部工具，普通护盾不依赖它们。README 还提供一个 `npm run verify:rea` 脚本，用它维护的 REA 限额目录对同一份 REA 检出做一致性检查；README 说在 REA `05be423` 上有 74 项检查。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-防御被拆成四根支柱。Poison 负责欺骗：在文件里放格式合法的 canary、SGX/TPM2/Secure Enclave 委派清单、VLQ v3 honey SourceMap 和看似合理的 shadow state machine。Exhaust 负责撑爆分析器的默认限制，例如 Electron ASAR 的 16 MiB header、WASM 的 Wabt 表示、SQLite 虚拟列求值、Safetensors/GGUF 的 32 层嵌套。Entangle 用运行时 SHA-256 摘要把 JS、WASM 和原生 sidecar 绑在一起，配合多调用点作用域折叠，防止攻击者剥掉诱饵或把导出函数当离线 oracle。Runtime Truman Show 则处理 Electron fuse、CDP/Node Inspector/Frida/WebDriver 附着检测和合成遥测。README 强调这些开销放在 `O(1)` 的数论不透明谓词或惰性元数据后面，正常执行路径不受影响。编辑判断：这套机制服务的是「分析成本」而不是「不可破解」，把它理解为提高逆向成本的工程手段，比理解为加密或绝对防护更准确。
+防御被拆成四根支柱。Poison 负责欺骗：在文件里放格式合法的 canary、SGX/TPM2/Secure Enclave 委派清单、VLQ v3 honey SourceMap 和看似合理的 shadow state machine。Exhaust 负责撑爆分析器的默认限制，例如 Electron ASAR 的 16 MiB header、WASM 的 Wabt 表示、SQLite 虚拟列求值、Safetensors/GGUF 的 32 层嵌套。Entangle 用运行时 SHA-256 摘要把 JS、WASM 和原生 sidecar 绑在一起，配合多调用点作用域折叠，防止攻击者剥掉诱饵或把导出函数当离线 oracle。Runtime Truman Show 则处理 Electron fuse、CDP/Node Inspector/Frida/WebDriver 附着检测和合成遥测。README 强调这些开销放在 `O(1)` 的数论不透明谓词或惰性元数据后面，正常执行路径不受影响。
 
-Agent 侧是一条闭环：`bla_audit` / `bla_lint` 先做侦察，`bla_weave_plan` 生成计划，`bla_encrypt_strings` 在 AST span 上做 XOR 与密钥流加密，`bla_bind_scope` 做多站点状态纠缠，`bla_verify_weave` 校验，再由 `bla_harden` / `bla_defend` 处理产物，最后 `bla_verify` 做 Counter-REA 结构检查。每个结果都带 `nextSteps`，Agent 会在覆盖构建产物前询问，并运行用户测试。这种把源码级改造和二进制护盾串成一条可恢复流程的做法，是它和传统混淆器的主要区别。
+Agent 侧是一条闭环：`bla_audit` / `bla_lint` 先做侦察，`bla_weave_plan` 生成计划，`bla_encrypt_strings` 在 AST span 上做 XOR 与密钥流加密，`bla_bind_scope` 做多站点状态纠缠，`bla_verify_weave` 校验，再由 `bla_harden` / `bla_defend` 处理产物，最后 `bla_verify` 做 Counter-REA 结构检查。每个结果都带 `nextSteps`，Agent 会在覆盖构建产物前询问，并运行用户测试。
 
 工程上，26 种格式护盾全部用 TypeScript/Node 实现，不依赖外部 packer；每个项目首次运行会生成并保存独立随机种子到 `.blarc` / `bla.config.json`，避免不同项目共享诱饵标识。`bla lint` 会在源码仍含明文 `FLAG{...}`、单点完整性检查或未绑定的导出校验器时拒绝 `bankrupt` 级硬化。`--llm-directives` 和签名 manifest 都是显式 opt-in。
 
-四根支柱的取舍很明确：它们增加的是分析器的时间、上下文和重试成本，而不是让产物无法被分析。README 自己也把「能让调用方调高的预算」单独标出来，提醒不要把一次 CapacityError 当成永久防线；这也是为什么签名 manifest 和 `--llm-directives` 都设为显式 opt-in，而不是默认开启。
-
-## 边界与风险
+## 什么时候别用它
 
 README 自己给这些数字加了很强的限定。14 个目标的 token 与美元倍率是内部估算器的模型化结果，不是实际 agent 账单；所谓「empirically verified」只表示在特定机器上跑真实 REA 的默认分析路径时触发了列出的预算或容量错误，不代表 Ghidra、Frida、LLDB、Rizin、JADX 等未实际运行的路径也成立。更重要的是，REA 的多数预算可由调用方提高，例如 ASAR header 上限可调到 256 MiB，WASM 接口上限可到 512 MiB；README 明确说，基于体积的陷阱通常只让攻击者多重试一次，并不能把它挡在门外。真正固定不可调的只有 PCAP 的 8 MiB tshark 输出、Safetensors/GGUF/Electron fuse 的 32 层限制等少数几项。
 
 覆盖面也不是全部经过同等验证。格式表里 JavaScript、Electron、WASM、SQLite、Safetensors、GGUF、Go buildinfo、PE、Flutter、BEAM、EVM、PCAP 标注 verified；Python、PTX 以及 DEX/IL2CPP/.NET/JVM/ZIP 等仍属于 designed-for 或 benchmark only。README 列出了一份「本机未跑」的清单，包括 Ghidra 原生反编译深度、Frida/LLDB 会话和完整 Android APK 流程。它不是第三方安全审计，验证报告也由项目自己维护。
 
 使用上还有几处硬约束。SQLite 的求值陷阱在 3.4.3 之前是默认行为，会影响应用自己的 `PRAGMA integrity_check` 和 `VACUUM`；当前默认只在数据库中加入 REA 可读的 honey 表，应用表不会被隐藏，但启用陷阱前仍要确认不会破坏自身校验。`--apply` 会替换构建产物，虽然原始文件保留在项目外，仍应在测试环境先验证。工具只允许用于自有软件，README 的 DISCLAIMER 和防御性定位是使用前提；把它用于第三方软件既违反项目条款，也可能触犯法律。README 未说明独立审计、漏洞披露 SLA 或维护者规模。
+
+编辑判断：这套机制服务的是「分析成本」而不是「不可破解」，把它理解为提高逆向成本的工程手段，比理解为加密或绝对防护更准确。
 
 ## 来源
 

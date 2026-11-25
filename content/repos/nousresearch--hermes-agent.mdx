@@ -18,15 +18,19 @@ Hermes Agent 由 Nous Research 开发，README 把它定位为「会自我改进
 
 它的目标不是绑在笔记本上的聊天工具。README 说可以跑在 5 美元的 VPS、GPU 集群或几乎不花钱的空闲无服务器环境；你可以在 Telegram 里让它继续在云 VM 上干活。模型不锁定：Nous Portal、OpenRouter、OpenAI、自有端点等都可以，用 `hermes model` 切换，不改代码。
 
-交互入口有两个。一个是完整 TUI：多行编辑、斜杠命令补全、会话历史、中断并改方向、流式工具输出。另一个是消息网关：Telegram、Discord、Slack、WhatsApp、Signal 和 CLI 都收进同一个 gateway 进程，支持语音备忘录转录和跨平台对话延续；README 的对照表还提到 Email。
+交互入口有两个。一个是完整 TUI：多行编辑、斜杠命令补全、会话历史、中断并改方向、流式工具输出。另一个是消息网关：Telegram、Discord、Slack、WhatsApp、Signal 和 CLI 都收进同一个 gateway 进程，支持语音备忘录转录和跨平台对话延续。执行侧有六种终端后端：local、Docker、SSH、Modal、Daytona 和 Vercel Sandbox，另有 Singularity/Apptainer 等插件后端。
 
-它和普通 CLI Agent 的差别在「常驻与积累」：内置 cron 调度器可把结果投递到任意已接入平台；可以生成隔离子 Agent 做并行工作；可以写 Python 脚本通过 RPC 调工具，把多步流程压成不占上下文的一轮；还面向研究提供批量轨迹生成和轨迹压缩。执行侧有六种终端后端：local、Docker、SSH、Modal、Daytona 和 Vercel Sandbox，另有 Singularity/Apptainer 等插件后端。
+## 它替掉了什么麻烦
 
-适合谁？README 的描述指向希望 Agent 长期在线、跨设备使用、并能积累技能和记忆的人。不适合只想在本机跑一个轻量 CLI 的人。
+它替掉的是「Agent 只活在一台笔记本、一个会话里」的用法。README 没有回顾此前 Agent 产品的形态，只反复强调两点：不绑在笔记本上，以及内置学习闭环。
 
-## 怎么上手
+编辑判断：普通 CLI Agent 的痛点通常是——关掉终端上下文就没了；换设备要重装和重配；想让它定时干活，得自己写 cron 和消息机器人；同一套技能也无法在多次任务之间沉淀。Hermes 把这些做进产品：技能、记忆和会话检索构成学习闭环，内置 cron 把结果投递到已接入平台，消息网关让手机和桌面共享同一个对话。
 
-Linux、macOS 和 WSL2 使用官方安装脚本：
+和同类方案的差别，README 的表述是「唯一」和「内置」；编辑判断：这些是项目自述，README 未给出与其他 Agent 的对比方法或数据。
+
+## 跑起来要几步
+
+三步：跑安装脚本、重载 shell、启动。Linux、macOS 和 WSL2 使用官方安装脚本：
 
 ```bash
 curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
@@ -38,9 +42,7 @@ Windows 原生环境使用 PowerShell：
 iex (irm https://hermes-agent.nousresearch.com/install.ps1)
 ```
 
-README 说源码安装器会把 Python 3.14、Node.js、npm、pnpm、ripgrep、FFmpeg 和 Python 依赖交给它的包管理组件处理；如果系统没有 Git，它会把校验过的 Git for Windows 归档放进 Hermes 工具目录，而不替换系统 Git。另有独立的 MSIX/App Installer 包，更新归属不同。
-
-安装位置：原生 Windows 在 `%LOCALAPPDATA%\hermes`，WSL2 在 `~/.hermes`。Android/Termux 有签名的 APT 仓库（aarch64，分 stable 和 canary），包内包含 Python、Node.js 和 TUI，README 要求按 Termux 指南安装而不是运行桌面脚本。
+README 说源码安装器会把 Python 3.14、Node.js、npm、pnpm、ripgrep、FFmpeg 和 Python 依赖交给它的包管理组件处理；如果系统没有 Git，它会把校验过的 Git for Windows 归档放进 Hermes 工具目录，而不替换系统 Git。安装位置：原生 Windows 在 `%LOCALAPPDATA%\hermes`，WSL2 在 `~/.hermes`。
 
 安装完成后重新加载 shell 并启动：
 
@@ -49,27 +51,23 @@ source ~/.bashrc
 hermes
 ```
 
-常用命令包括 `hermes model` 选择供应商、`hermes tools` 配置工具、`hermes gateway` 启动消息网关、`hermes setup` 运行完整向导、`hermes doctor` 排查问题、`hermes update` 更新。想省去逐个收集 API Key，可以运行 `hermes setup --portal` 登录 Nous Portal，一次接通模型、搜索、图像、TTS 和云浏览器；`hermes portal info` 查看已接通的项。
+常用命令包括 `hermes model` 选择供应商、`hermes tools` 配置工具、`hermes gateway` 启动消息网关、`hermes setup` 运行完整向导、`hermes doctor` 排查问题、`hermes update` 更新。想省去逐个收集 API Key，可以运行 `hermes setup --portal`，一次接通模型、搜索、图像、TTS 和云浏览器。消息渠道需要先运行 `hermes gateway setup` 再 `hermes gateway start`。
 
-消息渠道需要先运行 `hermes gateway setup` 再 `hermes gateway start`，然后给 Bot 发消息。README 的对照表列出 CLI 与消息平台共享不少斜杠命令，例如 `/new`、`/model`、`/personality`、`/retry`、`/undo`、`/compress`、`/usage`、`/insights`、`/skills`，平台侧另有 `/stop`、`/status`、`/sethome`。
+常见卡点中最具体的是 Windows 杀毒软件误报：README 用较大篇幅说明 Bitdefender、Windows Defender 可能把 Hermes `bin` 目录下的 `uv.exe` 隔离，这是假阳性；它给出用 GitHub CLI 和 `gh attestation verify` 校验下载包、比对哈希的完整步骤，并建议把整个目录加入白名单而不是文件哈希，因为每次更新哈希都会变。
 
-常见卡点中最具体的是 Windows 杀毒软件误报：README 用较大篇幅说明 Bitdefender、Windows Defender 可能把 Hermes `bin` 目录下的 `uv.exe` 隔离，这是假阳性；它给出用 GitHub CLI 和 `gh attestation verify` 校验下载包、比对哈希的完整 PowerShell 步骤，并建议把整个目录加入白名单而不是文件哈希，因为每次更新哈希都会变。另一个卡点是原生 Windows 与 WSL2 的安装路径和更新方式不同，不要混用。
+## 它把复杂度放在哪
 
-## 值得注意的设计
-
-学习闭环不是单一功能，而是三条线互相配合。技能是过程性记忆：复杂任务完成后由 Agent 自行创建，之后在使用中改进。记忆是陈述性积累：Agent 整理并周期性提醒自己持久化。检索是回忆：用 FTS5 搜索历史会话，再用 LLM 做摘要，解决跨会话遗忘；Honcho 负责更长期、辩证式的用户建模。三者合起来，才让「越用越懂你」有可执行的载体。
+复杂度放在「学习闭环」和「终端后端」两个抽象上。学习闭环不是单一功能，而是三条线互相配合：技能是过程性记忆，复杂任务完成后由 Agent 自行创建，之后在使用中改进；记忆是陈述性积累，Agent 整理并周期性提醒自己持久化；检索用 FTS5 搜索历史会话，再用 LLM 做摘要，Honcho 负责更长期的用户建模。
 
 执行侧的关键抽象是终端后端。local、Docker、SSH、Modal、Daytona、Vercel Sandbox 都实现同一套接口，因此 Agent 的工具调用不关心实际在哪跑；Modal 和 Daytona 提供无服务器持久化，环境闲置时休眠、需要时唤醒，README 说会话之间的成本接近于零。这使「5 美元 VPS」和「GPU 集群」成为同一个产品的两种部署形态。
 
-并行有两种方式。子 Agent 是隔离的上下文，适合并行工作流；Desktop 里可以在 Settings → Model → Subagents 选择它们的供应商、模型和限额。Python 脚本通过 RPC 调工具，则把多步流程折叠成一次不占上下文的执行，适合确定性的胶水逻辑。代价是两种方式的心智模型不同：前者像分身，后者像批处理。
+并行有两种方式。子 Agent 是隔离的上下文，适合并行工作流；Desktop 里可以在 Settings → Model → Subagents 选择它们的供应商、模型和限额。Python 脚本通过 RPC 调工具，则把多步流程折叠成一次不占上下文的执行。代价是两种方式的心智模型不同：前者像分身，后者像批处理。
 
-调度侧是内置 cron，结果可投递到任意已接入平台。这让「日报、夜间备份、每周审计」可以用自然语言定义并无人值守运行；但也意味着 Agent 的权限和失败处理需要提前设计，否则定时任务会在没人看着时反复失败。
+调度侧是内置 cron，结果可投递到任意已接入平台。这让「日报、夜间备份、每周审计」可以用自然语言定义并无人值守运行；但也意味着 Agent 的权限和失败处理需要提前设计。迁移设计值得一提：`hermes setup` 会检测 `~/.openclaw`、`~/.claude`、`~/.codex`、`~/.cursor`，预选找到的来源并先预览再导入；API Key 只有在显式传 `--migrate-secrets` 时才迁移。
 
-迁移设计值得一提。`hermes setup` 会检测 `~/.openclaw`、`~/.claude`、`~/.codex`、`~/.cursor`，预选找到的来源，安装官方 `agent-importers` 插件并先预览再导入。OpenClaw 的 SOUL.md、记忆、技能、命令允许列表、消息设置、TTS 资源和 AGENTS.md 都能迁移；API Key 只有在显式传 `--migrate-secrets` 时才迁移，这是有意的安全默认值。
+## 什么时候别用它
 
-## 边界与风险
-
-许可证是 MIT。README 明确欢迎贡献，并提供开发设置、代码风格和 PR 流程文档；原生 Windows 也已受支持。
+要求单机零常驻、或不信任 Agent 长期持有工具权限的人，不适合用它。许可证是 MIT。README 明确欢迎贡献，并提供开发设置、代码风格和 PR 流程文档；原生 Windows 也已受支持。
 
 最现实的运维成本是杀毒软件误报。README 自己用很大篇幅处理 `uv.exe` 被隔离的问题，说明这不是个例；它给出校验和白名单步骤，但企业环境可能不允许自行加白名单，部署前需要评估。另一个成本是常驻：消息网关、cron 和后端沙箱都要求一台长期在线的机器或云服务，空闲休眠虽然便宜，但唤醒有延迟。
 
@@ -77,7 +75,7 @@ README 未给出最低内存、磁盘或 GPU 要求，也没有说明自带遥�
 
 安全边界需要自行配置。消息渠道要准备 Bot 凭证并运行 `hermes gateway setup`；README 指向安全文档里的命令审批、私聊配对和容器隔离。技能与记忆保存在本地配置目录，迁移或清理前应先了解文件位置。从其他 Agent 导入时，API Key 默认不迁移；这是好事，但也意味着导入后要重新配置密钥。
 
-它不适合谁？不适合要求单机零常驻、或不信任 Agent 长期持有工具权限的人；也不适合希望开箱即得固定成本的人。编辑判断：它更适合愿意把 Agent 当作长期基础设施来运维的用户，而不是把它当一次性的命令行助手。
+另外，希望开箱即得固定成本的人也要先算清订阅与调用费。编辑判断：它更适合愿意把 Agent 当作长期基础设施来运维的用户，而不是把它当一次性的命令行助手。
 
 ## 来源
 

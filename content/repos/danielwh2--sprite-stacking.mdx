@@ -14,62 +14,60 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-sprite-stacking 是一个 Agent Skill，把四张像素画正交视图（顶、侧、前、后）变成一个体素体积，再切成层片，渲染成可以旋转的伪 3D 精灵。它不是建模工具，也不是真正的 3D 网格，而是把独立游戏里历史悠久的 sprite stacking 技法包装成 Agent 可调用的工作流。
+Sprite-stacking 是一个 Agent Skill，把四张正交像素视图（顶、侧、前、后）雕成一个体素体积，再切成层片，渲染成能旋转的伪 3D 精灵。它不做真正的 3D 网格，也不生成逐方向手绘的 sprite，而是把独立游戏里历史悠久的 sprite stacking 技法包装成 Agent 可调用的工作流。README 称 sprite stacking 本身不是它发明的，这个 Skill 新增的是四视图雕刻和 Agent 工作流。
 
-给谁用？做像素风独立游戏、需要快速产出可旋转道具或小物件的人；以及想让 Agent 直接生成并验证这类素材的人。README 说它适用于 Claude Code、Codex、Cursor、OpenCode、Gemini CLI 和 Pi。
+给谁用？做像素风独立游戏、需要快速产出可旋转道具或小物件的人，以及想让 Agent 直接生成并验证这类素材的人。README 说它适用于 Claude Code、Codex、Cursor、OpenCode、Gemini CLI 和 Pi。
 
-核心组成包括：Skill 的说明文件、切片 CLI `skills/sprite-stacking/scripts/views_to_slices.py`、一个独立的 `viewer.html`，以及测试脚本。和手动画 8 方向 sprite 相比，它的输入是四张图，输出是层片和可导出的 16 方向 sprite sheet；README 也明确说 sprite stacking 本身不是它发明的，这个 Skill 新增的是四视图雕刻和 Agent 工作流。
+核心组成有四块：Skill 的说明文件、切片 CLI `skills/sprite-stacking/scripts/views_to_slices.py`、一个独立的 `viewer.html`，以及 `tests/check.py` 测试脚本。输入是四张图，输出是层片条、预览图、可选的独立查看器和 16 方向 sprite sheet。README 把它概括为「四视图进、可旋转精灵出」，而不是一个通用建模工具。
 
-## 怎么上手
+## 它替掉了什么麻烦
 
-安装：
+它替掉的是「为每个朝向手绘 sprite，或为一个像素道具引入真 3D 建模管线」这两条重路。README 没有交代 sprite stacking 出现之前的标准做法；编辑判断：像素风游戏里能旋转的道具，过去通常要么手画 8 或 16 个朝向的 sprite sheet，要么改用 3D 模型渲染成 2D，前者随朝向数量线性涨价，后者要建模、UV、材质和渲染，跟像素画工作流脱节。
 
-```bash
-npx skills add danielwh2/sprite-stacking
-```
+这个 Skill 的切入点是把输入压缩到四张图。README 说它从顶、侧、前、后四个正交视图雕出体积，再切成层片，因此作者只需保证四个方向的画面对齐，剩下的旋转由渲染过程生成。编辑判断：这把「画 N 个朝向」换成了「画 4 个视图 + 对齐」，省下的是重复劳动，新增的是对齐责任。
 
-默认装到当前项目；加 `-g` 装到所有项目，加 `-a claude-code`（或 `codex`、`cursor` 等）指定 Agent。它用 skills CLI，需要 Node 22.20 或更高。也可以手动把 `skills/sprite-stacking` 复制到 `~/.claude/skills/`（Claude Code）或 `~/.agents/skills/`（Codex、Cursor、OpenCode、Gemini CLI、Pi）。
+和同类方案的差别，README 只把 sprite stacking 归为 prior art，没有列举其他四视图或体素工具，也没有做功能对比。编辑判断：从 README 能确认的差异是，它把雕刻、切片、CLI、浏览器查看器和 spritesheet 导出串成一条 Agent 可执行的链，而不是一个通用体素编辑器或 3D 渲染器；是否比手绘更快，取决于素材复杂度和视图是否好对齐。README 未说明它和 Aseprite 等像素画工具如何衔接。
 
-运行时需要 Python 3 加上 Pillow 和 NumPy：
+## 跑起来要几步
+
+最少三步：装 Skill、装 Python 依赖、让 Agent 按四视图生成，或者直接跑切片 CLI。README 给的安装命令是 `npx skills add danielwh2/sprite-stacking`，默认装到当前项目；加 `-g` 装到所有项目，加 `-a claude-code`（或 `codex`、`cursor` 等）指定 Agent。它用 skills CLI，需要 Node 22.20 或更高。
+
+不想用 CLI 时，也可以手动把 `skills/sprite-stacking` 复制到 `~/.claude/skills/`（Claude Code）或 `~/.agents/skills/`（Codex、Cursor、OpenCode、Gemini CLI、Pi）。运行时需要 Python 3 加上 Pillow 和 NumPy：
 
 ```bash
 pip install pillow numpy
 ```
 
-然后可以直接让 Agent 做，例如“Make a rotatable pixel art car.”或“Sprite stack this 4-view sheet and give me a turntable.”。没有图像生成器也可以，README 说 Agent 会用一段短 Python 脚本自己画视图。
-
-也可以直接跑 CLI：
+装好后可以直接让 Agent 做，例如「Make a rotatable pixel art car.」或「Sprite stack this 4-view sheet and give me a turntable.」。README 说没有图像生成器也可以，Agent 会用一段短 Python 脚本自己画视图。也可以直接跑 CLI：
 
 ```bash
 python3 skills/sprite-stacking/scripts/views_to_slices.py views.png slices.png \
   --slices 36 --preview check.png --html viewer.html
 ```
 
-预期结果是得到层片图、预览图和可选的独立查看器。`--preview check.png` 会额外存一张检查图，`--html viewer.html` 会写出可单独打开的查看器，它也接受直接拖入切片条。`--slices` 控制层数，15–20 偏块状，32–48 更细；`--order reading` 强制按 TOP、SIDE、FRONT、BACK 读，默认按比例匹配视图；`--round` 让塔、气球、花盆这类物体雕成圆的；`--side-nose right` 指定侧视图朝向；`--colours N` 共享调色板，`0` 保留所有颜色；`--normals` 和 `--emissive` 分别导出法线贴图切片和自动检测的自发光遮罩。
+预期结果是层片图、预览图和可选的独立查看器。`--slices` 控制层数，15–20 偏块状，32–48 更细；`--order reading` 强制按 TOP、SIDE、FRONT、BACK 读，默认按比例匹配视图；`--round` 让塔、气球、花盆这类物体雕成圆的；`--side-nose right` 指定侧视图朝向；`--colours N` 共享调色板，`0` 保留所有颜色；`--normals` 和 `--emissive` 分别导出法线贴图切片和自动检测的自发光遮罩。
 
-常见卡点：四张视图必须在同一行、正交且对齐，否则雕出来的体积会错；视图顺序识别不准时要手动加 `--order reading`；依赖 Pillow 和 NumPy，环境里没有就跑不起来；README 未说明输入图的分辨率上限。贡献前可以跑 `python3 tests/check.py`，README 说它应打印 `ok`。
+常见卡点有四个。四张视图必须在同一行、正交且对齐，否则雕出来的体积会错；视图顺序识别不准时要手动加 `--order reading`；环境里缺 Pillow 和 NumPy 就跑不起来；README 未说明输入图的分辨率上限。贡献前可以跑 `python3 tests/check.py`，README 说它应打印 `ok`。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-雕刻规则很直接：一个体素只有在四个视图都覆盖它时才保留。这相当于对四个视图做交集，得到视觉外壳。好处是算法简单、结果确定；代价是任何被某个视图遮挡的凹陷或内部结构都无法表达，四视图不一致时体积会明显出错。
+复杂度放在「四视图求交集雕刻 + 逐层投影渲染」这条链，以及一个体量不小的浏览器查看器里。README 说雕刻规则很直接：一个体素只有在四个视图都覆盖它时才保留，相当于对四视图做交集，得到视觉外壳。好处是算法简单、结果确定；代价是任何被某个视图遮挡的凹陷或内部结构都无法表达，四视图不一致时体积会明显出错。
 
-切片与渲染是第二步：把体积从地面开始切成一层层平面，每一层旋转、按俯仰角压扁、再上移 1 像素，叠起来就是可旋转的 sprite stack。这个顺序解释了为什么它看起来是伪 3D：它是按视角逐步投影层片，而不是渲染真实网格。
+切片与渲染是第二步。README 描述为把体积从地面开始切成一层层平面，每一层旋转、按俯仰角压扁、再上移 1 像素，叠起来就是可旋转的 sprite stack。这个顺序解释了它为什么看起来是伪 3D：它是按视角逐步投影层片，而不是渲染真实网格，所以内部结构、真实光照和任意俯仰都受这套投影限制。
 
 查看器是这套 Skill 里工程量最大的部分。它支持转盘、场景、切片扫描、爆炸视图和 Play 模式；场景模式带 Neon Street 和 Meadow Island 的程序化道具、统一 Y 排序和多 PNG 拖入；光照有昼夜循环、可拖动太阳和投影阴影；天气有雨和雪，雪会根据法线在朝上的体素上累积。导出支持 16 方向烘好的 PNG sprite sheet。README 称性能上用了向量化 NumPy 雕刻、零分配的 typed-array 软件光栅器，以及按角度和光照缓存的 prop sprite，Chrome 里约 0.2–1.5 ms/帧。
 
-代价是这些能力都绑定在浏览器查看器里，游戏引擎里拿到的仍是导出的 spritesheet。README 没有说明如何把查看器的光照、天气效果带进引擎。
+代价是这些能力都绑在浏览器查看器里。README 说导出的产物是 spritesheet，游戏引擎拿到的是烘好的图，不是可运行的层片系统；README 未说明如何把查看器的光照、天气效果带进引擎。编辑判断：想让效果和预览一致，只能在导出前把状态烘进贴图，运行时失去交互。
 
-## 边界与风险
+## 什么时候别用它
 
-许可证是 MIT。README 说明 sprite stacking 是已有技法，这个项目新增四视图雕刻和 Agent 工作流；这不影响 MIT 授权，但如果要主张原创性，需要看 README 的 prior art 说明。
+它不适合复杂角色、需要骨骼动画或精确碰撞体的资产，也不适合不愿维护四视图对齐质量的人。许可证是 MIT。README 说明 sprite stacking 是已有技法，这个项目新增四视图雕刻和 Agent 工作流；这不影响 MIT 授权，但如果要主张原创性，需要看 README 的 prior art 说明。
 
-它不是真 3D 建模。四视图对不齐、有遮挡或视图本身画错，都会雕出错误体积；README 没有提供自动校验或修复流程，只给了 `--order`、`--round` 等手工选项。编辑判断：输入质量基本决定输出质量。
+它不是真 3D 建模。四视图对不齐、有遮挡或视图本身画错，都会雕出错误体积；README 没有提供自动校验或修复流程，只给了 `--order`、`--round` 等手工选项。编辑判断：输入质量基本决定输出质量，视图改动后要重新检查预览图。
 
 素材版权仍要自己处理。生成的 sprite 是对你提供的像素画的再加工，原图的权利归属不会因为经过这个工具而改变；README 未说明对 AI 生成素材的授权立场。
 
-运行环境方面，CLI 需要 Python 3、Pillow、NumPy；安装 Skill 需要 Node 22.20+；查看器性能依赖浏览器。README 未说明 Windows 上的具体路径差异，也未说明除 Chrome 外的浏览器实测数据，透明背景、调色板冲突或超大输入图的处理方式也没有提及。
-
-适合谁？独立游戏里快速做可旋转道具、小建筑、树和车辆。不适合复杂角色、需要骨骼动画或精确碰撞体的资产；README 未说明这些场景的支持情况，从方法本身看也不在范围内。
+运行环境方面，CLI 需要 Python 3、Pillow、NumPy；安装 Skill 需要 Node 22.20+；查看器性能依赖浏览器，README 只给了 Chrome 的数据。README 未说明 Windows 上的具体路径差异，也未说明其他浏览器的实测表现，透明背景、调色板冲突或超大输入图的处理方式同样没有提及。编辑判断：独立游戏里快速做可旋转道具、小建筑、树和车辆是它的主场；复杂角色、骨骼动画和精确碰撞体不在方法覆盖范围内，README 也没有承诺这些场景。
 
 ## 来源
 

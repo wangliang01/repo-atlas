@@ -18,11 +18,21 @@ OpenClaw 是一个开源的个人 AI 助手，运行在自己的电脑或服务�
 
 它适合希望把助手放进日常聊天、又不愿把状态和凭据交给托管服务的人。README 强调状态、记忆和凭据都在自己的硬件上，模型与 Agent 运行时是可替换的插件，Claude、Codex 和本地模型都可以接。项目由独立的 OpenClaw Foundation 托管，README 声明没有付费层、托管服务或代币。
 
-组成可以分成四层：Gateway 是本地控制平面，管理会话、工具、事件和渠道连接；Control UI、CLI 与 TUI 都是连到 Gateway 的客户端；Channels 把助手接到各种消息服务；Companion apps 和 nodes 补上语音、Canvas、摄像头、屏幕和本地设备操作。再往上，tools、skills 与 plugins 扩展它能做的事。和把助手托管在云端的产品相比，差别在数据归属，但代价是部署、更新和安全边界都要自己管。README 说它最初是为一个叫 Molty 的太空龙虾 AI 助手而做，作者是 Peter Steinberger 与社区；核心团队由基金会雇用并签署发布，捐赠方不拥有也不指挥项目。
+组成可以分成四层：Gateway 是本地控制平面，管理会话、工具、事件和渠道连接；Control UI、CLI 与 TUI 都是连到 Gateway 的客户端；Channels 把助手接到各种消息服务；Companion apps 和 nodes 补上语音、Canvas、摄像头、屏幕和本地设备操作。再往上，tools、skills 与 plugins 扩展它能做的事。
 
-## 怎么上手
+README 说它最初是为一个叫 Molty 的太空龙虾 AI 助手而做，作者是 Peter Steinberger 与社区；核心团队由基金会雇用并签署发布，捐赠方不拥有也不指挥项目。
 
-安装器支持 macOS、Linux 和 Windows，会在需要时准备受支持的 Node.js 运行时：
+## 它替掉了什么麻烦
+
+它替掉的是「助手要么住在厂商的 App 里，要么每接一个聊天软件就从头搭一个 bot」这件事。README 没有交代出现之前的标准做法；编辑判断：过去用 AI 助手，常见形态是厂商托管的网页或 App，状态和登录凭据在对方服务器；想让它出现在自己的 Slack、Telegram 或 iMessage 里，就得分别写 bot、分别管理身份和会话，记忆也被切成几份。自建方案则往往缺少统一的权限边界。
+
+它的切入点是「一个本地 Gateway + 多个渠道适配器」。README 说 Gateway 管理会话、工具、事件和渠道连接，Control UI、CLI、TUI 都是它的客户端；Channels 把助手接到 WhatsApp、Telegram、Slack、Discord、Google Chat、Signal、iMessage 等。编辑判断：这把「按渠道复制助手」换成「同一套状态接多个入口」，代价是 Gateway 成为必须长期运行和看护的单点。
+
+和同类方案的差别，README 强调状态归属与可替换运行时，并把架构主张写成「可信网关、不可信执行、策略由代码执行」。编辑判断：可确认的差异是模型和 Agent 运行时都是插件，换 Claude、Codex 或本地模型不需要改其他部分；但 README 没有列举竞品，也没有做功能或成本对比。README 未说明它与各家托管助手在回答质量上的差异。
+
+## 跑起来要几步
+
+三步：装、引导、验证。README 说安装器支持 macOS、Linux 和 Windows，会在需要时准备受支持的 Node.js 运行时：
 
 ```bash
 # macOS / Linux / WSL2
@@ -48,25 +58,33 @@ openclaw gateway status
 openclaw dashboard
 ```
 
-引导会验证模型访问、创建工作区并配置 Gateway，最后一条命令打开 Control UI，在里面发一条消息即可确认助手可用。README 还指向安装指南里的生命周期脚本契约、Docker、Nix 和其他部署路径；如果只想先确认环境，可以先跑 `openclaw gateway status` 看服务状态，再用 `openclaw dashboard` 打开 Control UI。onboard 会验证模型访问并创建工作区，但 README 未说明它会写入哪些配置文件、如何回滚；需要审计的团队应在首次运行前记录目录状态。渠道配置和排错在官方 Getting started 文档里。README 的文档入口分成模型与认证、渠道、工具与插件、平台与 nodes、CLI 与 slash commands、Gateway 配置与升级等几类，说明部署之后仍需长期运维。README 未说明各系统的最低硬件要求，也没有给出所有渠道的完整配置步骤。
+引导会验证模型访问、创建工作区并配置 Gateway，最后一条命令打开 Control UI，在里面发一条消息即可确认助手可用。README 还指向安装指南里的生命周期脚本契约、Docker、Nix 和其他部署路径；如果只想先确认环境，可以先跑 `openclaw gateway status` 看服务状态，再用 `openclaw dashboard` 打开 Control UI。
 
-## 值得注意的设计
+常见卡点有三个。onboard 会验证模型访问并创建工作区，但 README 未说明它会写入哪些配置文件、如何回滚；需要审计的团队应在首次运行前记录目录状态。各渠道的配置步骤分散在官方 Getting started 文档里，README 未给出所有渠道的完整配置。README 也未说明各系统的最低硬件要求。
 
-第一个设计是 Gateway 作为本地控制平面。会话、工具、事件和渠道连接都归它管理，Control UI、CLI 和 TUI 都是连到 Gateway 的客户端。这样换聊天渠道或换前端不需要动核心，多人共享时也只是同一套 Gateway 的不同配置。README 把「可信网关、不可信执行、策略由代码执行」单独作为架构论点，说明安全边界是设计的一部分。
+## 它把复杂度放在哪
 
-第二个设计是渠道与设备节点的分层。Channels 负责把助手接到 WhatsApp、Telegram、Slack、Discord、Google Chat、Signal、iMessage 等消息服务，Companion apps 和 nodes 则补上语音、Canvas、摄像头、屏幕和本地设备操作。README 只说这些能力在受支持的平台可用，没有在主文档列出各平台的差异；因此同一套配置换到另一台设备，是否具备语音、摄像头或屏幕操作能力需要另查平台文档。工具、skills 和 plugins 再扩展助手能做的事，新能力通常做成基于 plugin SDK 的插件并通过 ClawHub 分发。
+复杂度放在 Gateway、渠道/节点分层和可替换运行时这三处，核心取舍是「信任边界靠配置而不是靠托管」。README 说 Gateway 是本地控制平面，会话、工具、事件和渠道连接都归它管理，Control UI、CLI 和 TUI 都是连到 Gateway 的客户端。这样换聊天渠道或换前端不需要动核心，多人共享时也只是同一套 Gateway 的不同配置。
 
-第三个设计是可替换的模型与运行时。模型提供商既可以是托管的也可以是本地的，Agent 运行时也是插件。README 明确说换模型或换 Agent 不需要改其他部分。这与把状态和凭据留在本机的目标配套：迁移的是执行端，不是数据归属。README 还把「可信网关、不可信执行」落到具体边界：Gateway 管理会话和渠道，但工具执行和插件运行仍是可配置、可沙箱化的部分；新能力优先做成插件，通过 ClawHub 分发，而不是全部塞进核心。代价是每个渠道、模型和节点都要单独配置，排错时需要在 Gateway、渠道和插件之间定位。
+第二个设计是渠道与设备节点的分层。README 说 Channels 负责接消息服务，Companion apps 和 nodes 补上语音、Canvas、摄像头、屏幕和本地设备操作；这些能力只在受支持的平台可用，主文档没有列出各平台差异。因此同一套配置换到另一台设备，是否具备语音、摄像头或屏幕操作能力需要另查平台文档。
 
-## 边界与风险
+第三个设计是可替换的模型与运行时。README 明确说换模型或换 Agent 不需要改其他部分，模型提供商既可以是托管的也可以是本地的，Agent 运行时也是插件。编辑判断：这与「状态和凭据留在本机」配套——迁移的是执行端，不是数据归属。
 
-README 把入站消息定义为不可信输入。能收私信的渠道默认要求未知发送者配对，用 `openclaw pairing approve <channel> <code>` 批准。主会话的工具默认直接在宿主机上运行，除非额外配置 sandboxing，因此连接其他用户或把 Gateway 暴露到公网之前，必须阅读安全指南、暴露 runbook 和 sandboxing 文档。
+安全边界也是设计的一部分。README 把入站消息定义为不可信输入：能收私信的渠道默认要求未知发送者配对，用 `openclaw pairing approve <channel> <code>` 批准；主会话的工具默认直接在宿主机上运行，除非额外配置 sandboxing。README 把「可信网关、不可信执行、策略由代码执行」单独作为架构论点，说明这不是事后补的开关。
 
-遥测方面，README 说默认只为每日版本检查访问网络，匿名功能统计需要主动开启，设置 `update.checkOnStart: false` 可以同时关闭两者。提示词会发给你配置的模型提供商和聊天平台，启用诊断导出时还会发给对应的接收方，这些都需要按自己的数据政策评估。
+代价是每个渠道、模型和节点都要单独配置，排错时需要在 Gateway、渠道和插件之间定位。编辑判断：这种分层对多入口很合适，但它没有把差异藏起来，运维者必须知道自己接了哪些渠道、每个渠道的信任假设是什么。
 
-开发仓库是 pnpm workspace，根目录直接跑 `npm install` 不受支持，需要 `pnpm install`、`pnpm build` 和 `pnpm ui:build`。安装器覆盖三大桌面平台，但 README 没有给出 Gateway 在每种系统上的完整功能差异或最低硬件要求，只链接到平台文档。项目采用 MIT 许可证，第三方代码说明在 THIRD_PARTY_NOTICES.md。README 未说明完整的威胁模型、默认监听地址与认证细节；多人模式和远程暴露属于高风险用法，README 只给出原则和文档入口。README 也未说明证书、反向代理、端口转发等远程部署细节，没有给出多用户场景下的权限模型，以及各渠道的速率限制、消息留存和平台条款差异；接入 WhatsApp、iMessage 等渠道前需要单独核对。
+## 什么时候别用它
 
-治理上，OpenClaw Foundation 是独立的 501(c)(3)，雇用核心团队并签署发布；README 列出的捐赠方包括 Amazon、OpenAI、Red Hat 等，并说明捐赠方不拥有也不指挥项目，OpenAI 是捐赠方而非所有者。README 建议漏洞通过 SECURITY.md 报告，社区支持走 community.openclaw.ai 与 issue chooser；新能力应优先做成基于 plugin SDK 的插件并放到 ClawHub，而不是直接改核心。编辑判断：它适合愿意自己运维、重视数据留在本机、且需要把助手接入多个聊天渠道的人；不适合想要零运维托管服务，或无法承担公网暴露风险的团队。
+它不适合想要零运维托管服务，或无法承担公网暴露风险的团队。README 把入站消息定义为不可信输入，能收私信的渠道默认要求未知发送者配对；主会话的工具默认在宿主机上运行，除非额外配置 sandboxing，因此连接其他用户或把 Gateway 暴露到公网之前，必须阅读安全指南、暴露 runbook 和 sandboxing 文档。
+
+遥测方面，README 说默认只为每日版本检查访问网络，匿名功能统计需要主动开启，设置 `update.checkOnStart: false` 可以同时关闭两者。提示词会发给你配置的模型提供商和聊天平台，启用诊断导出时还会发给对应接收方，这些都需要按自己的数据政策评估。
+
+开发仓库是 pnpm workspace，根目录直接跑 `npm install` 不受支持，需要 `pnpm install`、`pnpm build` 和 `pnpm ui:build`。安装器覆盖三大桌面平台，但 README 没有给出 Gateway 在每种系统上的完整功能差异或最低硬件要求，只链接到平台文档。项目采用 MIT 许可证，第三方代码说明在 THIRD_PARTY_NOTICES.md。
+
+README 未说明完整的威胁模型、默认监听地址与认证细节；多人模式和远程暴露属于高风险用法，README 只给出原则和文档入口。README 也未说明证书、反向代理、端口转发等远程部署细节，没有给出多用户场景下的权限模型，以及各渠道的速率限制、消息留存和平台条款差异；接入 WhatsApp、iMessage 等渠道前需要单独核对。
+
+治理上，OpenClaw Foundation 是独立的 501(c)(3)，雇用核心团队并签署发布；README 列出的捐赠方包括 Amazon、OpenAI、Red Hat 等，并说明捐赠方不拥有也不指挥项目，OpenAI 是捐赠方而非所有者。编辑判断：它适合愿意自己运维、重视数据留在本机、且需要把助手接入多个聊天渠道的人；不适合需要厂商 SLA 或无法审查本地执行边界的场景。
 
 ## 来源
 

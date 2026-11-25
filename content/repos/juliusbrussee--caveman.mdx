@@ -18,11 +18,15 @@ Caveman 的核心主张是「why many token when few do trick」：让 Agent 少
 
 它面向已经在用 Claude Code、Codex、OpenCode、Gemini CLI 等编程 Agent、希望降低账单或上下文占用的人。README 说安装后普通的 `claude` 命令也会保持精简模式，覆盖 30 多种 Agent，并且在本机使用你自己的密钥和 Claude Pro/Max 登录。它不代理你的 prompt，也不要求换 Agent。
 
-和「让模型简短回答」的提示词差别在于，Caveman 同时改输出、输入和路由。README 引用 Adobe Research 的结论说改写用户 prompt 会让回答变差，因此它绝不改写用户输入；又引用 JetBrains 的 A/B 测试说 Agent 会话大部分是代码和工具调用，语气改写碰不到这些，所以它增加了压缩输入和减少运行次数的部分。这是它从「一个玩笑」变成工具的主要理由。
+README 还给了三条外部佐证：Adobe 的 CAVEWOMAN 论文测出八种模型成本降 1.4 到 2.4 倍；Elasticsearch Labs 重做后响应 token 少 63.6% 且称零信息损失；JetBrains 86 个真实编码任务的配对 A/B 没有可测的质量损失（p = 0.82），输出 token 少 8.5%。这些是 README 引用的第三方结果，不是本仓库自己的测量。
 
-README 还列了一组外部证据：Adobe 的 CAVEWOMAN 论文测出八种模型成本降 1.4 到 2.4 倍；Elasticsearch Labs 重做后响应 token 少 63.6% 且称「零信息损失」；JetBrains 86 个真实编码任务的配对 A/B 没有可测的质量损失（p = 0.82），输出 token 少 8.5%。这些是 README 引用的第三方结果，不是本仓库自己的测量。
+## 它替掉了什么麻烦
 
-## 怎么上手
+README 说 Caveman「起于 2026 年 4 月的玩笑」，并明确写出两个塑造它的发现：Adobe 的结论是改写用户 prompt 会让回答变差，所以它绝不改写用户输入；JetBrains 的 A/B 说 Agent 会话大部分是代码和工具调用，语气改写碰不到这些。编辑判断：从这两条反推，之前省 token 的常见做法是给一句「简短回答」的提示词，或直接压缩上下文；前者只动语气、收益有限，后者容易丢信息。
+
+Caveman 的差别是同时改输出、输入和路由：输出侧用规则化的精简句式，输入侧在模型读取前压缩文件，路由侧按任务难度挑模型和推理强度。它还提供 Blocks 把 code mode 下反复重写的脚本留在仓库里。README 没有说明更早的同类工具谱系，也没有给出与「只加一句简短指令」的系统对比；它引用的第三方研究只验证了语气改写这一层。至于这些做法在真实团队里替代了什么流程，README 未说明。
+
+## 跑起来要几步
 
 README 给出的一行安装需要 Node.js 22.13 及以上：
 
@@ -40,31 +44,27 @@ npx skills add JuliusBrussee/caveman -g
 
 Claude Code 用户还可以通过插件市场安装，Gemini CLI 用 `gemini extensions install` 添加仓库地址；Windows 一行脚本要求 PowerShell 5.1 以上，README 给出的脚本固定在 v4.2.0。npm 12 及以上会阻止 git 安装，README 说 v3.2.0 起的一行脚本会自行处理，旧的固定脚本会失败，可以改用 `npx --allow-git=root -y github:JuliusBrussee/caveman#v4.2.0`。
 
-装好后用 `caveman status` 查看哪些部分开启，`caveman off browse` 单独关闭某一项。Auto 需要免费账号，先运行 `caveman login`，可选地用 `caveman providers add openai` 增加自有模型的供应商。`caveman doctor` 会按行列出问题及修复方式；`caveman trial -- claude` 可以在自己的真实任务上做 A/B。
+装好后用 `caveman status` 查看哪些部分开启，`caveman off browse` 单独关闭某一项。Auto 需要免费账号，先运行 `caveman login`，可选地用 `caveman providers add openai` 增加自有模型的供应商。`caveman doctor` 会按行列出问题及修复方式；`caveman trial -- claude` 可以在自己的真实任务上做 A/B。常见卡点：精简模式可能不会自动启动，README 说在 Agent 里输入 `/caveman`（Codex 里是 `$caveman`）；想退出说 `stop caveman`。只装 skill 时不会安装代理，也不会获得 Auto、Blocks 等部分。
 
-常见卡点：精简模式可能不会自动启动，README 说在 Agent 里输入 `/caveman`（Codex 里是 `$caveman`）；想退出说 `stop caveman`。只装 skill 时不会安装代理，也不会获得 Auto、Blocks 等部分。按请求计费的服务（如 GitHub Copilot）不会因为回答变短而省钱。
+## 它把复杂度放在哪
 
-## 值得注意的设计
+回复风格被写成一套规则，而不是随口模仿。README 的规则表包括：先给结论，格式是「[thing] [action] [reason]. [next step]」；不要问候、不要「让我来」、不要复述；一句话一个意思，基于 ASD-STE100 受控英语，最多 20 个词、主动语态、一个东西一个术语；含义不能丢，冠词可以省，但 `not`、`never`、`no`、`only` 不能省，数字和单位保持精确；代码、命令、路径和报错逐字符保留；没有戏剧化表达；遇到安全警告、不可逆操作或用户困惑时恢复完整句子。
 
-回复风格被写成一套规则，而不是随口模仿。README 的规则表包括：先给结论，格式是「[thing] [action] [reason]. [next step]」，不要问候、不要「让我来」、不要复述；一句话一个意思，基于 ASD-STE100 受控英语，最多 20 个词、主动语态、一个东西一个术语；含义不能丢，冠词可以省，但 `not`、`never`、`no`、`only` 不能省，数字和单位保持精确；代码、命令、路径和报错逐字符保留；没有戏剧化表达；遇到安全警告、不可逆操作或用户困惑时恢复完整句子；绝不改写用户 prompt。
-
-输入侧压缩发生在模型读取之前，原始文件仍留在磁盘上，Agent 需要时可以取回。README 的测量说，六个合成的大工具输出任务、18 对样本，整段会话输入 token 少 33.2%，18/18 答案正确；单个文件压缩率更高（CSV 98.9%、日志 98.5%、YAML 99.1%、测试输出 98.9%、JSON 98.5%），但 HTML 目前没有压缩器，反而让会话多 9.9%。README 自己也标注会话数据来自 2026 年 8 月的旧引擎。
+输入侧压缩发生在模型读取之前，原始文件仍留在磁盘上，Agent 需要时可以取回。README 的测量说，六个合成的大工具输出任务、18 对样本，整段会话输入 token 少 33.2%，18/18 答案正确；单个文件压缩率更高（CSV 98.9%、日志 98.5%、YAML 99.1%、测试输出 98.9%、JSON 98.5%），但 HTML 目前没有压缩器，反而让会话多 9.9%。这些会话数据来自 README 标注的旧引擎。
 
 Auto 是路由层：它在模型选择器里新增一个选项，按每个请求的难度选择模型和推理强度。README 的 interim 结果显示，85 个编码任务上 Auto 的成本是 Opus 5.5 xhigh 的 0.46 倍，解题率 43.7% 对 44.3%，但差距 ±7 个点、尚未分辨，且大部分节省来自在简单请求上降低推理强度。
 
 Blocks 是「code mode 的 skills.sh」。Agent 在 code mode 下会写脚本而不是连续调用工具，但每个会话都重写同一段脚本再丢掉；Blocks 把它留在仓库里、每次 PR 检查、下次直接交回。README 给的例子是 `go test -v ./...` 的 10,561 token 原始输出，用 `| tail -20` 是 397，用 `test-summary` 块是 76；但 `grep-defs` 也承认输给裸 `grep`。它预置八个块，处于 v0.1.0-rc.5，只支持 Python，没有沙箱。
 
-代价是规则本身要花 token：README 说规则约 1,160 个输入 token；在「Answer concisely」这个真实基线上，`/caveman` 只再省 3%，`/ultracave` 省 35%。编辑判断：它的价值主要在输入压缩和路由，而不是语气本身；如果只看输出措辞，收益容易被规则成本抵消。
-
-## 边界与风险
+## 什么时候别用它
 
 许可证是 Apache-2.0，覆盖整个仓库，但 Caveman 名称和石头标志是商标，归属 Julius Brussee。
 
-README 里的节省数据大多来自项目自己的测量，并且自己标注了局限：Auto 的结论是「interim」，质量差距尚未分辨；HTML 压缩没有结果；Blocks 仍是预发布、只支持 Python、没有沙箱；Waste fixes 标注为尚未测量；Read less 的会话数据来自旧引擎，HTML 反而更差，部分对照实验的区间跨零且 harness 未公开。这些数字应按作者自述看待，而不是独立基准。
+README 里的节省数据大多来自项目自己的测量，并且自己标注了局限：Auto 的结论是 interim，质量差距尚未分辨；HTML 压缩没有结果；Blocks 仍是预发布、只支持 Python、没有沙箱；Waste fixes 标注为尚未测量；Read less 的会话数据来自旧引擎，HTML 反而更差，部分对照实验的区间跨零且 harness 未公开。这些数字应按作者自述看待，而不是独立基准。它还承认规则本身要约 1,160 个输入 token：在「Answer concisely」这个真实基线上，`/caveman` 只再省 3%，`/ultracave` 省 35%。
 
-隐私是另一个重点。README 说 skill 本身不发数据，但 `/caveman-compress` 会把待压缩文件发给所配置的模型供应商。CLI 默认发送使用统计：命令、token 数、blocks 命令和使用次数、随机安装 ID、系统和 IP，不发 prompt、代码、路径或脚本；可用 `caveman telemetry off` 或 `DO_NOT_TRACK=1` 永久关闭。Auto 登录并启用后，每次提问会把最近一次提问（连同 Agent 附带的 CLAUDE.md、记忆或 @ 文件）、上一次提问、上一条回复的结尾、工具名、推理强度、少量 header 和上一请求的 token 数发给 Caveman Cloud；免费计划可能保留数据用于改进路由，`caveman off routing` 可停。只有路由到 Caveman Cloud 模型的请求会整段经过 Cloud，并按该项目的存储密钥计费。
+隐私是另一个重点。README 说 skill 本身不发数据，但 `/caveman-compress` 会把待压缩文件发给所配置的模型供应商。CLI 默认发送使用统计：命令、token 数、blocks 命令和使用次数、随机安装 ID、系统和 IP，不发 prompt、代码、路径或脚本；可用 `caveman telemetry off` 或 `DO_NOT_TRACK=1` 永久关闭。Auto 登录并启用后，每次提问会把最近一次提问（连同 Agent 附带的 CLAUDE.md、记忆或 @ 文件）、上一次提问、上一条回复的结尾、工具名、推理强度、少量 header 和上一请求的 token 数发给 Caveman Cloud；免费计划可能保留数据用于改进路由，`caveman off routing` 可停。
 
-使用边界还包括：按请求计费的订阅不会因回答变短而省钱；新模型本身已经会「简洁回答」，所以语气层的增量有限；Blocks 没有沙箱，运行仓库里的脚本要自行评估；30 多种 Agent 的兼容性由 README 声明，但每个 Agent 的版本差异仍可能带来问题。它不适合需要确定性成本模型、或不能接受任何遥测与云端路由的团队。编辑判断：最稳妥的用法是只开 Read less 和 Blocks、关闭 Auto 与遥测，先在自己的任务上跑 `caveman trial` 再决定。
+使用边界还包括：按请求计费的订阅不会因回答变短而省钱；新模型本身已经会简洁回答，所以语气层的增量有限；Blocks 没有沙箱，运行仓库里的脚本要自行评估；30 多种 Agent 的兼容性由 README 声明，但每个 Agent 的版本差异仍可能带来问题。它不适合需要确定性成本模型、或不能接受任何遥测与云端路由的团队。编辑判断：最稳妥的用法是只开 Read less 和 Blocks、关闭 Auto 与遥测，先在自己的任务上跑 `caveman trial` 再决定。
 
 ## 来源
 

@@ -16,15 +16,21 @@ sources: [github, toutiao]
 
 AI Design Skills 是一个小而专注的设计 Skill 集合，目前只有两个：`landing-page-design` 和 `figma-designer`。它面向能读 Markdown 规则的 AI 编码工具，包括 Claude Code、Cursor、Codex、Windsurf，以及任何支持把规则文件作为上下文的工具。
 
-给谁用？需要让 Agent 从零做一个落地页的开发者，以及想在 Figma 里生成“结构正确、可继续编辑”的设计稿的设计师和前端。它解决的不是“生成一张好看的图”，而是把设计过程拆成 Agent 能执行的步骤：先问需求，再定结构，再写文案和视觉系统。
+给谁用？需要让 Agent 从零做一个落地页的开发者，以及想在 Figma 里生成「结构正确、可继续编辑」的设计稿的设计师和前端。它解决的不是「生成一张好看的图」，而是把设计过程拆成 Agent 能执行的步骤：先问需求，再定结构，再写文案和视觉系统。
 
-核心组成就是两个自包含的 Skill 文件夹，按需安装。`landing-page-design` 覆盖 intake 问题、页面结构、转化文案，以及一套完整的视觉系统（字体、间距、圆角、动效）；`figma-designer` 在 Figma 里用真实结构搭建设计：间距、圆角、颜色变量、命名文本样式、auto layout、带所有状态的组件，以及会随 token 更新的 Foundations frame。
+核心组成就是两个自包含的 Skill 文件夹，按需安装；README 称只装自己需要的那个即可。`landing-page-design` 覆盖 intake 问题、页面结构、转化文案，以及一套完整的视觉系统（字体、间距、圆角、动效）；`figma-designer` 在 Figma 里用真实结构搭建设计：间距、圆角、颜色变量、命名文本样式、auto layout、带所有状态的组件，以及会随 token 更新的 Foundations frame。README 说集合还在增长，改版现有网站的需求指向另一个独立仓库 `redesign-skill`。
 
-和通用设计提示词的差别在于对“真实结构”的要求。README 强调 Figma 里用的是变量、样式和组件；编辑判断：这意味着产出更接近可维护的设计文件，而不是一张扁平稿。README 也说集合还在增长，改版现有网站的需求指向另一个独立仓库 `redesign-skill`。
+## 它替掉了什么麻烦
 
-## 怎么上手
+它替掉的是「用通用设计提示词直接生成一版页面」的做法。README 没有交代这个集合出现前的标准流程；README 只说明改版现有网站的需求指向独立仓库 `redesign-skill`，并注明它早于这个集合而单独存在。编辑判断：这说明作者先做「改造已有站点」，再把「从零做落地页」和「在 Figma 里搭结构」拆成新的自包含 Skill。
 
-需要 Node.js，然后用 skills CLI：
+编辑判断：过去让模型做设计，常见的产出是一段能看的 HTML/CSS 或一张扁平设计稿，问题集中在两处——结构不可继续编辑，规范和流程混在一起。它对准的正是这两点：`landing-page-design` 先问需求、再定结构、再写文案、最后给视觉系统；`figma-designer` 要求用变量、命名文本样式、auto layout 和带状态的组件，让设计师能接着改。
+
+和通用设计提示词的差别，README 用「真实结构」来概括：Figma 里用的是变量、样式和组件，而不是一张扁平稿。编辑判断：这让产出更接近可维护的设计文件；README 未点名其他同类 Skill，也未给出功能对比。
+
+## 跑起来要几步
+
+最少一步，前提是本机有 Node.js，然后用 skills CLI：
 
 ```bash
 npx skills add elayadesign/ai-design-skills
@@ -41,31 +47,31 @@ npx skills add elayadesign/ai-design-skills --list
 
 Claude Code 会落到 `.claude/skills/`，Cursor、Codex 等落到 `.agents/skills/`；加 `-y` 跳过确认，之后用 `npx skills update` 拉更新。
 
-手动安装也可以。Claude Code 是把 `skills/<skill-name>` 复制到 `.claude/skills/`；Cursor 是把 `SKILL.md` 下载到 `.cursor/rules/` 或粘贴到 Settings → Rules for AI；Codex 放进 `AGENTS.md`，Windsurf 放进 `.windsurfrules`，Cline 放进 `.clinerules`，其他工具就粘进系统提示。Claude.ai 没有终端时，可以下载 `SKILL.md` 上传到 Project，或附在对话里说“follow this”。
+手动安装也可以。Claude Code 是把 `skills/<skill-name>` 复制到 `.claude/skills/`；Cursor 是把 `SKILL.md` 下载到 `.cursor/rules/` 或粘贴到 Settings → Rules for AI；Codex 放进 `AGENTS.md`，Windsurf 放进 `.windsurfrules`，Cline 放进 `.clinerules`，其他工具就粘进系统提示。Claude.ai 没有终端时，可以下载 `SKILL.md` 上传到 Project，或附在对话里说「follow this」。
 
-装好后直接用自然语言提需求即可。常见卡点：`figma-designer` 需要你有 Figma 环境（README 说它在 Figma 里设计，但没有展开具体的前置条件或版本要求）；仓库只有两个 Skill，别期待覆盖完整设计系统；想先看清单用 `--list`；`redesign-skill` 不在这个仓库里，要单独去装。
+装好后直接用自然语言提需求即可。README 未说明 `figma-designer` 的具体前置条件或版本要求；想先看清单用 `--list`；`redesign-skill` 不在这个仓库里，要单独去装。README 未说明手动安装后如何更新，只有走 CLI 才有 `npx skills update`。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-第一个设计是“设计值集中在一个段落”。README 说每个 Skill 的字体、颜色、间距、动效都放在文件靠后的一个 section 里，fork 后改这一段，其余部分会自动跟着变。这把“规范”和“流程”分开了：流程稳定，设计值可按项目换。代价是这一段的写法会同时影响所有下游产出，改之前要理解它和规则的关系。
+复杂度放在三处。第一处是「设计值集中在一个段落」：README 说每个 Skill 的字体、颜色、间距、动效都放在文件靠后的一个 section 里，fork 后改这一段，其余部分会自动跟着变。这把规范和流程分开了——流程稳定，设计值可按项目换。
 
-第二个设计是顺序。`landing-page-design` 的流程是先问 intake 问题，再定页面结构，再写转化文案，最后给视觉系统。这个顺序把需求澄清放在生成之前，减少“页面很漂亮但没讲清楚卖点”的情况。README 没有说明 intake 问几个问题、如何处理用户答不上来的情况。
+第二处是顺序。`landing-page-design` 的流程是先问 intake 问题，再定页面结构，再写转化文案，最后给视觉系统。这个顺序把需求澄清放在生成之前，减少「页面很漂亮但没讲清楚卖点」的情况。README 没有说明 intake 问几个问题、如何处理用户答不上来的情况。
 
-第三个设计是 Figma 的“真实结构”。变量、命名文本样式、auto layout、带所有状态的组件、随 token 更新的 Foundations frame，这些都是在让 Agent 产出设计师能接着改的文件，而不是一张扁平稿。README 没有说明它如何与已有设计系统或团队变量库对接。
+第三处是 Figma 的「真实结构」。变量、命名文本样式、auto layout、带所有状态的组件、随 token 更新的 Foundations frame，这些都是在让 Agent 产出设计师能接着改的文件，而不是一张扁平稿。README 没有说明它如何与已有设计系统或团队变量库对接。
 
-还有一个仓库外的 SlopScan：README 用横幅介绍它，可以检查线上页面是否符合同一套规则，并给 Agent 一个修复提示。它是独立产品，不是这个仓库的一部分，也不是使用这两个 Skill 的前提。
+仓库外还有一个 SlopScan：README 用横幅介绍它，可以检查线上页面是否符合同一套规则，并给 Agent 一个修复提示。它是独立产品，不是这个仓库的一部分，也不是使用这两个 Skill 的前提。
 
-## 边界与风险
+## 什么时候别用它
 
-许可证是 MIT，README 明确说可以自用、fork、发布、出售用它做出来的东西，不要求署名。`landing-page-design` 在 credits 里说明它改编自 Leonxlnx/taste-skill 的内容真实感和动效思路，那个项目也是 MIT；README 保留了这个来源说明。
+编辑判断：需要品牌系统、组件库治理、可访问性审计或响应式断点的团队，不适合用它。覆盖范围是最大的限制：只有两个 Skill，一个管落地页从 0 到 1，一个管 Figma 结构；这些领域 README 都没有对应 Skill。README 也没有说明两个 Skill 之间的依赖或组合方式；实际使用时更像两个独立工具箱，它补的是两块具体短板，不是完整的设计团队替代品。
 
-覆盖范围是最大的限制。只有两个 Skill，一个管落地页从 0 到 1，一个管 Figma 结构；品牌系统、组件库治理、可访问性审计、响应式断点等 README 都没有对应 Skill。编辑判断：它补的是两块具体短板，不是完整的设计团队替代品。
+质量仍要人看。生成的设计是否可用、文案是否准确、对比度是否达标，README 没有给出评估方法或基准；Figma 产出是否真的能被团队接手，也取决于你们的命名和变量规范。README 未说明生成结果是否包含可访问性、对比度或性能检查；编辑判断：这些要另做审核。
 
-质量仍要人看。生成的设计是否可用、文案是否准确、对比度是否达标，README 没有给出评估方法或基准；Figma 产出是否真的能被团队接手，也取决于你们的命名和变量规范。
+编辑判断：设计值集中也带来代价，那一段会同时影响所有下游产出，改之前要理解它和规则的关系。这正是「好改」和「牵一发动全身」的同一处设计。
 
-依赖方面，安装需要 Node.js；Figma Skill 需要 Figma 环境，README 未说明具体版本、套餐或是否需要插件/API。其他工具通过规则文件接入，能力取决于该工具对 Markdown 规则的遵循程度。README 未说明生成结果是否包含可访问性、对比度或性能检查；编辑判断：这些要另做审核。
+依赖方面，安装需要 Node.js；Figma Skill 需要 Figma 环境，README 未说明具体版本、套餐或是否需要插件/API。其他工具通过规则文件接入，能力取决于该工具对 Markdown 规则的遵循程度。
 
-外部链接要分清：SlopScan 和 `redesign-skill` 都是独立项目，不在这个仓库的 MIT 授权范围内；使用前要分别确认它们的许可和收费方式。
+许可证是 MIT，README 明确说可以自用、fork、发布、出售用它做出来的东西，不要求署名。但外部链接要分清：SlopScan 和 `redesign-skill` 都是独立项目，它们各自的许可和收费方式 README 未说明，使用前要单独确认，不能假定与本仓库的 MIT 相同。`landing-page-design` 在 credits 里说明它改编自 Leonxlnx/taste-skill 的内容真实感和动效思路，那个项目也是 MIT。
 
 ## 来源
 

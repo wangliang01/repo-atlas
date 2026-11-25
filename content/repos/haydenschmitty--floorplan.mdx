@@ -18,11 +18,15 @@ Floorplan 是 Claude Code 和 Codex 的插件。它让 Agent 读代码库，然�
 
 README 面向三类人：用 AI 搭出应用但读不动代码的构建者、需要快速上手项目的团队，以及想看清 AI 每次改了什么的人。它能在同一个地图里处理单仓库、monorepo 和并排放置的多个仓库，还能从 PRD 或规格生成尚未写代码的蓝图。项目当前版本 0.11.0，要求 Node 18+，零依赖，MIT 许可证；README 强调它运行在已有的 Claude 或 ChatGPT 计划上，不需要 API key。
 
-和同类工具的差别，README 用一张对照表说明了。Archify 回答的是「怎么把系统讲清楚」，产出 10 种图或一页解释；Understand Anything 回答的是「大型代码库逐函数怎么工作」，产出知识图谱；Floorplan 回答的是「我做的这个应用实际怎么运作、哪里值得担心」，产出可缩放的应用地图，并附带 Health check 和 Recent work。README 的建议是：理解并检查自己的应用选 Floorplan，给文档或演讲画图选 Archify，研究大型代码库选 Understand Anything，两者也可以先用 Floorplan 建图、再用 Archify 画其中一条流程。
+## 它替掉了什么麻烦
 
-## 怎么上手
+它替掉的是「应用能跑，但没人说得清它怎么拼起来」的状态。README 用一句自问自答点出痛点：你可能借 AI 做出了应用，它能工作，但被问「有人结账时会发生什么」或「改这里会坏什么」，诚实的答案是「不知道」。README 没有交代这类理解工作过去的标准做法，只在 Why Floorplan 一节描述了结果；编辑判断：在此之前，要么自己读代码，要么让 AI 逐段解释，要么手工画架构图，三者都费时，而且很难保持更新。
 
-前置条件是 Node.js 18+，以及已登录的 Claude Code 或 Codex。Claude Code 下安装：
+编辑判断：它的取舍是把机械工作交给脚本、把语义判断交给模型，这也是它和纯「让 AI 读代码」方案的差别。README 用一张对照表区分同类工具：Archify 回答「怎么把系统讲清楚」，Understand Anything 回答「大型代码库逐函数怎么工作」，Floorplan 回答「我做的应用实际怎么运作、哪里值得担心」。编辑判断：前两者产出给人看的图或知识图谱，Floorplan 的独特之处是把健康检查和最近改动也放进同一张地图。
+
+## 跑起来要几步
+
+两步：装好 Node.js 18+ 和已登录的 Claude Code 或 Codex，然后装插件。Claude Code 下安装：
 
 ```bash
 claude plugin marketplace add haydenschmitty/floorplan
@@ -42,9 +46,9 @@ codex plugin add floorplan@floorplan
 
 README 建议即使使用 Claude 桌面应用也装上 Claude Code CLI，因为地图的 Ask 栏要靠它读取真实代码；Codex 桌面应用已自带所需能力。没有代码也可以先做蓝图：把 PRD 或规格发给 Agent，说「Here's my PRD. Make me a floorplan of what we'd need to build.」，得到的地图用虚线卡片标出「这是计划」，并附一份仍未决定事项的评审。README 还提醒，首次建图要对每个文件和 endpoint 做描述，小应用几分钟，大项目更久，费用按所用的 Claude 或 ChatGPT 计划计算；大项目会拆给并行 helper，增量更新则便宜得多。同一张地图在两个应用中通用，一边生成的地图可以在另一边打开；README 还提供在 CI、脚本或自有工具里、配合任意模型运行的无会话方式。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-它把工作明确拆成机械部分和语义部分。普通 Node 脚本负责发现仓库、解析十余种语言的代码、把前端请求匹配到服务端 endpoint、计算地图布局；Claude 或 Codex 只负责判断「应用由哪些部分组成」并用平实语言描述每个文件。README 用一张流程图表达这个管线，并强调脚本零依赖。这种分工让扫描结果可重复，同时把最需要理解力的命名交给模型。
+复杂度放在「机械扫描」和「语义命名」的分工上。它把工作明确拆成机械部分和语义部分：普通 Node 脚本负责发现仓库、解析十余种语言的代码、把前端请求匹配到服务端 endpoint、计算地图布局；Claude 或 Codex 只负责判断「应用由哪些部分组成」并用平实语言描述每个文件。README 用一张流程图表达这个管线，并强调脚本零依赖。这种分工让扫描结果可重复，同时把最需要理解力的命名交给模型。
 
 跨仓库连接是另一个重点。它会跟随 import，并把前端发出的每个网络请求匹配到真正响应它的服务端 endpoint，即使两者在不同仓库。README 列出的语言包括 TypeScript、JavaScript、Python、Go、Rust、Java、Kotlin、Scala、Swift、C#、PHP，以及 Vue、Svelte、Astro 文件和 Shopify 主题。支持面很宽：Express、Fastify、Koa、Hono、NestJS、Next.js、Firebase Cloud Functions、Supabase Edge Functions、Flask、FastAPI、Django、Gin、Echo、chi、Actix、Axum、Spring、ASP.NET Core、Laravel、Serverless Framework、Bun.serve 等，前端侧覆盖 Next.js、React Router、Vue、SvelteKit、Remix、Nuxt、Astro、Expo、Angular、TanStack、Shopify 和 Inertia。
 
@@ -54,9 +58,9 @@ README 建议即使使用 Claude 桌面应用也装上 Claude Code CLI，因为�
 
 安全叙事写得比较细。README 说它没有 hooks、没有 MCP server、没有依赖、不下载任何东西、也从不运行来自互联网的代码；唯一可能的外发是用户主动登记的候补邮箱。每次改动都有测试检查这些约束，每个 release 还会列出各文件的 fingerprint，方便核对安装到的副本。
 
-## 边界与风险
+## 什么时候别用它
 
-0.11.0 仍是 0.x 版本，README 未给出稳定性承诺或向后兼容政策。健康检查只能覆盖 README 列出的模式，不能替代完整安全审计；它只显示密钥位置、不显示密钥值。编辑判断：把 Health check 当成上线前的第一道筛查可以，但不能当成合规或渗透测试的替代品。
+编辑判断：需要稳定版本承诺、或要把健康检查当成合规审计的团队，不适合用它。0.11.0 仍是 0.x 版本，README 未给出稳定性承诺或向后兼容政策。健康检查只能覆盖 README 列出的模式，不能替代完整安全审计；它只显示密钥位置、不显示密钥值。把 Health check 当成上线前的第一道筛查可以，但不能当成合规或渗透测试的替代品。
 
 数据方面，扫描、地图和本地服务都在本机运行，地图不上传；但在 Claude 应用里打开地图时，Claude 会把地图的名称、描述和结构上传到私有 claude.ai 账户，上传前会询问。Ask 栏通过 Claude Code CLI 或 Codex 使用用户自己的账号，模型能读代码但不能改代码。插件只写 `floorplan/`，在 Claude Code 中经确认还会写一段到 `CLAUDE.local.md`；README 说两者都不会提交，也不碰 `.gitignore`、`CLAUDE.md` 或源码。
 

@@ -15,19 +15,33 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-Hadolint 是一个用 Haskell 写的 Dockerfile 静态检查工具。它先把 Dockerfile 解析成 AST，再在 AST 上跑规则，并调用 ShellCheck 检查 `RUN` 指令里的 Bash。README 的定位是"更聪明的 Dockerfile linter"，帮镜像构建符合最佳实践。
+Hadolint 是一个用 Haskell 写的 Dockerfile 静态检查工具，把 Dockerfile 解析成 AST 后执行规则，并把 `RUN` 里的 Bash 交给 ShellCheck 检查。README 称它是“更聪明的 Dockerfile linter”，帮使用者构建符合最佳实践的镜像；README 还说有在线版，地址是 hadolint.github.io/hadolint。
 
-它面向写 Dockerfile 的开发者、平台团队和 CI 维护者。和只跑 ShellCheck 相比，Hadolint 多了一层 Dockerfile 结构检查：`FROM` 是否固定版本、`COPY --from` 是否引用已定义的 stage、stage 名是否重复、`apt-get`/`pip`/`npm`/`apk` 是否锁版本、`CMD`/`ENTRYPOINT` 是否用 JSON 形式等。README 也列出了三个同类工具：replicatedhq/dockerfilelint、RedCoolBeans/dockerlint、projectatomic/dockerfile_lint。
+README 未说明具体用户画像。编辑判断：它主要给写 Dockerfile 的开发者、平台团队和 CI 维护者用，因为既能在本地跑，也能装进 CI 或编辑器；它只检查 Dockerfile 文本，不构建镜像，也不运行容器。
 
-规则分两族：`DL` 开头的是 Hadolint 自己的规则，`SC` 开头的是 ShellCheck 规则。README 给出的严重级别有 Error、Warning、Info、Style、Ignore 五档，每条规则有默认级别。
+组成有四块。命令行入口负责接收文件路径、配置和输出格式；规则集分两族，`DL` 来自 Hadolint 自己，`SC` 来自 ShellCheck，README 说只列了最常见的 SC 规则，实际有几十条以上；配置层支持 `yaml`、环境变量和行内 pragma；分发形态包括预编译二进制、Docker/Podman 镜像、brew、scoop、Nix 和 Haskell 源码构建。README 给出的规则表自称“不完整列表”，并说明 `DL` 规则实现集中在 `Rules.hs`。
 
-从默认级别能看出它的取舍：`DL3000`（WORKDIR 必须绝对路径）、`DL3004`（不要用 sudo）、`DL3020`（文件和目录用 `COPY` 而不是 `ADD`）、`DL3024`（stage 名唯一）、`DL3026`（只允许可信 registry）、`DL4000`（`MAINTAINER` 已弃用）是 Error；`DL3002`（最后一个 USER 不应是 root）、`DL3006`（显式 tag 版本）、`DL3007`（不要用 latest）、`DL3008`/`DL3013`/`DL3018`（锁 apt/pip/apk 版本）、`DL3042`（pip 加 `--no-cache-dir`）是 Warning。Info 和 Style 更多是建议，适合先观察。
+规则分 Error、Warning、Info、Style、Ignore 五档，每条有默认级别。编辑判断：这更像一套可配置的检查框架，而不是固定输出的黑盒。
 
-这些级别不是固定的：可以用 `--error`、`--warning`、`--info`、`--style` 按规则码覆盖，也可以在配置文件的 `override` 里批量改。这对"某些规则只想警告、不想阻塞"的场景很实用。输出里会带具体规则码和说明，方便去规则 wiki 查；退出码受 `failure-threshold` 控制，`--no-fail` 则永不因规则失败。README 也欢迎有规则想法的人开 issue，说明规则集仍在演进。
+## 它替掉了什么麻烦
 
-## 怎么上手
+它替掉的是“Dockerfile 只能靠人工评审和构建失败兜底”这件事。README 没有交代 Hadolint 出现之前的标准做法；编辑判断：此前最佳实践主要靠代码评审和团队约定，而 `docker build` 通常只在语法或指令明显不合法时报错，不会因为用了 `latest`、`RUN` 后没清理缓存、`ADD` 该换成 `COPY`、`apt-get install` 没锁版本而失败，这些恰好是镜像体积、可复现性和安全性的常见来源。
 
-本地装好后直接跑：
+它的切入点是把 Dockerfile 当代码检查。README 称它解析出 AST 再跑规则，并借 ShellCheck 检查 `RUN` 里的 Bash。编辑判断：这把两类原本分散的检查合进一个命令——Dockerfile 结构规则负责 `FROM` 是否固定版本、`COPY --from` 是否引用已定义的 stage、stage 名是否重复、`CMD`/`ENTRYPOINT` 是否用 JSON 形式；ShellCheck 负责 `RUN` 内部的 shell 写法。没有它时，前者靠评审，后者要单独抽出 Bash 片段再跑 ShellCheck，都难和 Dockerfile 的行号、指令上下文对上。
+
+同类方案的差别要谨慎说。README 的 Alternatives 只列了 replicatedhq/dockerfilelint（注明是 super-linter 使用的另一个 linter）、RedCoolBeans/dockerlint、projectatomic/dockerfile_lint，README 未说明它们与 Hadolint 的功能差异、规则覆盖或性能。编辑判断：从 README 能确认的差异是 Hadolint 把 AST 规则和 ShellCheck 组合起来，并以 Haskell 单二进制和多平台容器镜像分发；谁更全、谁更快，README 没给依据。
+
+## 跑起来要几步
+
+最少两步：装好 `hadolint`，把 Dockerfile 路径交给它。README 说可从 release 页面下载 OSX、Windows、Linux 的预编译二进制；不行就退回容器、`brew` 或源码安装。macOS 用 `brew install hadolint`，Windows 用 `scoop install hadolint`，装了 `nix` 的发行版用 `hadolint` 包。不想装二进制时，用 Docker 或 Podman 从标准输入喂进去。
+
+```bash
+brew install hadolint
+scoop install hadolint
+docker pull hadolint/hadolint
+```
+
+首跑命令如下，分别是基本检查、忽略指定规则、限制可信 registry：
 
 ```bash
 hadolint <Dockerfile>
@@ -35,41 +49,42 @@ hadolint --ignore DL3003 --ignore DL3006 <Dockerfile>
 hadolint --trusted-registry my-company.com:500 <Dockerfile>
 ```
 
-不想装二进制，可以用容器把 Dockerfile 从标准输入喂进去：
+容器与 PowerShell 写法：
 
 ```bash
 docker run --rm -i hadolint/hadolint < Dockerfile
-# 或者
-docker run --rm -i ghcr.io/hadolint/hadolint < Dockerfile
+podman run --rm -i docker.io/hadolint/hadolint < Dockerfile
 ```
 
-Windows PowerShell 的写法是 `cat .\Dockerfile | docker run --rm -i hadolint/hadolint`。安装方式包括各平台的预编译二进制、macOS 的 `brew install hadolint`、Windows 的 `scoop install hadolint`、Nix、Docker 镜像（另有 Debian/Alpine 变体），以及用 Haskell 加 cabal 从源码构建。
+```powershell
+cat .\Dockerfile | docker run --rm -i hadolint/hadolint
+```
 
-第一次跑通常会看到一批 Warning 和 Info。先不要一次性全开：用 `-t`/`--failure-threshold` 决定什么级别才让进程失败（默认 `info`），用 `--ignore` 或配置文件压掉不适用的规则，再逐步收紧。输出格式支持 `tty`、`json`、`checkstyle`、`codeclimate`、`gitlab_codeclimate`、`gnu`、`codacy`、`sonarqube`、`sarif`、`junit`，方便接 CI。
+README 未给出示例输出；编辑判断：终端会打印规则码、位置和说明，默认格式 `tty`。默认 `failure-threshold` 是 `info`，因此只要违反到 Info 级别，进程就以失败码退出。编辑判断：想先观察可加 `--no-fail` 或调高阈值；第一次跑看到一批 Warning 和 Info 很正常。
 
-配置文件的查找顺序是 `$PWD/.hadolint.yaml`、`$XDG_CONFIG_HOME/hadolint.yaml`、`$HOME/.config/hadolint.yaml`、`$HOME/.hadolint/hadolint.yaml` 或 `$HOME/hadolint/config.yaml`、`$HOME/.hadolint.yaml`，只取第一个找到的；Windows 用 `%LOCALAPPDATA%` 代替 `XDG_CONFIG_HOME`。用 Docker 跑时，`--file-path-in-report` 可以修正报告里的文件路径，对 checkstyle、codeclimate、sonarqube、junit 和 gitlab_codeclimate 格式有用。
+常见卡点有五个。配置按固定顺序查找，README 列的五处位置只取第一个找到的，放错会让配置不生效，Windows 用 `%LOCALAPPDATA%` 代替 `XDG_CONFIG_HOME`。命令行一旦出现 `--ignore`，配置文件里的 `ignored` 会被整体忽略而不是合并。用 Docker 跑时报告路径可能不对，`--file-path-in-report` 只对 `checkstyle`、`codeclimate`、`sonarqube`、`junit` 和 `gitlab_codeclimate` 格式生效。行内 `# hadolint ignore=...` 只作用于下一条语句，整文件要用 `# hadolint global ignore=...`。Windows 基础镜像等非 POSIX shell 要写 `# hadolint shell=powershell`，否则 shell 相关规则不会被跳过。
 
-README 建议把它接进 CI、编辑器和 pre-commit，在写 Dockerfile 的过程中就得到反馈，而不是等到构建。它列出了代码评审平台、持续集成、编辑器和版本控制几类集成文档；具体插件不在 README 正文里展开。集成排查时可以用 `--verbose`，它会把 hadolint 的输出日志打到 stderr。
+## 它把复杂度放在哪
 
-## 值得注意的设计
+复杂度放在“解析成 AST 再分层检查”这条链上。README 说解析器来自 `language-docker`，AST 定义在它的 `Syntax.hs`；数据流是：读入 Dockerfile 文本，解析成指令序列，Hadolint 规则遍历 AST 产生 finding，`RUN` 里的命令交给 ShellCheck，最后按 `tty`、`json`、`checkstyle`、`codeclimate`、`gitlab_codeclimate`、`gnu`、`codacy`、`sonarqube`、`sarif`、`junit` 等格式输出，并用退出码表达严重级别。
 
-规则建立在 AST 上，而不是逐行文本匹配，所以能理解指令结构和 stage 关系。例如 `DL3022` 要求 `COPY --from` 引用之前定义的 `FROM` 别名，`DL3024` 要求 `FROM` 别名唯一，`DL3061` 要求 Dockerfile 以 `FROM`、`ARG` 或注释开头。这类规则单靠正则很难可靠实现。
+关键抽象有五层。规则码是第一层，`DL` 和 `SC` 代表两套来源；严重级别是第二层，决定默认强度；`failure-threshold` 是第三层，README 明确说它只影响退出码，所有 finding 仍会打印；抑制机制是第四层，分行内、整文件和配置文件全局三种；标签 schema 是第五层，用 `label-schema` 或 `--require-label` 要求标签符合 `text`、`semver`、`rfc3339`、`url`、`hash`、`spdx`、`email` 等格式。
 
-`RUN` 里的 Bash 交给 ShellCheck，是它比纯 Dockerfile 规则更完整的原因。代价是两套规则的编号和语义并存：排查时要知道 `DL` 和 `SC` 分别来自哪里。
+编辑判断：代价是理解和维护成本。两套规则码并存，排查时要知道问题来自 Dockerfile 规则还是 ShellCheck；README 只给部分 SC 规则，完整清单要去 ShellCheck 的 wiki 查。AST 规则能表达 stage 关系，例如 `DL3022` 要求 `COPY --from` 引用之前定义的别名、`DL3024` 要求别名唯一、`DL3061` 要求文件以 `FROM`、`ARG` 或注释开头，这些靠逐行正则很难可靠实现；编辑判断：代价是规则必须跟着 Dockerfile 语法演进，README 未说明它对 BuildKit heredoc 等新语法的支持情况。
 
-抑制机制分三层。行内 `# hadolint ignore=DL3006` 只作用于下一条语句；`# hadolint global ignore=DL3003,DL3006,SC1035` 作用于整个文件；配置文件里的 `ignored` 是全局的。README 还给了一个反向规则 `DL1001`，用来提醒团队不要滥用行内 ignore。非 POSIX shell 的镜像可以用 `# hadolint shell=powershell` 声明，让 Hadolint 跳过 shell 相关规则。
+标签检查把复杂度转给使用者。README 提醒，标签值若来自构建期变量，如 `LABEL version="${VERSION}"`，schema 必须把该标签声明为 `text`，否则静态检查无法推断值。`--strict-labels` 会警告 schema 之外的标签；schema 没定义时，只要出现标签就会警告。抑制机制也有反作用：`DL1001` 专门提醒不要滥用行内 ignore，说明团队要自己约定哪些规则能压、压在哪一层。
 
-标签检查是另一条线。用 `--require-label author:text` 或 `label-schema` 可以要求 `author`、`version`、`created` 等标签存在并符合 `text`、`semver`、`rfc3339`、`url`、`hash`、`spdx`、`email` 等格式；`--strict-labels` 会反过来禁止 schema 之外的标签。README 提醒：如果标签值来自构建期变量，schema 必须写成 `text`，否则静态检查会失败。
+想改规则，README 指了开发路径：在 `cabal repl` 里 `import Language.Docker`，用 `parseText "FROM debian:jessie"` 看 AST；单元测试用 `cabal configure --enable-tests`、`cabal build --enable-tests`、`cabal test`，集成测试跑 `./integration_test.sh`。这印证核心抽象就是 AST 加规则遍历，而不是文本模式匹配。
 
-开发侧也围绕 AST：在 `cabal repl` 里可以 `import Language.Docker`，再用 `parseText "FROM debian:jessie"` 看解析结果；Dockerfile 语法由 `language-docker` 描述，规则实现集中在 `Rules.hs`。这条信息对想加自定义规则的人有用，也说明它的规则不是硬编码在文本扫描器里。
+## 什么时候别用它
 
-## 边界与风险
+许可证是 GPL-3.0，想把它嵌进自己的产品再分发、又不愿承担 GPL 义务的人，不适合用它。README 只标了许可证，没有给法律解释；编辑判断：把它当独立 CLI 或 CI 检查调用通常不涉及分发，但嵌入前应自行确认义务。
 
-Hadolint 采用 GPL-3.0。把它作为 CLI 或 CI 检查使用通常没问题，但如果要把它的代码嵌入并分发自己的工具，需要按 GPL 的要求评估。README 未给出法律解释，商用前应自行确认。
+平台方面，README 说预编译二进制覆盖 OSX、Windows、Linux，容器镜像可用于 Docker 和 Podman，另有 brew、scoop、Nix 和 cabal 源码构建；README 未说明其他平台限制。README 称它是 linter；编辑判断：它不下载基础镜像、不执行 `RUN`、不扫描镜像漏洞。README 未说明运行时是否联网或上报数据，若合规要求“工具不得外连”，需自行验证。
 
-它只做静态检查，不构建、不运行镜像，也不扫描漏洞。规则集带有维护者的最佳实践倾向：例如要求固定 `apt-get`/`pip` 版本，在某些滚动更新的基础镜像或内部仓库里可能不适用；`--trusted-registry` 也需要你按组织实际情况配置，否则 `DL3026` 会频繁误报。README 未说明它是否理解 BuildKit 的 heredoc 等较新语法，用新语法时应先验证规则是否误报。编辑判断：把它当 Dockerfile 的 lint 层很值，但不要当安全扫描器或镜像构建的替代品。
+不适合三类人。第一，想让它构建、启动或扫描镜像的人：它只做 Dockerfile 静态检查，构建失败、运行时行为、依赖漏洞都不管。第二，Dockerfile 大量使用 README 未覆盖的新语法，或基础镜像用非 POSIX shell 又不愿加 pragma 的人：规则可能误报，应先小范围验证。第三，没人维护规则配置的团队：编辑判断，默认规则偏向维护者的最佳实践，例如要求 `apt-get`、`pip`、`npm`、`apk` 锁版本，在滚动更新的基础镜像或内部仓库里可能不适用，长期靠 `--ignore` 压规则会让检查失去意义。
 
-README 未说明规则总数、各规则的完整清单（只给了"不完整列表"），以及不同版本之间的兼容性策略；每条规则的细节以 README 链接到的 wiki 为准。接入 CI 前建议先用 `--no-fail` 或较高的 `failure-threshold` 观察一段时间，再决定哪些规则设为阻塞。
+运维成本主要在集成和调参。README 建议接进 CI、编辑器或 pre-commit，并列出了代码评审平台、持续集成、编辑器和版本控制几类集成文档，但具体插件不在正文展开。编辑判断：接入时先用 `--no-fail` 或较高阈值观察，再逐步把稳定规则设为阻塞。README 未说明规则总数、完整清单和跨版本兼容策略，升级前应在 CI 里跑一遍对比。
 
 ## 来源
 

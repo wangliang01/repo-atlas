@@ -15,15 +15,21 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-Hindsight 是给 AI Agent 用的长期记忆系统。README 开头把差异说得很直白：多数记忆系统只做对话历史召回，Hindsight 想让 Agent“学习”，而不只是“记住”。它由 Vectorize.io 维护，核心操作只有三个：`retain` 写入、`recall` 召回、`reflect` 基于记忆推理。
+Hindsight 是给 AI Agent 用的长期记忆系统，核心操作只有三个：`retain` 写入、`recall` 召回、`reflect` 基于记忆推理。README 开头把差异说得很直白：多数记忆系统只做对话历史召回，Hindsight 想让 Agent「学习」，而不只是「记住」。它由 Vectorize.io 维护，提供 API 服务、Python/Node/Go 客户端、Web UI、MCP 端点，以及可替换的 LLM、嵌入和重排模型。
 
-使用者是正在搭对话 Agent、客服、销售、项目助理或编码 Agent 的开发者。它既可以自托管，也可以用 Hindsight Cloud。与“向量库加对话摘要”相比，它多了记忆类型、观察（observations）、心智模型/页面（mental models/pages）和决策模型；README 称这些设计解决了 RAG 和知识图谱在长期记忆上的不足，并把 LongMemEval 成绩、论文和在线基准站放在显眼位置，方便先看效果再决定是否部署。
+使用者是正在搭对话 Agent、客服、销售、项目助理或编码 Agent 的开发者。记忆按 bank 隔离，一个 bank 可以理解为一位用户、一个 Agent 或一个项目的大脑。它既可以自托管，也可以用 Hindsight Cloud；README 的集成列表覆盖 LangGraph、LlamaIndex、CrewAI、Vercel AI SDK 等框架。
 
-核心组成包括 API 服务、Python/Node/Go 客户端、Web UI、MCP 端点，以及可替换的 LLM、嵌入和重排模型。所有记忆按 bank 隔离，一个 bank 可以理解为一个用户、一个 Agent 或一个项目的大脑；README 的集成列表还覆盖 LangGraph、LlamaIndex、CrewAI、Vercel AI SDK 等主流框架。
+记忆分四类：世界事实、经历、观察（observations）和心智模型。README 称这套设计针对 RAG 和知识图谱在长期记忆上的不足，并把 LongMemEval 成绩、论文和在线基准站放在显眼位置，方便先看效果再决定是否部署。bank 还能带 disposition（skepticism、literalism、empathy），影响 `reflect` 的推理方式，也可以从声明式 bank 模板创建。README 说它面向对话 Agent，也面向自主执行任务的 Agent。
 
-## 怎么上手
+## 它替掉了什么麻烦
 
-最快的路径是 Docker，前置条件是一个 LLM API Key（README 也列出免 Key 的订阅接入）：
+它替掉的是「Agent 的记忆等于把对话历史塞回上下文」这种做法。README 未说明这个领域的历史沿革；它只点名两类替代技术：RAG 和知识图谱，并称 Hindsight 消除了它们的不足。编辑判断：RAG 擅长按相似度取回片段，但不负责把多条信息合并成稳定结论；知识图谱能表达关系，却要求预先定义结构。两者的共同缺口是记忆不会随新证据修正。
+
+Hindsight 的切入点是把记忆做成可维护的对象：观察带证据引用和计数，新证据到来时修正旧信念；心智模型是常驻答案，读取时只查数据库。和同类方案相比，README 还强调它可以接进 n8n 之类工作流，但对这类场景可能 overkill。
+
+## 跑起来要几步
+
+最快三步：起服务、装客户端、跑一次最小闭环。前置条件是一个 LLM API Key（README 也列出免 Key 的订阅接入）。Docker 启动命令如下：
 
 ```bash
 export OPENAI_API_KEY=sk-xxx
@@ -34,7 +40,7 @@ docker run -it --pull always --name hindsight --restart unless-stopped -p 8888:8
   ghcr.io/vectorize-io/hindsight:latest
 ```
 
-启动后 API 在 `http://localhost:8888`，UI 在 `http://localhost:9999`。然后安装客户端并跑一次最小闭环：
+启动后 API 在 `http://localhost:8888`，UI 在 `http://localhost:9999`。接着安装客户端：
 
 ```bash
 pip install hindsight-client -U
@@ -49,31 +55,31 @@ client.recall(bank_id="my-bank", query="What does Alice do?")
 client.reflect(bank_id="my-bank", query="Tell me about Alice")
 ```
 
-也可以 `pip install hindsight-api` 裸机运行，或用 Helm、外部 PostgreSQL、Hindsight Cloud。已有 Agent 想少改代码，可以 `pip install hindsight-litellm` 后用 `wrap_openai()` 或 `wrap_anthropic()`，让每次调用自动召回和写入；更细的控制仍建议直接用 SDK 或 REST API。
+也可以 `pip install hindsight-api` 裸机运行，或用 Helm、外部 PostgreSQL、Hindsight Cloud。平台方面，README 的表格列出 Linux（x86_64/ARM64）、macOS（Apple Silicon 与 Intel）、Windows（x86_64）都支持 Docker；Intel Mac 的裸机安装要改用 `hindsight-all-slim`。不想自己运维时，Hindsight Cloud 提供托管基础设施、自动扩缩、控制台、备份、团队协作和 99.9% 可用性 SLA，按用量计费并送起步额度。
 
-常见卡点是 LLM Provider 配置：README 支持 25+ 家，通过 `HINDSIGHT_API_LLM_PROVIDER` 切换，本地可用 Ollama、LM Studio、llama.cpp。Intel Mac 要装 `hindsight-all-slim`，嵌入式模式则用 `hindsight-all`。客户端还有 Go、CLI 和 REST API。
+常见卡点是 LLM Provider 配置：README 支持 25+ 家，通过 `HINDSIGHT_API_LLM_PROVIDER` 切换，本地可用 Ollama、LM Studio、llama.cpp；嵌入式模式用 `hindsight-all`。Node.js 用 `npm install @vectorize-io/hindsight-client`，Go 和 CLI 也各有安装方式。想先评估不必写代码：README 只标注 UI 在 9999 端口，没有展开界面功能；MCP 客户端可以直接把 retain、recall、reflect 当工具调用，地址形如 `http://localhost:8888/mcp/{bank_id}/`。README 未给出安装耗时或最低硬件要求。
 
-嵌入式模式用 `HindsightServer` 在 Python 进程内起服务。接入面也不只 SDK，README 列出 60+ 集成，编码 Agent 有专门的安装包 `npx @vectorize-io/hindsight-coding-agents install all`，会按仓库从 git 历史和过往会话建 bank。只想先评估的话，不必写代码：README 只标注了 UI 在 9999 端口，没有展开界面功能；MCP 客户端可以直接把 retain、recall、reflect 当工具调用。
+## 它把复杂度放在哪
 
-## 值得注意的设计
+复杂度放在「写入时抽取、召回时合并」这条链上。`retain` 会调用 LLM 抽取事实、时间、实体和关系，再归一化成实体、时间序列和搜索索引。`recall` 并行跑四种检索：向量相似度、BM25 关键词、图上的实体/时间/因果链接、时间范围过滤；结果用 reciprocal rank fusion 合并，再经过 cross-encoder 重排，最后按 token 预算裁剪。
 
-写入不是简单存文本。`retain` 会调用 LLM 抽取事实、时间、实体和关系，再归一化成实体、时间序列和搜索索引。召回 `recall` 并行跑四种检索：向量相似度、BM25 关键词、图上的实体/时间/因果链接、时间范围过滤；结果用 reciprocal rank fusion 合并，再经过 cross-encoder 重排，最后按 token 预算裁剪。
+关键抽象是分层记忆。观察由后台把相关事实合并成带证据引用和计数的信念，新证据到来时是「修正」而不是覆盖；心智模型是对某个问题的常驻答案，读它只是一次数据库读取，不触发检索和 LLM 调用；页面（pages）把机制包装成可搜索、可投影为 Markdown 的活文档，按文件夹组织。
 
-记忆被分成世界事实、经历、观察和心智模型。观察由后台把相关事实合并成带证据引用和计数的信念，新证据到来时是“修正”而不是覆盖。心智模型是对某个问题的常驻答案，读它只是一次数据库读取，不触发检索和 LLM 调用，适合让 Agent 启动时直接带着结论。页面（pages）则把这套机制包装成可搜索、可投影为 Markdown 的活文档，并按文件夹组织，像 wiki 一样维护。
+接入方式也被收进复杂度里。嵌入式模式用 `HindsightServer` 在 Python 进程内起服务；已有 Agent 可以 `pip install hindsight-litellm` 后用 `wrap_openai()` 或 `wrap_anthropic()` 自动召回和写入；MCP 端点每个 bank 一个且默认开启；编码 Agent 有专门安装包 `npx @vectorize-io/hindsight-coding-agents install all`，按仓库从 git 历史和过往会话建 bank。
 
-决策模型是成本设计的一部分。`hs-decide-1-flash`（0.8B，Apache 2.0）、`hs-rerank-1`（114M，MIT）、`hs-embed-1`（112M，MIT）把“这条事实新不新”“哪些记忆相关”这类小判断做成类型化输出，减少调用大模型的次数。README 说打开后 recall、consolidation、reflect 和 pages 都会使用它，但默认是否启用未明说；代价是多了三个模型和一套部署选项。这三个模型在 Hugging Face 开放权重，也可以走 Hindsight Inference 托管，都支持八种语言。
+决策模型是成本设计的一部分。`hs-decide-1-flash`（0.8B，Apache 2.0）、`hs-rerank-1`（114M，MIT）、`hs-embed-1`（112M，MIT）把「这条事实新不新」「哪些记忆相关」这类小判断做成类型化输出。README 说打开后 recall、consolidation、reflect 和 pages 都会使用它，但默认是否启用未明说；代价是多了三个模型和一套部署选项，README 称这三个模型都支持八种语言。多语言默认保留原文和实体，README 举例说中文名不会被转写成拼音。
 
-多语言默认保留原文和实体，README 举例说中文名不会被转写成拼音；bank 还能带 skepticism、literalism、empathy 等 disposition，影响 `reflect` 的推理方式。生产侧提供分层配置（全局环境变量 → 租户 → bank）、Prometheus 指标、迁移和修复用的 admin CLI，以及 retain、consolidation、refresh 的 webhook。
+`retain` 还接受 `context`、`timestamp` 和 metadata，用来给记忆补充语境、时间和过滤字段；`recall` 支持按时间提问，例如「六月发生了什么」。`reflect` 面向需要推理而不是查找的问题，README 举的例子包括项目经理评估风险、销售复盘哪些外联得到回复、客服发现文档没覆盖的问题。
 
-## 边界与风险
+## 什么时候别用它
 
-许可证是 MIT。自托管需要 PostgreSQL 加 pgvector（或 Oracle AI Database 23ai）以及 LLM 服务；Docker 默认用内置的 pg0，生产环境仍要自己管备份、迁移和监控。README 提供了 Prometheus、admin CLI、webhook 等运维接口，但没有给出容量和延迟基准。
+需要确定性输出、无法接受 LLM 抽取误差，或对记忆数据保留和跨 bank 删除有硬要求的人，不适合用它。许可证是 MIT，本身不是障碍；但自托管需要 PostgreSQL 加 pgvector（或 Oracle AI Database 23ai）以及 LLM 服务，Docker 默认用内置的 pg0，生产环境仍要自己管备份、迁移和监控。README 提供了 Prometheus、admin CLI、webhook 等运维接口，但没有给出容量和延迟基准。
 
 准确性方面，README 称在 LongMemEval 上达到 SOTA，并称结果被 Virginia Tech 和 Washington Post 的研究者独立复现；同一段也说明其他厂商分数是自报的。编辑判断：这是厂商主导的基准，选型时应在自己的对话数据上复测召回和 `reflect` 质量。
 
-隐私是重点。记忆天然含个人信息，`retain` 会把内容交给所选 LLM。Memory Defense 是每个 bank 可选开启的策略，用 45 条规则扫描密钥和 PII，命中后脱敏为 `[REDACTED:github_token]` 或直接拦截；默认不开。bank 之间严格隔离，但跨 bank 的删除、导出和保留周期 README 未说明；Cloud 的具体价格和记忆导出格式也未说明，每个 bank 的容量上限、并发写入限制和 token 成本估算同样没有给出。
+隐私是重点。记忆天然含个人信息，`retain` 会把内容交给所选 LLM。Memory Defense 是每个 bank 可选开启的策略，用 45 条规则扫描密钥和 PII，命中后脱敏为 `[REDACTED:github_token]` 或直接拦截；默认不开。bank 之间严格隔离，但跨 bank 的删除、导出和保留周期 README 未说明；Cloud 的价格、记忆导出格式、每个 bank 的容量上限、并发写入限制和 token 成本估算同样没有给出。
 
-不适合谁：只是做简单工作流、用 n8n 拼几个节点的人。README 自己说这类场景可能“overkill”。需要确定性规则、不能接受 LLM 抽取误差的场景，也应先用更轻的方案。文档站另列了 FAQ、Best Practices 和 Cookbook，但 README 只给了链接，没有展开这些内容。
+不适合谁：只是做简单工作流、用 n8n 拼几个节点的人。README 自己说这类场景可能 overkill。需要确定性规则、不能接受 LLM 抽取误差的场景，也应先用更轻的方案。文档站另列了 FAQ、Best Practices 和 Cookbook，但 README 只给了链接。
 
 ## 来源
 

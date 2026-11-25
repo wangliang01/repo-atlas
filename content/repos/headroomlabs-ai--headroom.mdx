@@ -15,15 +15,21 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-Headroom 是 AI Agent 的上下文压缩层。它在工具输出、日志、RAG 片段、文件和对话历史进入 LLM 之前先做压缩，目标是在答案不变的前提下减少输入 token。README 给出的实测是四个 Agent 场景减少 21–57% 输入 token，重复 JSON 数组和日志行可到 90% 以上，散文几乎没有压缩空间。压缩在本机运行，README 称不会把 prompt 或文件内容发出去做压缩。
+Headroom 是 AI Agent 的上下文压缩层，在工具输出、日志、RAG 片段、文件和对话历史进入 LLM 之前先做压缩，目标是答案不变而输入 token 更少。README 给出的实测是四个 Agent 场景减少 21–57% 输入 token，重复 JSON 数组和日志行可到 90% 以上，散文几乎没有压缩空间；压缩在本机运行，README 称不会把 prompt 或文件内容发出去做压缩。
 
 它给两类人用。自建应用的开发者可以把 `compress(messages)` 当函数嵌进 Python 或 TypeScript 代码；跑 Claude Code、Codex、Cursor 等编码 Agent 的人可以用代理或 `headroom wrap`，不改代码。接入形态有四种：库、代理、Agent wrap、MCP server，另有跨 Agent 记忆和 `headroom learn` 失败学习。
 
-和把文本发给第三方压缩 API 的方案相比，Headroom 的差异是本地运行、覆盖所有内容类型、并且可逆。README 的对比表把 Compresr、Token Co. 归为"发给它们的 API、不可逆"，把 OpenAI Compaction 归为"只管对话历史、由 provider 原生完成"。
+## 它替掉了什么麻烦
 
-## 怎么上手
+它替掉的是「上下文太长只能硬塞或手工删减」这件事。README 没有交代 Headroom 出现前的行业做法；编辑判断：常见处理是直接付更多输入 token、手工裁剪日志和工具输出，或让模型自己总结历史，前两种容易丢关键行，后一种会改写内容且不可逆。
 
-最小路径分三种。自建应用：
+README 用一张图说明它要保住什么：55,957 token 的 Agent prompt 压到实际发送的 24,340 token，第 67 条里的 FATAL 行逐字节保留；另一个演示把 10,144 token 的日志压到 1,260 token，仍能找到同一行 FATAL。编辑判断：这说明它的卖点不是「压得最狠」，而是「压完还能找到该找的东西」，这正好对应手工裁剪最难保证的部分。
+
+和同类方案的差别，README 的对比表写得很直接：Compresr、Token Co. 把文本发到它们的 API，本地运行和可逆两栏都是否；OpenAI Compaction 只处理对话历史、由 provider 原生完成，同样不本地、不可逆。Headroom 声称覆盖全部内容类型、本地运行、可逆，并能以代理、库、中间件、MCP 多种形态部署。README 也承认，如果 provider 自带的压缩已经覆盖你的流量，而且你不需要可逆或跨 Agent 记忆，就不一定要用它。
+
+## 跑起来要几步
+
+最小路径按「你能否改应用代码」分三种。自建应用：
 
 ```bash
 pip install headroom-ai
@@ -36,7 +42,7 @@ result = compress(messages, model="gpt-4o")
 client.chat.completions.create(model="gpt-4o", messages=result.messages)
 ```
 
-这条路径不需要 API key，也不需要下载模型，进程内完成。设置 `HEADROOM_OFFLINE=1` 可以彻底断网。默认只压 tool 和 assistant 消息，用户消息不动，除非传 `compress_user_messages=True`。
+这条路径不需要 API key，也不需要下载模型，进程内完成；设置 `HEADROOM_OFFLINE=1` 可以彻底断网。默认只压 tool 和 assistant 消息，用户消息不动，除非传 `compress_user_messages=True`。
 
 编码 Agent：
 
@@ -47,31 +53,33 @@ headroom wrap claude
 
 `wrap` 会起一个本地代理，并让 Agent 走这个代理；`headroom unwrap <tool>` 撤销。不想改 Agent 配置，也可以 `headroom proxy --port 8787` 起一个通用代理。装完先跑 `headroom doctor` 确认路由，`headroom perf` 看性能，代理运行时用 `headroom dashboard` 看节省。
 
+官方也提供 Docker 镜像，适合不想在本机装 Python 环境的人。
+
 要求 Python 3.11+。原生 wheel 覆盖 macOS Apple Silicon 和 Linux；Intel macOS README 建议先用 Docker 版。x86 主机上 ONNX 相关特性需要 AVX2，没有时会退回 BM25 相关性和启发式检测，而不是直接崩。`[all]` 包含 CLI、代理和图片支持但不含 PyTorch；`[ml]`、`[memory]`、`[evals]`、`[voice]` 要单独装，可能带 CUDA 依赖。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-核心链路是 `CacheAligner → ContentRouter → CCR`。ContentRouter 判断内容类型再选压缩器：JSON 走 SmartCrusher，源码走 CodeCompressor，散文走 Kompress-v2-base（HuggingFace 上的模型）。SmartCrusher 保留错误项、统计上的离群值和首尾边界，README 说它按字段方差选保留项，而不是靠关键词表；CodeCompressor 用 AST 处理 Python、JS/TS、Go、Rust、Java、C/C++、C#、PHP。
+复杂度放在「内容分流、可逆缓存、不击穿 KV cache」这三件事的配合上。核心链路是 `CacheAligner → ContentRouter → CCR`。ContentRouter 判断内容类型再选压缩器：JSON 走 SmartCrusher，源码走 CodeCompressor，散文走 Kompress-v2-base（HuggingFace 上的模型）。SmartCrusher 保留错误项、统计上的离群值和首尾边界，README 说它按字段方差选保留项，而不是靠关键词表；CodeCompressor 用 AST 处理 Python、JS/TS、Go、Rust、Java、C/C++、C#、PHP。
 
-CCR 负责可逆：原文缓存在本地，模型需要全文时调用 `headroom_retrieve`。CacheAligner 则负责不破坏 provider 的 KV cache：它只标记会击穿缓存前缀的易变内容，不改写 prompt。配合"只压新区"（live-zone compression），已经发过的前缀保持字节一致，历史不会被丢弃，provider 缓存仍能命中。这是它能在编码 Agent 上常驻的关键。
+CCR 负责可逆：原文缓存在本地，模型需要全文时调用 `headroom_retrieve`。CacheAligner 负责不破坏 provider 的 KV cache：它只标记会击穿缓存前缀的易变内容，不改写 prompt。配合「只压新区」（live-zone compression），已经发过的前缀保持字节一致，历史不会被丢弃，provider 缓存仍能命中。这是它能在编码 Agent 上常驻的关键。
 
-输出侧还有一层可选的 verbosity steering。设置 `HEADROOM_OUTPUT_SHAPER=1` 后，代理会在 system prompt 末尾追加一句"简洁、不要复述上下文"，README 说这样仍能命中 prompt cache。它覆盖 Anthropic `/v1/messages` 和 OpenAI 兼容的 `/v1/chat/completions`、`/v1/responses`。输出节省是反事实的，所以 README 用置信区间标注为 estimated；要实测可设 `HEADROOM_OUTPUT_HOLDOUT=0.1` 留出对照组。
+输出侧还有一层可选的 verbosity steering。设置 `HEADROOM_OUTPUT_SHAPER=1` 后，代理会在 system prompt 末尾追加一句「简洁、不要复述上下文」，README 说这样仍能命中 prompt cache。它覆盖 Anthropic `/v1/messages` 和 OpenAI 兼容的 `/v1/chat/completions`、`/v1/responses`。输出节省是反事实的，所以 README 用置信区间标注为 estimated；要实测可设 `HEADROOM_OUTPUT_HOLDOUT=0.1` 留出对照组。
 
-除了节省比例，README 还给了准确性数据：GSM8K 从 0.870 到 0.870（±0.000），TruthfulQA 从 0.530 到 0.560，SQuAD v2 在 19% 压缩率下 97%，BFCL 在 32% 压缩率下 97%。README 自己说明，N=100 时 ±0.03 落在置信区间内，所以 TruthfulQA 应理解为"没有可测差异"，而不是提升。压缩开销是 10K token JSON 上 p50 0.21ms、100K token 1.4ms，基本不进入 Agent 延迟。
+README 还给准确性数据：GSM8K 从 0.870 到 0.870（±0.000），TruthfulQA 从 0.530 到 0.560，SQuAD v2 在 19% 压缩率下 97%，BFCL 在 32% 压缩率下 97%。README 自己说明，N=100 时 ±0.03 落在置信区间内，所以 TruthfulQA 应理解为「没有可测差异」，而不是提升。压缩开销是 10K token JSON 上 p50 0.21ms、100K token 1.4ms，基本不进入 Agent 延迟。
 
-Agent 兼容性表里，Claude Code、Codex、Grok CLI、Aider、Copilot CLI、VS Code Copilot、OpenClaw、OpenCode、Cline、Continue、Goose、OpenHands、Kimi CLI、ZCode 标为可用 `wrap`；Cursor 需要手动把代理打印的 base URL 填进设置；Cortex Code 只支持库模式。README 还提醒，走第三方 OpenAI 兼容服务时要传 `--openai-api-url`，否则 key 会被发到 OpenAI 并报 401。
+跨 Agent 记忆也是同一层的扩展：README 说 Claude、Codex、Gemini、Grok 共享一个存储，带来源标记和自动去重。README 还列出图片压缩，称通过训练好的 ML router 可减少 40–90%。`headroom learn` 把失败会话里的修正提炼出来，写进项目或用户的指令文件；它默认写 `CLAUDE.local.md` 并保持 gitignore，避免把个人偏好带进团队仓库。
 
-跨 Agent 记忆是另一个卖点：README 说 Claude、Codex、Gemini、Grok 共享一个存储，带来源标记和自动去重。`headroom learn` 则把失败会话里的修正提炼出来，写进项目或用户的指令文件；它默认写 `CLAUDE.local.md` 并保持 gitignore，避免把个人偏好带进团队仓库。这套机制依赖会话历史的质量，README 未说明学习结果的准确率或回滚方式。
+## 什么时候别用它
 
-## 边界与风险
+短对话和纯散文场景不值得引入。README 说散文和已经紧凑的内容压缩很少，低于 Kompress `min_input_words` 的块会原样返回；如果 provider 原生压缩已经够用，也不需要它。
 
-Apache-2.0。README 的节省数字来自四个固定场景的基准（代码搜索 21%、SRE 排障 57%、代码库探索 42%、GitHub issue 分诊 30%），并在 README 中给出了复现命令和 seed；它不是对你流量的承诺，应该用 `headroom savings` 看自己的数据。README 也说散文和已经紧凑的内容压缩很少，低于 Kompress `min_input_words` 的块会原样返回。
+许可证是 Apache-2.0。README 的节省数字来自四个固定场景的基准（代码搜索 21%、SRE 排障 57%、代码库探索 42%、GitHub issue 分诊 30%），并给出了复现命令和 seed；它不是对你流量的承诺，应该用 `headroom savings` 看自己的数据。
 
 有损压缩的风险仍在：即使有 CCR 可还原，模型在压缩后的上下文里做判断，仍可能漏掉细节。代理模式会看到 Agent 的请求流量，README 强调压缩在本地、数据不离开机器，但代理本身是新的信任边界，部署时要自己评估。
 
 遥测默认开启。README 说匿名 beacon 上报压缩比例、计数器、provider/model ID、OS 和架构，不上报 prompt、补全、代码和文件路径；关闭方式是 `HEADROOM_BEACON=off`、`HEADROOM_TELEMETRY=off`、`DO_NOT_TRACK=1` 或 `HEADROOM_OFFLINE=1`。
 
-`headroom learn` 会把失败会话的修正写进 `CLAUDE.local.md`（默认，gitignore）、`CLAUDE.md`、`AGENTS.md`、`GEMINI.md` 或 `GROK.md`，这会影响后续 Agent 行为，启用前要确认写入目标。README 未说明 CCR 缓存的默认 TTL、代理的鉴权模型、代理在断网或上游不可用时的降级行为，以及完整的限制清单（链接到 docs 的 Limitations 页）。编辑判断：适合工具输出和日志很多的 Agent，先开统计再决定是否常驻；短对话和纯散文场景不值得引入。
+`headroom learn` 会把失败会话的修正写进 `CLAUDE.local.md`（默认，gitignore）、`CLAUDE.md`、`AGENTS.md`、`GEMINI.md` 或 `GROK.md`，这会影响后续 Agent 行为，启用前要确认写入目标。README 未说明 CCR 缓存的默认 TTL、代理的鉴权模型、代理在断网或上游不可用时的降级行为，以及完整的限制清单（链接到 docs 的 Limitations 页）。README 把开源版定位为展示能力的框架，并说企业版会提供更多节省和归属分析，开源版不承诺同等效果。编辑判断：适合工具输出和日志很多的 Agent，先开统计再决定是否常驻；短对话和纯散文场景不值得引入。
 
 ## 来源
 
