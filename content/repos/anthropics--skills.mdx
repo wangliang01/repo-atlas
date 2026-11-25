@@ -14,19 +14,50 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-`anthropics/skills` 是 Anthropic 官方的 Agent Skills 仓库，收集了创意、开发、企业和文档处理等示例。你清单里的 “Skill Creator” 对应仓库里的 `skills/skill-creator`，它教 Claude 把一类重复工作写成带 `SKILL.md`、脚本和资源的 Skill；本文按父仓库建档，避免把子目录伪装成独立项目。
+`anthropics/skills` 不是单个工具，而是 Anthropic 官方维护的 Agent Skills 仓库：一份技能目录、一份规范和一份模板放在同一个地方。它要解决的问题是让 Claude 把某一类任务按固定流程重复完成，比如按公司品牌规范做文档、按组织流程分析数据，或者自动化某个个人任务；做法是把指令、脚本和资源打包成文件夹，由 Claude 在需要时动态加载。
+
+给谁用？三类人最直接：想学 Agent Skills 怎么写的人、想找生产级示例的人，以及想直接复用文档处理能力的人。仓库里的 `skills/` 按创意与设计、开发与技术、企业与沟通、文档处理分组；`spec/` 是 Agent Skills 规范；`template/` 是新建 Skill 的起点。README 还把 Notion 列为合作方技能示例，说明 Skill 也可以用来教 Claude 使用具体软件。
+
+和同类的差别主要在官方身份和文档技能。README 明确说，`skills/docx`、`skills/pdf`、`skills/pptx`、`skills/xlsx` 是驱动 Claude 文档能力的实现，也以 Apache 2.0 开源，作者把它们当作“生产环境里正在使用的复杂 Skill”的参考；这四类分别对应 Word、PDF、PPT 和 Excel 文件。用户清单里的 “Skill Creator” 对应的是仓库里的一个技能文件夹，不是独立项目；README 没有单独介绍这个子目录。
 
 ## 怎么上手
 
-Claude Code 里可 `/plugin marketplace add anthropics/skills`，再安装 `anthropic-agent-skills`；也可以直接读 `skills/skill-creator` 和 `template/`。仓库还提供 Agent Skills 规范和文档处理 Skill 的源码。
+在 Claude Code 里，先把仓库注册成插件市场：
+
+```
+/plugin marketplace add anthropics/skills
+```
+
+然后按 `Browse and install plugins` → `anthropic-agent-skills` → 选 `document-skills` 或 `example-skills` → `Install now`。也可以直接装：
+
+```
+/plugin install document-skills@anthropic-agent-skills
+/plugin install example-skills@anthropic-agent-skills
+```
+
+装好后在对话里点名技能即可，例如让 Claude 用 PDF 技能抽取表单字段。Claude.ai 的付费计划已经内置这些示例技能；走 API 的话，Anthropic 提供预置技能和自定义技能上传，具体看 Skills API Quickstart。
+
+自己写一个最小 Skill 只需要一个文件夹和 `SKILL.md`：YAML frontmatter 里 `name` 和 `description` 是必填，下面是 Claude 会遵循的指令、示例和准则。仓库的 `template-skill` 可以直接拿来改。`spec/` 和 `template/` 不需要安装，直接读仓库即可。
+
+第一次跑通前要知道两个卡点。第一，这个仓库没有单一的顶层安装包，装的是插件里的一组技能，具体装哪组由你选。第二，README 的免责声明说这些技能“仅供演示和教育”，Claude 实际给出的行为和仓库里的实现可能不同，关键任务必须自己在环境里测过。
 
 ## 值得注意的设计
 
-每个 Skill 是自包含文件夹，核心是 `SKILL.md` 里的指令和元数据；`spec/` 给规范，`template/` 给起点，`skills/docx`、`pdf`、`pptx`、`xlsx` 展示生产级复杂 Skill 的写法。这种“规范 + 模板 + 实例”三层结构比单独一篇教程更好用。
+最核心的抽象是“自包含文件夹 + `SKILL.md`”。每个技能把自己的指令、脚本和资源放在一个目录里，Claude 只在相关任务上加载它。README 用“动态加载”描述这个过程，但没有展开内部的选择机制，所以这里不推断实现细节。技能可以带脚本和资源，不只是一段 Markdown，这也是文档技能比纯提示词更复杂的地方。
+
+仓库把“规范、模板、实例”三层放在一起，是它比单篇教程更好用的原因。`spec/` 定义 Agent Skills 标准，`template/` 给出空壳，`skills/` 里的几十个技能展示不同复杂度的写法。学习时可以横着看同一类技能怎么组织，落地时可以拿文档技能当复杂度的上限参考。
+
+文档技能值得单独看。它们不是玩具示例，而是生产应用的实现；README 说这些技能以 Apache 2.0 开源，并把它们作为“更复杂技能”的参考。代价是这些技能依赖各自的脚本和资源，仓库没有统一说明每个技能的运行时依赖，README 也未说明逐个技能的安装步骤。
 
 ## 边界与风险
 
-README 明确说这些 Skill 仅供演示和教育，Claude 实际行为可能不同，关键任务要自己测试。仓库顶层没有单一 LICENSE，README 称许多 Skill 是 Apache 2.0，但逐个使用前仍要确认。编辑判断：学 Skill 写法看这里，不要把示例当生产保证。
+许可证是第一个要确认的点。仓库顶层没有单一 LICENSE，README 只说“许多技能”是 Apache 2.0，文档技能也是 Apache 2.0。编辑判断：逐个技能确认许可证，不要把“许多”理解成“全部”。
+
+README 的免责声明是第二个边界：这些技能用于演示和教育，不构成生产保证，Claude 的行为可能和仓库实现不同。想直接拿来做关键业务，需要自己补测试和回归。
+
+平台方面，仓库给出 Claude Code、Claude.ai 和 Claude API 三条使用路径；其他 Agent 是否兼容取决于它是否支持 Agent Skills 标准（README 指向 agentskills.io），README 没有逐一列出兼容客户端。每个技能的具体依赖、支持的模型版本、性能表现和彼此之间的依赖关系，README 均未说明，也没有给出任何评测数据。
+
+不适合谁？如果你想要一个装完即用的产品，这个仓库更像参考书和零件库；如果你要的是可以直接进生产的完整方案，需要自己承担验证和集成工作。
 
 ## 来源
 

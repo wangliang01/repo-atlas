@@ -14,19 +14,59 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-Hypit 给 Claude Code、Codex 等 Agent 一套做视频的语言和系统。丢进一条视频，Agent 把它克隆成完整 workflow——素材、字幕、B-roll、特效，全部锚定到词而不是秒；也可以从模板起步，或直接描述想要的视频。
+Hypit 给 Claude Code、Codex 等编码 Agent 一套做视频的语言和系统。丢进一条参考视频，Agent 会把它克隆成完整工作流：素材、字幕、B-roll、特效，全部锚定到词而不是秒。README 强调克隆只是最快入口，也可以从模板起步，或直接描述想要的视频让 Agent 从零写工作流。
+
+它面向做短视频营销、UGC、信息流广告和本地化的团队。核心组成包括一套叫 SVML 的视频描述语言、一个可执行的工作流与编译器、可替换的组件，以及可选的生成模型服务。生成模型不是必需：README 说工作流可以只用字幕、动效和代码渲染出片，不调用生成模型，也不产生相应服务费。
+
+和"用 AI 一次性生成一段视频"相比，Hypit 的产物是可编辑、可重跑的组合，而不是一次性渲染结果。它也不只是给一份脚本拆解，而是把素材、时间轴和组件都落成工程文件。
 
 ## 怎么上手
 
-`npx skills add hypit-ai/hypit -g` 安装 Skill；首次使用时 Agent 会检查 Hypit 可执行文件并帮你准备。视频项目可以放在任何地方，模型服务可用 HypiHub，也可以接自己的 API 或本地模型。
+装 Skill 只要一条：
+
+```bash
+npx skills add hypit-ai/hypit -g
+```
+
+首次使用时，Agent 会检查 Hypit 可执行文件，必要时帮你在本地准备。视频项目可以放在任意目录。README 的 badges 标了 Node.js 22.15+、pnpm 10.33、TypeScript 5.9，但安装命令本身走 `npx skills`。
+
+模型服务方面，Hypit 本身免费，编码 Agent 和模型服务各自计费。README 推荐托管服务 HypiHub，也可以接自己的 API 或本地模型；做法是告诉 Agent 服务名和 API 文档，让它配置连接。
+
+跑起来是在任意空目录或已有项目里开一个 Agent 会话，然后：
+
+```text
+/hypit Clone this video: /path/to/video.mp4, and replace the ranking content with a comparison of Hypit (official website: hypit.ai) with other AI video products.
+```
+
+或者不给参考视频：
+
+```text
+/hypit Make a ranking video that puts Hypit in S tier.
+```
+
+Agent 会检查环境、索取视频需要的凭据、生成素材并搭建最终 composition。README 给了三个完整例子：UGC、播客、街头采访；每个都列出素材来源、模型、处理步骤、三个克隆变体和总成本（约 $1.07–$1.15）。这些成本是 README 的示例，不代表你的账单。
 
 ## 值得注意的设计
 
-核心是 SVML：左侧写 workflow，右侧实时渲染对应视频；克隆时保留原视频的结构和节奏，换脸、换词、换 B-roll 后批量出 100 个变体。生成模型是可选的，字幕、动效和代码渲染也能出片。
+最关键的设计是"按词锚定"而不是按秒。README 说克隆保留原视频的结构和节奏，换脸、换词、换 B-roll 之后批量出 100 个变体；重写一句台词，时间会自动重排。这样同一个 workflow 可以复用结构，只替换变化的部分，适合信息流广告的多 hook 测试。
+
+SVML 是这个系统的中间表示。README 的示意图里，左边是 SVML 源码，右边实时渲染对应视频；例子仓库里也直接给出 `.svml` 文件。它同时承担"可读的工程文件"和"可编译的视频描述"两个角色。
+
+组件是可插拔的。README 说可以换主持人而不动字幕，可以用已安装的包、改示例或自己写。组件通常跟随所属视频项目，分享时可以作为带版本的 tarball 交给别人，或发布到自己的 npm scope/私有 registry；进入 Hypit 官方 Distribution 则要单独提案。
+
+从 README 的例子能看出 workflow 的组成：参考视频、A-roll/B-roll 素材、词级对齐（例子里用 WhisperX）、字幕样式、版面（如分屏采访、排行榜）、音效和背景音乐，以及可替换的角色或产品。真正被复用和批量化的，是这套结构和时间关系，而不是某一段生成视频。
+
+接入模型服务时，README 说 Agent 会"索取视频需要的凭据"，但没有列出支持哪些 provider、密钥如何保存。HypiHub 是推荐路径；接自有 API 或本地模型时，需要把服务名和 API 文档交给 Agent，由它配置连接。也就是说，模型接入的可靠性取决于 Agent 对文档的理解，而不是一个固定的适配层。
+
+渲染侧用 64 个无头 Chromium 进程并发，这是 README 示例里的做法。它解释了为什么能批量出片，也意味着本机资源要求不低；README 未说明最低内存、CPU 或是否需要 GPU。
 
 ## 边界与风险
 
-许可证元数据是 NOASSERTION，README 只说 Hypit 本身免费，商用前必须看 LICENSE；克隆爆款视频、真人脸和声音涉及版权、肖像权和平台政策。渲染用 64 个无头 Chromium，机器要求不低。编辑判断：营销团队会很喜欢，但合规风险要单独评估。
+许可证需要特别确认。GitHub 元数据是 `NOASSERTION`，README 说 Hypit 按 "Hypit Open Source License" 发布，仓库 badge 写的是 "Apache-2.0 with conditions"。三者并不完全一致，商用前必须读仓库里的 `LICENSE` 原文，不能只看 badge。
+
+内容合规是更大的风险。克隆爆款视频、换真人脸和声音，会同时触及版权、肖像权、声音授权和平台政策；README 说输出归你，但第三方模型和服务有自己的条款。用 Meta Ad Library 或 TikTok 上的视频做模板前，要确认授权范围。README 未说明是否内置人脸/声音授权的检查。
+
+运行成本分两块：模型服务按量计费，本地渲染吃机器。64 个 Chromium 并发在普通笔记本上可能跑不动；README 未给出硬件门槛。编辑判断：适合有明确投放场景、能承担合规审查的营销团队；不适合想"一键搬运"又不处理版权的人。它被标为 watch，也反映了成熟度和合规风险。
 
 ## 来源
 

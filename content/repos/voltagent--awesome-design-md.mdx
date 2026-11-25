@@ -14,19 +14,44 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-`DESIGN.md` 是 Google Stitch 提出的纯文本设计系统文档，AI Agent 读了就能生成一致的 UI；不需要 Figma 导出、JSON schema 或特殊工具，放进项目根目录即可。awesome-design-md 提供从真实网站提炼好的 DESIGN.md 集合。
+awesome-design-md 是一份 DESIGN.md 合集。DESIGN.md 是 Google Stitch 提出的纯文本设计系统文档，AI Agent 读它来生成风格一致的 UI；它只是一个 Markdown 文件，不需要 Figma 导出、JSON schema 或额外工具。仓库把真实网站的设计语言整理成这种文件，你复制进项目根目录，再让 Agent 按它做页面。
+
+使用者是拿 AI 编码助手做前端的人：独立开发者、设计师、做落地页或后台界面的团队。它和“给 Agent 一句‘做得像 Linear’”的差别在约束方式：文件里写的是颜色语义、字体层级、组件状态、间距、阴影、响应式规则和 do/don't，而不是一句风格描述。
+
+README 把两类文件的分工说得很清楚：`AGENTS.md` 管“怎么建项目”，`DESIGN.md` 管“项目应该长什么样、感觉如何”。这也是它最核心的概念。
 
 ## 怎么上手
 
-从集合里挑一个 DESIGN.md 复制到项目，告诉 Agent“build me a page that looks like this”；也可以请求特定网站的 DESIGN.md。集合按 AI/LLM、开发者工具、后端/DevOps、生产力、设计、金融、电商、媒体等分类。
+不需要安装。步骤只有两步：
+
+1. 从 Collection 里选一个站点，把对应的 `DESIGN.md` 复制到项目根目录。
+2. 告诉 AI Agent 使用它，例如 README 里的 “build me a page that looks like this”。
+
+每个站点目录还带 `preview.html` 和 `preview-dark.html`，可以先在浏览器里看色板、字号、按钮和卡片，再决定要不要用。集合按 AI & LLM、开发者工具、后端/数据库/DevOps、生产力/SaaS、设计工具、金融/加密、电商、媒体/消费科技、汽车等分类；README 的 badge 标的是 84 份 DESIGN.md。里面有 Claude、Ollama、Mistral 这类 AI 产品，也有 Linear、Notion、Stripe、Airbnb、Apple 等跨行业站点，还有一个从 1990 年代网页提取的复古系列。
+
+如果你要的站点不在列表里，README 指向 getdesign.md 的请求入口，也提供私有请求。没有 CLI、没有包管理器命令，也没有构建步骤；这是内容仓库，不是运行库。Collection 里每一项只有一句风格摘要，真正的规则要点进对应的 `DESIGN.md` 看。
+
+常见卡点其实是使用方式：只把文件丢进仓库、不告诉 Agent 去读，它不一定会自动采用；不同 Agent 对“读哪些文件”的默认行为不一样，最好在 `AGENTS.md` 或对话里明确指向 `DESIGN.md`。README 未说明对具体 Agent 的加载优先级。
 
 ## 值得注意的设计
 
-它把 `AGENTS.md` 和 `DESIGN.md` 分工说得很清楚：前者管“怎么建”，后者管“长什么样”。每个文件包含真实的模式、token 和规则，不是表面描述，所以比一句“做个像 Linear 的页面”更能约束输出。
+每份文件都按 Stitch 的 DESIGN.md 格式写，并做了扩展，共 9 节：视觉主题与氛围、颜色与角色、字体规则、组件样式、布局原则、深度与层级、Do's and Don'ts、响应式行为、Agent Prompt Guide。这个结构把“设计语言”拆成 Agent 可执行的约束，而不是审美形容词。README 说这些文件遵循 Stitch 的 DESIGN.md 格式，Google Stitch 也能直接理解，不只限于编码 Agent。
+
+扩展里最实用的是 Color Palette & Roles 和 Typography Rules：前者把颜色绑定到功能角色，后者给完整层级表；再加上组件状态和响应式断点，Agent 在生成新组件时有可参照的规则。Agent Prompt Guide 则提供现成的颜色速查和提示词，降低每次对话重新描述的成本；前八节负责解释“为什么这样用”，第 9 节负责让 Agent 直接开工。
+
+`preview.html` 是另一层设计：它把 Markdown 里的 token 变成可视目录，让人和 Agent 都能快速核对。README 说这些 token 来自公开网站可见的 CSS 值；这意味着它是“从成品反推的规范”，不是品牌方提供的源设计系统。
+
+集合的组织方式也值得注意：按行业和品牌分类，而不是按设计风格分类。找参考时更接近“我想要 Vercel 那种黑白精准感”，而不是“我想要极简风”。
 
 ## 边界与风险
 
-MIT。这些文件是对公开网站的分析，不是品牌官方设计规范；模仿知名品牌仍有商标和视觉混淆风险，生成结果也会漂移。编辑判断：做 UI 快速对齐风格很好用，商用前把品牌元素换掉。
+仓库是 MIT。README 的 License 段说明：所有 DESIGN.md 按“as is”提供、不附保证；token 是公开可见的 CSS 值；仓库不主张对任何站点视觉标识的所有权。
+
+这意味着两件事。第一，文件不是品牌官方设计规范，颜色、字体、组件规则可能随网站改版而过时；README 未说明每份文件的抽取方法、复核流程和更新频率，只给了 last update badge，也没有说明 84 份文件是否都经过同一套人工复核。第二，模仿知名品牌仍有商标、视觉混淆和版权风险；编辑判断：做学习、原型、内部工具可以，商用产品上线前应替换 logo、专有字体和可识别品牌元素。
+
+质量风险在于“看起来对”不等于“能用”。编辑判断：生成结果仍取决于所用 Agent 和模型，文件只能降低漂移，不能保证像素级还原；README 未提供生成质量的评测数据。它也不处理可访问性合规、国际化和暗色模式的完整语义，这些要自己补。
+
+不适合谁：需要一套可版本化、可发布的设计 token 管线的团队；需要品牌方授权资产的场景；以及期待“复制即得到生产级设计系统”的人。编辑判断：它更适合当高质量的风格约束和起点。参与贡献时，README 要求先开 issue 讨论，再提 PR，且主要接受修正现有文件里的错误颜色、缺失 token 和弱描述。
 
 ## 来源
 

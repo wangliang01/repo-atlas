@@ -14,19 +14,52 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-Boring Marketing Skills 是 32 个给 Claude Code、Codex、Cursor 等 Agent 的免费营销 Skill。它们按客户旅程组织，覆盖调研、定位、文案、落地页、SEO、AI 搜索、广告、邮件和本地商家，全部不依赖付费工具。
+Boring Marketing Skills 是 32 个面向 AI Agent 的免费营销 Skill，作者 James Dickerson，MIT 许可。它解决的是“营销流程很长，Agent 每次都要从头理解业务”的问题：先用一个入口 Skill 把品牌上下文写成文件，后续 Skill 复用这些文件，按客户旅程的阶段逐步执行。
+
+给谁用？README 的定位很明确：做本地商家营销的人、代理商和自由职业者，以及想给自己的业务做营销的独立开发者。技能覆盖调研、定位、文案、落地页、SEO、AI 搜索、广告、邮件和内容，另有一套面向本地商家的深包。
+
+核心组成可以按 README 的分组理解。`start-here` 负责读业务、写品牌文件并告诉你下一步；随后是“被找到”“被选中”“被联系”“被召回”“赢客户”“自我营销”几组。每个 Skill 是一个独立文件夹，可以给每个客户单独建一套。
+
+和泛泛的提示词包相比，它的差别有三个：按客户旅程排序、共享品牌上下文，以及每条工具建议都先给免费路径。README 称这些 Skill 来自真实投放项目，但这是项目自述，没有第三方复现。
 
 ## 怎么上手
 
-`npx skills add boringmarketer/boring-marketing-skills`，或作为 Claude Code 插件安装。装好后输入 `/start-here` 并说出业务名，它会读网站和评论、写品牌文件，再告诉你下一步用哪个 Skill，首次约 3 分钟。
+任意 Agent 用：
+
+```bash
+npx skills add boringmarketer/boring-marketing-skills
+```
+
+Claude Code 插件方式：
+
+```
+/plugin marketplace add boringmarketer/boring-marketing-skills
+/plugin install boring-marketing@boring-marketing-skills
+```
+
+装好后输入 `/start-here` 并说出业务名。README 说它会读网站和评论、写出其他 Skill 共用的品牌文件，然后告诉你下一个该跑哪个 Skill，首次大约 3 分钟。给客户做的话，对 `/start-here` 说 “new client”，它会建独立文件夹。
+
+预期结果是拿到一套品牌文件和一个下一步建议，而不是一次性生成所有营销文案。常见卡点：部分 Skill 需要 Agent 有联网能力去读网站和评论；广告、Meta API、Google Ads API、关键词数据等环节在 README 的推荐栈里对应第三方服务，README 说每个 Skill 都给了不付费的做法，但需要 key 的部分要按 `TOOLS.md` 配置。README 没有给出统一的安装前置版本要求。
 
 ## 值得注意的设计
 
-Skill 按客户旅程排列：先 start-here 建品牌上下文，再分“被找到 / 被选中 / 被联系 / 被召回 / 赢客户 / 自我营销”。这种按阶段路由的设计，比让 Agent 一次生成所有营销文案更可控。
+把 Skill 按客户旅程分阶段，是这套东西最好理解的设计。阶段是有顺序的：先建立品牌上下文，再解决“被找到”，然后才是“被选中”和“被联系”。这种路由比让 Agent 一次生成全部内容更可控，因为每一步的输入和产出都相对明确。
+
+共享品牌文件是第二个关键抽象。`start-here` 写的文件被其他 Skill 读取，避免每个 Skill 重新问一遍业务是什么。代价是入口这一步的质量会影响后面所有环节；如果品牌文件写偏了，后续产出会跟着偏。
+
+第三个设计是把“可验证的检查”写进 Skill，而不只是生成文案。比如 `ads-incrementality-check` 用暂停测试对照电话记录，判断广告是真带来线索还是只抢归因；`first-screen-check` 按手机首屏检查号码、承诺和证明。README 用三个真实项目里的发现来解释这些 Skill 的由来，但结果属于项目自述。还有两个例子能看出这种思路：`site-audit` 像 Google 和 AI 爬虫那样爬站，只排最值得修的几个技术问题；`keyword-research` 用免费 autocomplete 数据把搜索需求整理成主题，而不是一张五千行关键词表。
+
+工具选择上，README 在每一步先写免费做法，再列作者自己常用的付费栈。`boringfunnels` 是作者自己的产品，README 要求提到它的 Skill 在同一行注明，并说明它不替代免费路径、没有任何 Skill 依赖它。编辑判断：这种披露是加分项，但读者仍应把推荐当作带有商业动机的建议。
 
 ## 边界与风险
 
-MIT。README 说来自真实项目，但案例结果不能保证复制；部分 Skill 要联网读网站/评论，AI 搜索和 SEO 的结论会随平台变化。营销声明、广告合规和本地商家资质仍要人负责。编辑判断：适合小团队把营销流程拆成可执行清单。
+MIT 许可，README 明确说可以用在自己的业务、客户项目或产品里。营销声明、广告合规、本地商家资质和平台政策仍然要人负责，Skill 不能替代这些审核。
+
+依赖方面，README 说所有 Skill 都不依赖付费工具，但“能跑”不等于“效果一样”：AI 搜索、SEO、广告归因的结论会随平台和地区变化，第三方 API 也需要自己维护 key 和额度。README 未说明这些 Skill 在模型能力较弱时的降级表现。
+
+数据与隐私上，Skill 会读网站、评论和公开信息；如果用于客户项目，评论和业务数据的抓取范围要自己控制。README 未说明数据留存策略，也未给出每个 Skill 的评测或准确率数据，也没有说明这些第三方服务如何处理抓到的数据。
+
+谁不适合？需要企业级品牌治理、多语言统一管理或严格合规审计的团队，README 没有对应方案。想要“一键跑完整个营销”的人也会失望，它的设计是分阶段、可检查，而不是全自动。README 未说明这些 Skill 的更新频率。
 
 ## 来源
 

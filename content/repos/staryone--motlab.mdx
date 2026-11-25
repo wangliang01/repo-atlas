@@ -14,19 +14,48 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-motlab 是“视频即代码”：每个场景是一个 canvas 页面，只有一个 `renderAt(t)` 函数负责画第 t 秒的帧。viewer 逐帧播放，导出时用无头 Chrome 的 WebCodecs 渲染 MP4；你把参考素材和方向交给 Agent，它写场景、开 viewer、按你的批注改。
+motlab 把视频拆成“场景即代码”：每个场景是一张 canvas 页面，只有一个 `renderAt(t)` 函数负责画出第 t 秒的帧；一个编码 Agent 根据你给的参考素材和方向写这些页面，你在网页 viewer 里逐帧审片、在画面上留批注，最后用无头 Chrome 渲染成 MP4。README 明确说它不使用任何 AI 图像或视频模型，画面来自你的参考素材和代码绘制。
+
+它适合愿意用代码和 Agent 生产视频的开发者、设计工程师或内容团队，尤其是需要版本化、可复用、可批量导出的场景；不适合想拖时间线做剪辑的人。核心组成包括 `@motlab/cli` 引擎、viewer、`motlab` 与 `motlab-assets` 两个 Agent Skill，以及描述场景和音频的 `project.json`。和 Remotion、HyperFrames 这类“用代码写视频”的方案相比，它的差别主要在两点：帧在页面内用 WebCodecs 编码，不像 DOM 方案那样逐帧截图再交给 ffmpeg；并且把“Agent 写场景 + 人在 viewer 批注”做成了主流程。
 
 ## 怎么上手
 
-`npm install -g @motlab/cli && npx @motlab/cli setup`。装好后给 Agent 一个参考素材文件夹和一句方向，场景由 Agent 写；viewer 可以本地跑，也可以部署到自己的服务器加密码，从手机审片和导出。
+前置条件是 Node 24+、Google Chrome 或 Chromium、以及带 `ffprobe` 的 ffmpeg 在 PATH 里。Python 3 可选，只给 Skill 的辅助脚本用；Blender 也可选，用于 `motlab-assets` 的 3D 路径。
+
+```bash
+npm install -g @motlab/cli
+npx @motlab/cli setup
+```
+
+`npm install` 装引擎；`setup` 会把两个 Skill 复制到 Agent 的技能目录、检查机器，并确保 `motlab` 命令可用；在 npm 目录不在 PATH 的环境（如 Windows 上的 nvm）会把它加到 `~/.local/bin`。默认安装给 Claude Code，其他 Agent 要显式指定，例如 `npx @motlab/cli setup --skill agents`（Codex、Cursor、OpenCode、GitHub Copilot、Gemini CLI、Amp、Windsurf、Muse Code）、`--skill antigravity`、`--skill hermes`，或用 `--skill-dir <目录>`。装完要新开一个 Agent 会话。
+
+第一次跑通可以先看示例：
+
+```bash
+motlab edit example
+```
+
+它在后台启动 viewer 并打开样例，地址是 `http://127.0.0.1:4173/p/example/`；空格播放，方向键逐帧，Ctrl+滚轮缩放时间线，在预览上拖拽画框。自己做视频时，把参考素材放进一个文件夹，然后对 Agent 说类似 “Make a 20 second portrait promo for my app with motlab. The references are in ./promo-refs.”。Agent 会规划镜头、写场景、开 viewer；你在帧上点选、框选或用 `P` 手绘圈注并写字，批注进入 `selection.json`，Agent 按编号处理。满意后点右上角 Export，输出到项目的 `out/`。
+
+常见卡点：npm 全局安装后 `example/` 不在当前目录，需要从 `motlab --help` 打印的引擎目录里复制出来；`setup` 装错 Agent 时用 `--dry-run` 先看步骤，`--link` 可改为链接；viewer 常驻后台，用 `motlab stop`、`motlab restart`、`motlab start` 管理。
 
 ## 值得注意的设计
 
-帧不离开 Chrome，直接在页面里用 WebCodecs 编码；默认并行渲染 3 个场景，4K 导出也能调 1–4 个。viewer 支持点选、框选、时间范围和手绘批注，批注写进 `selection.json`，Agent 按编号处理；版本并排，不会覆盖上一版。
+场景契约非常薄：一张普通 HTML 页面，带 `<canvas id="c">`、`window.renderAt(t)`、`window.TOTAL` 和 `window.ready`。所有可见内容都是时间的函数，所以预览、静帧和最终渲染画的是同一套帧，不需要维护两套动画逻辑。viewer 用 iframe 加载真实页面，音频走 WebAudio；保存场景文件后会自动重载，并标出 Agent 说正在处理的场景。
+
+渲染路径决定了它的速度主张。`motlab render` 为每个场景和转场开一个无头 Chrome，默认同时渲染 3 个（Export 菜单可选 1–4 个），在页面内用 `VideoEncoder` 编码，ffmpeg 只负责拷贝流、拼接、写色彩标记和混音。视频素材用 Mediabunny 在页面内解码，因此场景可以裁剪素材并在上面绘制。README 的解释是：DOM 类引擎要给每一帧截图再喂给 ffmpeg，页面内编码跳过了这一步，速度差就来自这里。
+
+README 给出的基准是同一台 Windows 笔记本（Ryzen 7 5800H、RTX 3060 Laptop）上的一个场景、1080p、300 帧：motlab 9.5–12.6 秒，HyperFrames 27.2 秒，Remotion 30.7 秒，即大约快 2.2–3.2 倍；4K 下 motlab 13.1–19.4 秒，对手最快 48.9 秒。作者也说明了软件渲染和 4K 下 HyperFrames 反超的情况。这是单机单场景的自测，不能直接当成你项目上的比例。
+
+批注和版本是协作层面的设计：批注可以是框、点或手绘，图片存在 `selection/`；多个版本并排显示，第二次剪辑不会覆盖第一次；viewer 可以部署到自己的服务器、加域名和密码，从手机审片和导出。另有 `motlab-assets` 用同样方式生成可复用的图标、插画、绑定好的 2D 角色、转场、3D 物体和纹理，让多条视频共享同一套视觉。
 
 ## 边界与风险
 
-Apache-2.0。README 称在自己的 benchmark 上比 Remotion/HyperFrames 快 2–4 倍，这是项目自测，不代表你的场景；代码写视频的门槛高于剪映式工具，复杂动效仍要人调。右栏把 Remotion、HyperFrames 列为对标，是 README 明确提到的比较对象。
+许可证是 MIT 或 Apache 2.0 二选一，贡献同时按两者授权；转场来自 gl-transitions（MIT），第三方依赖列在 `THIRD_PARTY_NOTICES.md`；你带进项目的字体、素材、音乐保持各自许可。README 对平台的支持描述很谨慎：代码在一台 Windows 笔记本上开发和测量，macOS 只验证了 npm 包渲染 9 秒示例，Linux 有一次 42 秒竖屏、无 GPU 的完整渲染。FAQ 又说完全没有 GPU 的机器和没有 GPU 的 3D 场景尚未测试，和上面那次 Linux 记录存在出入，测试覆盖仍有空白。
+
+硬件依赖是真实成本：GPU 可选，但 README 称软件渲染会慢 2.8–4.5 倍；每次渲染会在第一行打印实际用的 GPU。4K 导出、并行场景和长视频都会吃内存与显存，README 没有给出最低配置或并发上限。README 还明确说 alpha 通道的输出还没做，需要透明背景的场景要另想办法。
+
+隐私方面，用自己的服务器跑 viewer 需要反向代理和密码；README 说明登录方案只在 Windows 笔记本上测过，没在真实 VPS 上验证；同一 Wi-Fi 下没有服务器的方案暂不支持。viewer 的认证强度、密码存储方式 README 未说明。编辑判断：它适合把视频纳入代码仓库、需要 Agent 反复改片的人；如果团队没有前端或 Canvas 能力，复杂动效仍然要人来调，学习成本高于剪映式工具。
 
 ## 来源
 

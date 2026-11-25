@@ -14,19 +14,45 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-MediaCrawler 是多平台自媒体数据采集工具，支持小红书、抖音、快手、B站、微博、贴吧、知乎的公开信息抓取。功能包括关键词搜索、指定帖子 ID、二级评论、创作者主页、登录态缓存、IP 代理池和评论词云。
+MediaCrawler 是一个多平台自媒体数据采集工具，覆盖小红书、抖音、快手、B 站、微博、贴吧、知乎七个平台。每个平台都支持关键词搜索、按帖子 ID 抓取、二级评论、指定创作者主页、登录态缓存、IP 代理池和评论词云。README 把它定位为学习和研究工具，并明确禁止商业用途。
+
+它和“逐个平台写逆向我加密参数”的爬虫路线不同：MediaCrawler 基于 Playwright 打开浏览器、保留登录态，再在这个上下文里执行 JS 表达式拿到签名参数。README 把这一点列为核心优势——不需要逆向复杂的加密算法，技术门槛因此降低。README 另有单独的 Pro 版本，增加断点续爬、多账号与代理池、移除 Playwright 依赖和完整 Linux 支持等能力，并带多个 AI Agent 项目源码。
 
 ## 怎么上手
 
-需要 uv、Node.js 和 Python 依赖，按 README 配置后运行；技术路线是 Playwright 浏览器自动化，保留登录态，再用 JS 表达式取签名参数，不做复杂的 JS 逆向。
+前置条件有两项：安装 uv（README 推荐用 `uv --version` 验证），以及 Node.js >= 16.0.0。然后在项目目录执行：
+
+```shell
+uv sync
+```
+
+浏览器驱动是可选的：默认走 CDP 模式连接你已有的 Chrome，不需要 `uv run playwright install`；只有切到标准 Playwright 模式才需要。
+
+首次跑通常选 CDP 模式，因为它能复用现有 Chrome 的登录状态、Cookie 和扩展，README 称这样能显著降低平台风控。配置步骤是：安装 Chrome >= 144；地址栏打开 `chrome://inspect/#remote-debugging`，勾选 “Allow remote debugging for this browser instance”；看到 `Server running at: 127.0.0.1:9222` 即就绪。之后运行：
+
+```shell
+uv run main.py --platform xhs --lt qrcode --type search
+```
+
+程序会让 Chrome 弹出确认框，点接受即可，README 要求 60 秒内完成。预期结果是按 `config/base_config.py` 里的关键词搜索帖子并抓取信息和评论；评论抓取默认关闭，要改 `ENABLE_GET_COMMENTS`。指定帖子用 `--type detail`，其他平台参数看 `uv run main.py --help`。常见卡点包括：CDP 模式必须先用真实 Chrome 开启远程调试，不能靠脚本自己启动；不想用 CDP 就在 `config/base_config.py` 设 `ENABLE_CDP_MODE = False`；抖音和知乎还需要 Node.js 环境。
+
+数据可以存成 CSV、JSON、JSONL、Excel、SQLite 或 MySQL。另有 WebUI：后端用 `uv run uvicorn api.main:app --port 8080 --reload`，前端在 `webui` 下 `npm install` 后 `npm run dev`，访问 `http://localhost:5173/`。
 
 ## 值得注意的设计
 
-它的优势是把“登录态 + 浏览器上下文”当成采集基础设施，避开每个平台各自的加密参数逆向；同一套配置覆盖多个平台，还有断点续爬、多账号和代理池的 Pro 版。
+整个采集链路的抽象是“登录态浏览器上下文 + 平台适配器”。登录态只解决一次，后续搜索、详情、评论、创作者主页都复用同一套上下文；签名参数不做算法级复刻，而是在页面里执行 JS 取回。这样做的好处是平台改签名算法时，只要浏览器还能正常发请求，采集逻辑就不必跟着逆改。代价是必须维持一个真实浏览器进程，资源占用和运行环境都比纯 HTTP 客户端重。
+
+各平台共用同一份配置模型：平台、登录方式、抓取类型、评论开关、代理池、存储后端都从 `config/base_config.py` 读。媒体下载默认关闭，开启后按帖子聚合落盘，例如 `data/xhs/media/{帖子ID}/` 下有 `cover.jpg`、`video.mp4`、`001.jpg`、`001_live.mp4`。实况照片由 `DOWNLOAD_LIVE_PHOTO` 控制，默认 True，且只在 `ENABLE_GET_MEDIA` 开启时生效。B 站装了 ffmpeg 会走 DASH 分轨合流拿最高画质，否则降级为 mp4 直链；清晰度由 `BILI_QN` 控制，默认 80（1080p）。下载是串行跟随爬取的，README 说明这是为了避免给平台 CDN 压力，失败只记日志、不中断爬取。
+
+Pro 版把开源版明确没有的能力单独拿出去：断点续爬、多账号加代理池、去 Playwright 依赖。编辑判断：这也说明开源版在长时间、大规模任务上需要自己补状态管理和账号轮换。
 
 ## 边界与风险
 
-许可证元数据是 NOASSERTION，README 明确写“仅供学习，禁止商业用途”，并链接了爬虫违法案例。平台条款、隐私、频率限制和账号风险都要自己承担；Pro 版是付费项目。编辑判断：研究采集技术可以看，生产使用先做法律评估。
+许可证在 GitHub 元数据里是 NOASSERTION，README 未给出具体开源许可证条款，只声明知识产权归开发者所有。README 的免责声明很强硬：仅供学习和研究，禁止商业用途，不得大规模爬取，使用即表示同意条款，并链接了国内爬虫违法案例。编辑判断：如果用途涉及商业分析、对外提供数据或大规模采集，应先做法律评估，这份 README 本身不构成授权。
+
+技术风险集中在三处。第一，它依赖平台未公开的 Web 接口和登录态，任何平台改版都可能让某个适配器失效，README 未说明兼容性承诺或更新节奏。第二，CDP 模式直接使用你日常 Chrome 的登录态和 Cookie，等于把真实账号暴露给自动化请求，账号被限流或封禁的风险由使用者承担；README 没有给出隔离账号或频率控制的建议。第三，合规责任完全在用户一侧，平台条款、个人信息保护、著作权都需要自行确认。
+
+它也不适合需要稳定 SLA 的生产数据管道：开源版没有断点续爬，媒体下载不做并发，失败不重试。README 未说明数据量上限、请求频率或反爬对抗策略。想要更完整的工程能力，README 指向需要订阅支持的 Pro 版本；如果只是学爬虫架构和浏览器自动化，开源版的代码结构和中文注释反而更直接。
 
 ## 来源
 

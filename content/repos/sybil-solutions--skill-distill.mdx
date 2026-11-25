@@ -14,19 +14,49 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-`skill-distill` 回答一个具体问题：前沿模型把任务做好了，开源模型拿到正确指令能不能做同样的事？它让 Claude Code/Codex 当老师，在会话结束时指定一个学生（harness + 模型），然后循环写 Skill、跑学生、对比结果、修第一个出错点。
+`skill-distill` 针对一个很具体的问题：前沿模型把某个任务做对了，换成开源权重模型，给它正确的指令，能不能也做对？它本身是给 Claude Code 或 Codex 用的 Skill，扮演“老师”；你在一次高质量会话结束时调用它，并指定“学生”——一个 Agent harness 加一个模型，例如 omp 配 DeepSeek-V4.1-Flash。
+
+它面向愿意做评测、并且已经在同时使用闭源与开源模型的团队；不适合只想把提示词缩短一点的人。产出有两样：仓库里可复用的“操作 Skill”，以及针对某一任务、某一模型、某一 harness 的“产物 Skill”。和普通的提示词压缩或经验总结相比，它的差别在于闭环：学生要在干净环境里真的跑，结果要和参考对比，改到对齐为止，最后还要人验收。
 
 ## 怎么上手
 
-clone 后把 `skills/skill-distill` 软链到 `~/.claude/skills/` 或 `~/.agents/skills/`；需要 tmux、git、Python 3.10+ 和学生 harness。之后说“distill this session into a skill for …”。
+前置条件是 `tmux`、`git`、Python 3.10+，以及已安装并指向模型的学生 harness。要为网页类任务截图，还要装 Playwright 和 Pillow：
+
+```bash
+pip install playwright pillow && playwright install chromium
+```
+
+安装是把 Skill 软链到 Agent 的技能目录：
+
+```bash
+git clone https://github.com/sybil-solutions/skill-distill
+ln -s "$PWD/skill-distill/skills/skill-distill" ~/.claude/skills/skill-distill    # Claude Code
+ln -s "$PWD/skill-distill/skills/skill-distill" ~/.agents/skills/skill-distill    # Codex
+```
+
+然后在一次成功的会话末尾说：
+
+> distill this session into a skill for omp with deepseek-v4.1-flash on my local server
+
+老师会按 `skills/skill-distill/SKILL.md` 的循环执行：读会话、写 Skill、在 tmux 里用干净起始状态和原始 prompt 启动学生、对比产物、找到学生第一个出错点并就地改 Skill、再跑；每版跑三次，直到学生与参考对齐。你可以用 `tmux attach -t distill-<task>` 看学生干活。
+
+第一次的预期结果是：得到一个 `student-skill` 形态的产物 Skill、一个 ledger 和 report，以及并排展示的参考与学生最佳结果；只有你执行 `accept`，这次蒸馏才算完成。仓库的 `examples/` 里有完整跑完的样例，包括 prompt、产物 Skill、ledger 和截图，可以先对照它们理解一次成功蒸馏长什么样。常见卡点包括：Codex 当学生时要在 `STUDENT_ARGS` 里指定 provider；Claude Code 当学生跑开源模型时要用 `ANTHROPIC_BASE_URL` 指向 Anthropic 兼容服务；opencode 的 JSON 日志在 `extract_session.py` 里还没有解析器。README 没有提 Windows 支持，而 `tmux` 本身通常意味着 Unix 环境，Windows 用户需要自备兼容层，这一点属于 README 未说明。
 
 ## 值得注意的设计
 
-老师拿到参考的原始 prompt、干净起始状态和 Skill，学生 harness 的全局上下文会被关掉；每版 Skill 跑三次，避免一次侥幸；只教步骤、判断、坑和检查，不把最终产物或写产物的脚本塞进 Skill。最后由人接受。
+整套方法把“变量”压到只剩 Skill。学生拿到的是与参考逐字相同的原始 prompt、干净起始状态和 Skill，别的都不给；只要 harness 允许，学生自己的全局上下文文件和技能会被关掉。这样对比才能说明“Skill 有没有教会它”，而不是“学生原本就知道”。代价是准备干净起始状态和参考结果本身需要工程，任务越复杂成本越高。参考结果也必须先固定下来：老师要知道“做对”长什么样，才能判断学生是否对齐；README 没有说明参考结果如何采集和存储，这部分属于 README 未说明。
+
+Skill 本身被限制不能作弊：不能包含参考的最终产物，也不能包含一个直接写出产物的脚本；它要教的是步骤、判断、坑和检查，只有在学生无论如何做不对某一小段时才允许放短代码。这条规则把“蒸馏”与“复制答案”区分开，也意味着老师必须理解任务，而不只是转述。
+
+评估纪律体现在两个数字上：每版三次试验，避免一次侥幸；检查项先在参考上验证，检查在参考上失败就说明检查本身坏了。修正方式是“找到第一个出错点，在那里改 Skill”，而不是整篇重写，这让每次改动可归因。配套的 `distill.py` 提供 `init`、`trial`、`status`、`wait`、`evidence`、`verdict`、`ledger`、`report`、`accept` 等记账命令，`extract_session.py` 把 Claude Code、Codex、omp 的日志整理成可读参考（会丢掉系统提示和 `AGENTS.md` 文本），`capture_web.py` 则负责起服务、用无头 Chromium 操作并截图。
 
 ## 边界与风险
 
-MIT。依赖 tmux 和学生 harness，跑一轮不便宜；会话日志可能含敏感信息；最终是否“学会”仍是人判断。编辑判断：这是把“提示词经验”变成可复现资产的认真尝试，但更适合愿意做评测的团队。
+许可证是 MIT。适配器成熟度差异很大：README 说 omp 已测试；Codex 作为老师已测试，作为学生需要在 `STUDENT_ARGS` 提供 provider；Claude Code 适配器已写，开源模型要配 `ANTHROPIC_BASE_URL`；pi 已写未测；opencode 已写未测，且日志解析器缺失。也就是说，换学生之前先确认链路通不通。
+
+成本不只是钱：每版三次试验、多次迭代，再加上老师模型读写会话和对比结果，跑一轮的开销可能远超一次普通会话。原始会话日志保存在 `runs/`，README 说它被 git 忽略，并明确日志含本机路径和上下文；即便如此，日志仍可能包含业务代码或凭据，保留和清理策略要自己定，这是编辑判断而非 README 承诺。
+
+最后，“学生学没学会”仍是人的判断。README 把它设计成人工 `accept`，这很诚实，但也意味着没有自动的泛化保证：产物 Skill 只对应一个任务、一个模型、一个 harness，换模型或换 harness 就要重跑。编辑判断：这是把“提示词经验”变成可复现资产的正经方法，适合已有评测习惯的团队；如果只是想让提示词更短，直接改 prompt 更划算。
 
 ## 来源
 

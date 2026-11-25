@@ -14,26 +14,46 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-OpenFilm 把任何编码 Agent 变成视频 Agent，并提供能改任何东西的编辑器。你和 Agent 在同一部片子上实时协作：Agent 改什么你立刻看到，你改什么 Agent 也看到；Agent 做大部分工作，你指着一个地方说怎么改。
+OpenFilm 把任意编码 Agent 变成视频 Agent，并提供四个可以手动修改的编辑器。编辑判断：它针对的是 AI 生成视频后只能整段重做、难以精细修改的问题。你和一个编码 Agent 在同一部片子上实时协作，Agent 改什么你立刻看到，你改什么 Agent 也看到。Agent 承担找素材、写镜头、剪时间线的大部分工作，你负责指着某个位置说怎么改，或者直接上手改。
+
+它面向做短视频、产品发布片、演示视频的人，尤其是已经在用 Claude Code 或 Codex 的开发者。OpenFilm 的产物是一个可继续编辑的工程：时间线、镜头、字幕、配音和调色都保留下来，也能导出到专业剪辑软件。README 称它不需要 Remotion 或 HyperFrames 这类框架。
 
 ## 怎么上手
 
-下载 macOS/Windows 桌面 App（自带内置 Agent），或给已有 Agent 装 Skill：`npx skills add openfilm/openfilm`，需要 Node 22.2+ 和 ffmpeg。装好后直接说“Make a 20-second launch video for my CLI, with music.”
+有两条安装路径，按你是否已有编码 Agent 选：
+
+- **桌面 App**：从 GitHub Releases 下载 macOS 或 Windows 版本，README 说所需组件连同内置 Agent 一起打包，也能直接接 Claude Code 或 Codex。
+- **自己的编码 Agent**：安装 Skill，要求 Node 22.2+ 和 ffmpeg，然后执行：
+
+```bash
+npx skills add openfilm/openfilm
+```
+
+装好后直接对 Agent 说要做什么，README 给的例子是 “Make a 20-second launch video for my CLI, with music.” 预期结果是 Agent 自己找素材、写每个镜头并剪在一起，你在 OpenFilm 里实时看到变化。
+
+常见卡点：Skill 路径依赖本机有 ffmpeg，README 未说明安装方式；桌面端的“内置 Agent”用哪个模型、是否需要登录或 API key，README 未说明；没有桌面 App 时，Agent 调用的素材生成服务取决于你给编码 Agent 配了哪些工具，README 也没有列出具体要求。想从源码跑或提 PR，README 指向 `CONTRIBUTING.md`。
 
 ## 值得注意的设计
 
-四个编辑器共享同一份工程，但工作方式不同：
+核心抽象是“一部片子就是一个文件夹，里面有一个 `film.html`”。时间线由 `<section>` 表示，每个 section 里放 clip，用 CSS 决定位置和尺寸，例如：
 
-- Screening：看片，框选、圈选或点一个时刻，告诉 Agent 你要改哪里。
-- Edit：完整时间线，剪辑、字幕、配音和调色都在这里。
-- Canvas：素材规划板，把笔记、图片、片段和声音排在一起。
-- Color：用 scopes、色轮、曲线和 LUT 调色。
+```html
+<video src="assets/footage.mp4#t=12,18" at="4" style="left: 160px; top: 90px; width: 1600px; height: 700px"></video>
+```
 
-编辑器遵循开放标准，第三方也能做。
+每个镜头本身是一个网页，只暴露一个函数 `frame(t)`，负责画出第 t 秒的完整画面。浏览器能画的东西都能用：three.js、WebGL、canvas、SVG、CSS、GSAP、视频。README 强调同一个 `t` 永远得到同一张图，因此任何机器渲染结果一致，Agent 可以逐帧检查，也不需要额外的视频框架把 React 组件转成帧。
+
+另一个关键设计是 `overrides`。你手动改镜头里的文字、颜色、位置或大小时，OpenFilm 不把改动写进页面的代码，而是存进该 clip 的 `overrides`。这样 Agent 可以重写页面代码，你的修改仍然生效。编辑判断：这是整套协作模型能成立的前提——否则每次 Agent 重生成镜头都会覆盖人的工作。
+
+四个编辑器共享同一份工程和素材库，只是入口不同。README 说官方还会为不同人群增加更多编辑器，并遵循开放标准，第三方也能构建。**Screening** 用来整片观看，点击某一刻、拖选一段或在画面里圈一块，Agent 就知道你指的是什么。**Edit** 是完整时间线，能修剪、分割、重排、改速度/音量/淡入淡出、裁剪、调色、抠背景、改字幕和配音，也能把时间线交给 Final Cut Pro、Premiere Pro 或 DaVinci Resolve。**Canvas** 是规划板，把笔记、图片、片段和声音并排摆放，用你自己的服务生成后再按顺序送进时间线。**Color** 提供 scopes、色轮、曲线和 `.cube` LUT，README 称预览即导出。素材库对本地素材是链接而非复制，移动位置后能重新找到。
 
 ## 边界与风险
 
-MIT。Agent 仍要模型/API，素材和音乐有授权问题；桌面端成熟度和专业 NLE 还有差距，导出到 Final Cut/Premiere/DaVinci 可能丢效果。编辑判断：协作模型比“Agent 生成后丢给你一个 MP4”更合理，适合短视频和产品片。
+许可证是 MIT。风险主要不在代码，而在素材和依赖。README 说 Agent 会找“footage、music and voices”，OpenFilm 也自带免费音乐、音效、声音和贴纸，但没有说明这些自带素材的授权范围；编辑判断：商用发布前应逐项确认素材许可证，Agent 从网上找到的素材同样如此。导出到 Final Cut、Premiere 或 DaVinci 时能保留多少效果，README 未说明，现有描述只承诺“可以带走时间线”。
+
+桌面端和 Skill 都依赖外部能力：桌面 App 的平台只有 macOS 和 Windows，Linux 未提及；Skill 要求 Node 22.2+ 和 ffmpeg；素材生成和剪辑判断依赖你接入的模型服务，README 未说明费用、额度或隐私处理方式。桌面端对显卡、内存和磁盘的要求，README 同样没有说明。编辑判断：它更适合短视频和产品片这类以网页视觉为主的成片，复杂实拍叙事、精细多轨音频和团队审片流程仍应由专业 NLE 承担。
+
+社区标准是它的扩展方式：插件、技能、素材和示例都是普通文件夹，官方编辑器本身也按插件方式构建。好处是第三方能加编辑器或接服务；代价是生态质量参差，README 未说明审核机制或兼容性承诺。README 也没有说明导出视频的分辨率、码率、编码格式等选项。它还不适合完全不想碰工程文件的用户——虽然可以只靠对话完成，但要发挥手动编辑和 `overrides` 的价值，仍需要理解 `film.html` 的结构。
 
 ## 来源
 

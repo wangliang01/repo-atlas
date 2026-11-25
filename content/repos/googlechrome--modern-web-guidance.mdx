@@ -14,19 +14,55 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-Modern Web Guidance 把 Web 平台的专业知识、最佳实践和浏览器兼容数据做成 Agent Skill，按需把针对性指南送进上下文。它要解决的是：Agent 的训练数据里堆满旧代码，于是给本来有原生方案的任务生成一堆 JavaScript。
+Modern Web Guidance 是给编码 Agent 用的 Web 平台知识包。它把现代浏览器 API、最佳实践和兼容性数据做成可按需检索的指南，让 Agent 在写前端时少走"用 JavaScript 手搓原生能力"的老路。README 称它由 Google Chrome、Microsoft Edge、Mozilla Firefox 和 MDN 团队共同维护，另有社区参与。
+
+它面向会用 Claude Code、Codex、Cursor、Copilot 等 Agent 写 Web 代码的开发者。核心不是一份长文档，而是一个 Skill 加一个本地 CLI：Agent 先搜索，再按 ID 取回具体指南。README 给出的导览范围是 269 个现代 Web 特性，其中 CSS 与布局 144 个、HTML 与 DOM 38 个、JavaScript 与 API 87 个，另按用户体验、性能、表单与 UI、可访问性、内置 AI 等学科归类。
+
+和"把整份 MDN 塞进上下文"相比，它的差别在于按任务取用、按 Baseline 兼容数据调整，并把实验性 API 默认关在门外。它也不等同于 linter：指南进入上下文后是否被采纳，仍取决于 Agent 和开发者。
+
+指南按学科分目录，README 举例的覆盖点包括 View Transitions、container queries、subgrid、oklch、`scheduler.yield`、Popover API、锚点定位、`:user-invalid`，以及浏览器内置的翻译、摘要和语言检测 API。对 Agent 来说，这些内容的用处不是"知道有这个 API"，而是拿到可以直接落地的代码模式和回退写法。
 
 ## 怎么上手
 
-`npx modern-web-guidance@latest install` 启动安装向导，需要 Node 22+。不想安装也可以直接试 `search`、`retrieve` 和 `legacy-scan` 三个子命令。
+前置条件只有 Node.js 22 或更高版本。安装跑一条命令：
+
+```shell
+npx modern-web-guidance@latest install
+```
+
+这是一个交互式向导。想先不安装，可以直接试三个子命令：
+
+```shell
+npx modern-web-guidance@latest search "animate a dialog modal backdrop"
+npx modern-web-guidance@latest retrieve "animate-to-from-top-layer"
+npx modern-web-guidance@latest legacy-scan .
+```
+
+`search` 返回匹配的指南，`retrieve` 按 ID 取正文，`legacy-scan .` 扫描当前代码库里的过时写法。第一次跑通后，Agent 在相关任务里会激活 `modern-web-guidance` Skill，并调用 CLI 完成检索。
+
+也可以走各家的插件入口。README 列出的方式包括 `npx skills add GoogleChrome/modern-web-guidance`、`gh skill install GoogleChrome/modern-web-guidance`，以及 Claude Code、Codex、Copilot CLI、Antigravity、Grok、Kimi、Pi 各自的命令。用 `install --choose` 可以只装需要的包：`modern-web-guidance` 约 205 token，`chrome-extensions` 约 175 token。README 未说明向导会把文件写进哪些目录、是否会覆盖已有的 skill；如果团队已经在用别的 Web 指南包，安装前最好先确认目标位置。
+
+常见卡点是版本更新。用 `npx ... install` 装的，后续跑 `npx modern-web-guidance@latest update`。README 特别提醒：曾通过 Anthropic 内置的 `claude-plugins-official` 市场安装的 Claude Code 用户会停留在 `v0.0.194`，因为该市场在 10 月 12 日后不再更新第三方插件，需要换到 `googlechrome` 市场重装。
 
 ## 值得注意的设计
 
-指南按 UX、CSS 布局、性能、表单与 UI、可访问性等学科组织，覆盖 View Transitions、container queries、Popover、锚点定位等新能力；内容经过 eval 裁剪，强调 token 效率。`legacy-scan` 还能扫描仓库里的旧模式。
+检索链路是"Agent 激活、本地语义搜索、按 ID 取回"。README 说明搜索用离线、零依赖的 embedding 模型加 BM25，不发搜索 API 请求，也不需要 key。整个 npm 包自包含，缓存后可用 `npx --offline` 离线运行，这一点对延迟和供应链都更稳。
+
+指南的内容策略围绕"安全采用"展开。纯增强的特性（例如推测性预加载）允许老浏览器直接忽略；关键行为（例如对话框控件、网络 beacon）则配轻量、低开销的回退，README 称通常小于 50 行代码，而不是引入重型 polyfill。指南还会记录平台坑，例如 `fetchLater()` 的 64KB 负载上限、macOS 滚动条行为。
+
+实验性能力有明确闸门。Origin Trial API 和"单引擎、三个月内发布或仍在稳定中"的易变特性可以 `search` 到，但 `retrieve` 默认被挡住，要在项目根目录的 `.mwgrc`（或用户级 `~/.mwgrc`）里打开 `allowOriginTrials`、`allowVolatileFeatures`，或用对应 CLI 命令解锁。这样 Agent 不会在开发者不知情时采用不稳定 API。
+
+代价是内容维护依赖一套较重的 eval 流程。README 称指南要经过 Playwright 评分器和"金标准 100% 通过、未修改基线 0% 通过"的校准，再比较 Agent 有指南和无指南的通过率，按结果裁剪模型已经会的部分。README 用 opportunity（100% 减无指南通过率）和 uplift（有指南减无指南）衡量价值：模型本来就会的任务，指南会被裁掉；模型常错的任务才会保留和加强。这个机制解释了为什么它的内容看起来不像完整文档，而更像针对弱点的补丁。README 公布的快照里，`claude_code (opus-5-5)` 从 54% 升到 94%，`codex_cli` 从 49% 升到 85%。这些数字是 README 的自测，具体任务和评分口径要看它的 Eval Dashboard。
 
 ## 边界与风险
 
-Apache-2.0，由 Chrome/Edge/Firefox/MDN 团队共同维护，但仍不是标准本身。指南会随平台演进，`legacy-scan` 只报告不自动修；它也不知道你的浏览器支持矩阵和业务约束，采纳前要自己判断。
+许可分两层：软件代码是 Apache-2.0，`guides/` 下的文档与指南内容是 CC-BY 4.0，部分内容改编自 MDN、W3C、WHATWG 和 IETF 的材料。如果要再分发指南内容，署名义务和代码许可不是一回事。
+
+遥测默认开启。README 说 Google 会收集安装次数、调用 Agent 名称、指南检索 ID，以及 Agent 生成的 CLI 搜索词，不收集原始用户 prompt，关闭方式是设置 `DISABLE_TELEMETRY=1`。对隐私敏感的团队应在 shell profile 里先关掉。
+
+`legacy-scan` 只被描述为"扫描代码库里的过时写法"，README 未说明它会输出什么格式、覆盖哪些规则，也未说明是否会尝试自动修改。把它当成发现线索的工具，而不是修复工具。
+
+还有两个边界。指南覆盖的是 Web 平台能力，不包含你的业务约束、浏览器支持矩阵和性能预算；是否采用仍要人判断。README 未说明它对非 Web 技术栈或服务端 Node 代码是否适用。编辑判断：适合经常让 Agent 写前端的团队，尤其是希望减少无谓 JavaScript 和 polyfill 的项目；不适合期待"装上就自动改代码"的流水线。
 
 ## 来源
 

@@ -14,19 +14,61 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-Hadolint 是 Dockerfile 静态检查工具，把 Dockerfile 解析成 AST 后跑规则，并调用 ShellCheck 检查 `RUN` 里的 Bash。目标是帮你构建符合最佳实践的镜像。
+Hadolint 是一个用 Haskell 写的 Dockerfile 静态检查工具。它先把 Dockerfile 解析成 AST，再在 AST 上跑规则，并调用 ShellCheck 检查 `RUN` 指令里的 Bash。README 的定位是"更聪明的 Dockerfile linter"，帮镜像构建符合最佳实践。
+
+它面向写 Dockerfile 的开发者、平台团队和 CI 维护者。和只跑 ShellCheck 相比，Hadolint 多了一层 Dockerfile 结构检查：`FROM` 是否固定版本、`COPY --from` 是否引用已定义的 stage、stage 名是否重复、`apt-get`/`pip`/`npm`/`apk` 是否锁版本、`CMD`/`ENTRYPOINT` 是否用 JSON 形式等。README 也列出了三个同类工具：replicatedhq/dockerfilelint、RedCoolBeans/dockerlint、projectatomic/dockerfile_lint。
+
+规则分两族：`DL` 开头的是 Hadolint 自己的规则，`SC` 开头的是 ShellCheck 规则。README 给出的严重级别有 Error、Warning、Info、Style、Ignore 五档，每条规则有默认级别。
+
+从默认级别能看出它的取舍：`DL3000`（WORKDIR 必须绝对路径）、`DL3004`（不要用 sudo）、`DL3020`（文件和目录用 `COPY` 而不是 `ADD`）、`DL3024`（stage 名唯一）、`DL3026`（只允许可信 registry）、`DL4000`（`MAINTAINER` 已弃用）是 Error；`DL3002`（最后一个 USER 不应是 root）、`DL3006`（显式 tag 版本）、`DL3007`（不要用 latest）、`DL3008`/`DL3013`/`DL3018`（锁 apt/pip/apk 版本）、`DL3042`（pip 加 `--no-cache-dir`）是 Warning。Info 和 Style 更多是建议，适合先观察。
+
+这些级别不是固定的：可以用 `--error`、`--warning`、`--info`、`--style` 按规则码覆盖，也可以在配置文件的 `override` 里批量改。这对"某些规则只想警告、不想阻塞"的场景很实用。输出里会带具体规则码和说明，方便去规则 wiki 查；退出码受 `failure-threshold` 控制，`--no-fail` 则永不因规则失败。README 也欢迎有规则想法的人开 issue，说明规则集仍在演进。
 
 ## 怎么上手
 
-本地装 hadolint 后直接 `hadolint Dockerfile`；也可以 `docker run --rm -i hadolint/hadolint < Dockerfile`。支持 `--ignore`、`--trusted-registry`、配置文件、行内/全局忽略和 CI 集成。
+本地装好后直接跑：
+
+```bash
+hadolint <Dockerfile>
+hadolint --ignore DL3003 --ignore DL3006 <Dockerfile>
+hadolint --trusted-registry my-company.com:500 <Dockerfile>
+```
+
+不想装二进制，可以用容器把 Dockerfile 从标准输入喂进去：
+
+```bash
+docker run --rm -i hadolint/hadolint < Dockerfile
+# 或者
+docker run --rm -i ghcr.io/hadolint/hadolint < Dockerfile
+```
+
+Windows PowerShell 的写法是 `cat .\Dockerfile | docker run --rm -i hadolint/hadolint`。安装方式包括各平台的预编译二进制、macOS 的 `brew install hadolint`、Windows 的 `scoop install hadolint`、Nix、Docker 镜像（另有 Debian/Alpine 变体），以及用 Haskell 加 cabal 从源码构建。
+
+第一次跑通常会看到一批 Warning 和 Info。先不要一次性全开：用 `-t`/`--failure-threshold` 决定什么级别才让进程失败（默认 `info`），用 `--ignore` 或配置文件压掉不适用的规则，再逐步收紧。输出格式支持 `tty`、`json`、`checkstyle`、`codeclimate`、`gitlab_codeclimate`、`gnu`、`codacy`、`sonarqube`、`sarif`、`junit`，方便接 CI。
+
+配置文件的查找顺序是 `$PWD/.hadolint.yaml`、`$XDG_CONFIG_HOME/hadolint.yaml`、`$HOME/.config/hadolint.yaml`、`$HOME/.hadolint/hadolint.yaml` 或 `$HOME/hadolint/config.yaml`、`$HOME/.hadolint.yaml`，只取第一个找到的；Windows 用 `%LOCALAPPDATA%` 代替 `XDG_CONFIG_HOME`。用 Docker 跑时，`--file-path-in-report` 可以修正报告里的文件路径，对 checkstyle、codeclimate、sonarqube、junit 和 gitlab_codeclimate 格式有用。
+
+README 建议把它接进 CI、编辑器和 pre-commit，在写 Dockerfile 的过程中就得到反馈，而不是等到构建。它列出了代码评审平台、持续集成、编辑器和版本控制几类集成文档；具体插件不在 README 正文里展开。集成排查时可以用 `--verbose`，它会把 hadolint 的输出日志打到 stderr。
 
 ## 值得注意的设计
 
-它的规则有明确编号和严重级别，比如用 `COPY` 而不是 `ADD`、`COPY --from` 必须引用已定义 stage、FROM alias 必须唯一。把 Dockerfile 结构检查和 shell 检查合在一起，比只跑 ShellCheck 更完整。
+规则建立在 AST 上，而不是逐行文本匹配，所以能理解指令结构和 stage 关系。例如 `DL3022` 要求 `COPY --from` 引用之前定义的 `FROM` 别名，`DL3024` 要求 `FROM` 别名唯一，`DL3061` 要求 Dockerfile 以 `FROM`、`ARG` 或注释开头。这类规则单靠正则很难可靠实现。
+
+`RUN` 里的 Bash 交给 ShellCheck，是它比纯 Dockerfile 规则更完整的原因。代价是两套规则的编号和语义并存：排查时要知道 `DL` 和 `SC` 分别来自哪里。
+
+抑制机制分三层。行内 `# hadolint ignore=DL3006` 只作用于下一条语句；`# hadolint global ignore=DL3003,DL3006,SC1035` 作用于整个文件；配置文件里的 `ignored` 是全局的。README 还给了一个反向规则 `DL1001`，用来提醒团队不要滥用行内 ignore。非 POSIX shell 的镜像可以用 `# hadolint shell=powershell` 声明，让 Hadolint 跳过 shell 相关规则。
+
+标签检查是另一条线。用 `--require-label author:text` 或 `label-schema` 可以要求 `author`、`version`、`created` 等标签存在并符合 `text`、`semver`、`rfc3339`、`url`、`hash`、`spdx`、`email` 等格式；`--strict-labels` 会反过来禁止 schema 之外的标签。README 提醒：如果标签值来自构建期变量，schema 必须写成 `text`，否则静态检查会失败。
+
+开发侧也围绕 AST：在 `cabal repl` 里可以 `import Language.Docker`，再用 `parseText "FROM debian:jessie"` 看解析结果；Dockerfile 语法由 `language-docker` 描述，规则实现集中在 `Rules.hs`。这条信息对想加自定义规则的人有用，也说明它的规则不是硬编码在文本扫描器里。
 
 ## 边界与风险
 
-GPL-3.0。规则集有倾向性，某些“最佳实践”不一定适合你的基础镜像；它只做静态检查，不构建也不运行镜像。编辑判断：CI 里加一条很值，但别把它当安全扫描器。
+Hadolint 采用 GPL-3.0。把它作为 CLI 或 CI 检查使用通常没问题，但如果要把它的代码嵌入并分发自己的工具，需要按 GPL 的要求评估。README 未给出法律解释，商用前应自行确认。
+
+它只做静态检查，不构建、不运行镜像，也不扫描漏洞。规则集带有维护者的最佳实践倾向：例如要求固定 `apt-get`/`pip` 版本，在某些滚动更新的基础镜像或内部仓库里可能不适用；`--trusted-registry` 也需要你按组织实际情况配置，否则 `DL3026` 会频繁误报。README 未说明它是否理解 BuildKit 的 heredoc 等较新语法，用新语法时应先验证规则是否误报。编辑判断：把它当 Dockerfile 的 lint 层很值，但不要当安全扫描器或镜像构建的替代品。
+
+README 未说明规则总数、各规则的完整清单（只给了"不完整列表"），以及不同版本之间的兼容性策略；每条规则的细节以 README 链接到的 wiki 为准。接入 CI 前建议先用 `--no-fail` 或较高的 `failure-threshold` 观察一段时间，再决定哪些规则设为阻塞。
 
 ## 来源
 
