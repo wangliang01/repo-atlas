@@ -9,7 +9,8 @@ repo: "owner/project"
 title: "一个示例项目"
 summary: "用一句话说清楚它是什么。"
 domains: ["编码与开发"]
-forms: ["框架 / SDK / 库"]
+forms: ["SDK 与库"]
+identities: ["后端"]
 peers: ["Orca"]
 verdict: watch
 featuredAt: 2026-11-24
@@ -52,7 +53,8 @@ test("合法详情页：解析成功，日期是本地 Date", () => {
   const detail = parseRepoDetail("owner--project", FIXTURE);
   assert.equal(detail.data.repo, "owner/project");
   assert.deepEqual(detail.data.domains, ["编码与开发"]);
-  assert.deepEqual(detail.data.forms, ["框架 / SDK / 库"]);
+  assert.deepEqual(detail.data.forms, ["SDK 与库"]);
+  assert.deepEqual(detail.data.identities, ["后端"]);
   assert.deepEqual(detail.data.peers, ["Orca"]);
   assert.equal(detail.data.verdict, "watch");
   assert.equal(detail.data.featuredAt.getFullYear(), 2026);

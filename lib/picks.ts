@@ -1,5 +1,5 @@
 import type { PickEntry } from "./schema.ts";
-import { ALL_DOMAINS, DOMAINS } from "./categories.ts";
+import { ALL_DOMAINS, DOMAINS, IDENTITIES } from "./categories.ts";
 
 // 「涨得快」= 这一批里 stars/天 最高的前 10 个。
 // 不设固定阈值：这批仓库动辄几百上千星/天，阈值要么全中要么全不中。
@@ -21,6 +21,7 @@ export type PickDetailInfo = {
   summary: string;
   domains: string[];
   forms: string[];
+  identities: string[];
   peers: string[];
   verdict: "recommend" | "watch" | "avoid";
 };
@@ -33,36 +34,56 @@ export function formsOf(entry: PickLike, details: DetailSource): string[] {
   return details[entry.repo.toLowerCase()]?.forms ?? [];
 }
 
+export function identitiesOf(entry: PickLike, details: DetailSource): string[] {
+  return details[entry.repo.toLowerCase()]?.identities ?? [];
+}
+
 export type PickDomain = { label: string; count: number };
 
 // 计数恒按全集算：否则点了领域之后数字跳变，人会以为出错
 export function pickDomains(entries: PickLike[], details: DetailSource): PickDomain[] {
-  const present = new Set(entries.flatMap((entry) => domainsOf(entry, details)));
-  const ordered = DOMAINS.filter((domain) => present.has(domain));
+  return pickFacet(entries, details, domainsOf, DOMAINS);
+}
+
+// 身份同样按全集算；没人认领的身份不出现，不留一个空壳类目
+export function pickIdentities(entries: PickLike[], details: DetailSource): PickDomain[] {
+  return pickFacet(entries, details, identitiesOf, IDENTITIES);
+}
+
+function pickFacet(
+  entries: PickLike[],
+  details: DetailSource,
+  valuesOf: (entry: PickLike, details: DetailSource) => string[],
+  order: readonly string[],
+): PickDomain[] {
+  const present = new Set(entries.flatMap((entry) => valuesOf(entry, details)));
   return [
     { label: ALL_DOMAINS, count: entries.length },
-    ...ordered.map((label) => ({
-      label,
-      count: entries.filter((entry) => domainsOf(entry, details).includes(label)).length,
-    })),
+    ...order
+      .filter((label) => present.has(label))
+      .map((label) => ({
+        label,
+        count: entries.filter((entry) => valuesOf(entry, details).includes(label)).length,
+      })),
   ];
 }
 
-// 两个轴正交：领域决定看哪一类，涨得快是叠加在上面的布尔开关
-export type PickFilter = { domain: string; risingOnly: boolean };
+// 三个轴正交：用途与身份各自筛选，涨得快是叠加在上面的布尔开关
+export type PickFilter = { domain: string; identity: string; risingOnly: boolean };
 
-export const DEFAULT_FILTER: PickFilter = { domain: ALL_DOMAINS, risingOnly: false };
+export const DEFAULT_FILTER: PickFilter = { domain: ALL_DOMAINS, identity: ALL_DOMAINS, risingOnly: false };
 
 export function filterPicks<T extends PickLike>(
   entries: T[],
   filter: PickFilter,
   details: DetailSource,
 ): T[] {
-  const { domain, risingOnly } = filter;
+  const { domain, identity, risingOnly } = filter;
   const rising = risingOnly ? risingRepos(entries) : null;
 
   return entries.filter((entry) => {
     if (domain !== ALL_DOMAINS && !domainsOf(entry, details).includes(domain)) return false;
+    if (identity !== ALL_DOMAINS && !identitiesOf(entry, details).includes(identity)) return false;
     if (rising && !rising.has(entry.repo)) return false;
     return true;
   });

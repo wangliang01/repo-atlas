@@ -84,6 +84,7 @@ export function detailInfoMap(): Record<string, DetailInfo> {
       summary: detail.data.summary,
       domains: detail.data.domains,
       forms: detail.data.forms,
+      identities: detail.data.identities,
       peers: detail.data.peers,
       verdict: detail.data.verdict,
     };
