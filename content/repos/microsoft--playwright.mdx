@@ -14,19 +14,51 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-Playwright 用同一套 API 驱动 Chromium、Firefox 和 WebKit，覆盖测试、脚本和 AI Agent 三种场景。它提供测试运行器、CLI、MCP、库和 VS Code 扩展五条入口。
+Playwright 是微软维护的 Web 自动化框架，用同一套 API 驱动 Chromium、Firefox 和 WebKit。README 把它定位成三种用途：写端到端测试、写浏览器脚本、给 AI Agent 当操作浏览器的手。适合需要跨浏览器验证的 Web 团队，也适合要给 Agent 接浏览器能力的开发者。
+
+同一份代码库对外是五个入口，每个入口解决不同问题：
+
+- **Playwright Test**：完整的测试运行器，带浏览器隔离、auto-wait 和 web-first assertions。
+- **Playwright CLI**：面向编码 Agent 的命令行界面，README 称它比 MCP 更省 token。
+- **Playwright MCP**：通过 Model Context Protocol 给 AI Agent 浏览器控制。
+- **Playwright Library**：不带测试运行器的自动化库，用来做爬取、截图、生成 PDF。
+- **VS Code 扩展**：在编辑器里跑测试、调试、录制脚本和挑选定位器。
+
+和一般测试框架的差别在于覆盖面：它不只做测试，还把脚本和 Agent 场景拆成互相独立的包，跨浏览器能力覆盖 Linux、macOS、Windows 上的有头和无头执行。README 未说明它与其他框架的性能对比。
+
+这五个入口围绕同一套浏览器自动化能力，但安装和更新互不绑定。VS Code 扩展提供一键跑测试、断点调试、CodeGen 录制、悬停挑选定位器，以及每次测试后的 Trace Viewer；面向 Agent 的 CLI 和 MCP 则把浏览器操作从测试代码里拆出去，供非测试场景调用。
 
 ## 怎么上手
 
-端到端测试用 `npm init playwright@latest`；只写自动化脚本用 `npm i playwright`；Agent 场景可装 `@playwright/cli` 或直接 `npx @playwright/mcp@latest`。首次还要 `npx playwright install` 下载浏览器。
+前置条件是 Node.js 环境，README 未写明最低 Node 版本。按用途选安装命令，命令都保持 README 原文：
+
+- 端到端测试：`npm init playwright@latest`，或手动执行 `npm i -D @playwright/test` 加 `npx playwright install`。
+- 编码 Agent：`npm install -g @playwright/cli@latest`，需要更完整的技能集成再加 `playwright-cli install --skills`。
+- AI Agent / MCP 客户端：`npx @playwright/mcp@latest`；Claude Code 用 `claude mcp add playwright npx @playwright/mcp@latest`。
+- 纯脚本：`npm i playwright`。
+- VS Code：从 Marketplace 安装。
+
+测试场景第一次跑通的路径是：初始化项目、写一个测试文件（README 给了 `has title` 和 `get started link` 两个例子）、执行 `npx playwright test`。预期结果是测试在配置的所有浏览器上并行运行，默认无头模式，每个测试拿到一个全新的浏览器上下文。常见卡点是浏览器二进制不在 npm 包里，必须额外跑 `npx playwright install`；CLI、MCP、测试运行器是三个独立发布的包，版本要分别管理。
 
 ## 值得注意的设计
 
-核心设计是 auto-wait 和 web-first assertions：不写死等待时间，元素可操作才动作，断言自动重试。每个测试跑在独立 browser context 里，登录态可以保存成 `storageState` 复用；trace viewer 能回放 DOM、网络和控制台。
+核心机制是 auto-wait 和 web-first assertions。README 明确说不写死等待时间：Playwright 等元素进入可操作状态才动作，断言会一直重试到条件成立。这套设计把“等待多久”从测试代码里拿掉，代价是失败时的时序问题需要靠 trace 定位。
+
+定位器（Locators）按用户看页面的方式找元素，例如 `page.getByRole('button', { name: 'Submit' })`、`page.getByLabel('Email')`、`page.getByTestId('login-form')`。测试隔离靠 browser context 实现，README 说每个 context 相当于一个全新的浏览器配置；登录态可以用 `storageState` 存下来复用，省掉每个用例重复登录。
+
+并行是默认行为：`npx playwright test` 会在配置的所有浏览器上并行跑，默认无头。README 称每个测试的 browser context 隔离开销接近零，需要登录的流程把状态存一次、再用 `test.use({ storageState: 'auth.json' })` 复用。编辑判断：这避免了用例之间串状态，但也要求测试自己准备数据，不能依赖前一个用例留下的页面。
+
+tracing 是排障的主要手段：在 `playwright.config.ts` 里设 `trace: 'on-first-retry'`，失败后用 `npx playwright show-trace trace.zip` 打开 Trace Viewer，回看每一步动作、DOM 快照、网络请求和控制台消息。MCP 则走另一条路：Agent 看到的是结构化无障碍树和 `e5`、`e10` 这类元素引用，README 强调不需要视觉模型或截图，交互是确定性的。CLI 的设计取舍是避免把大体积工具 schema 和无障碍树塞进模型上下文，这正是 README 称它更省 token 的原因。
+
+跨浏览器支持表列出 Chromium、Firefox、WebKit 三套引擎在 Linux、macOS、Windows 上的有头与无头执行；Chromium 默认使用 Chrome for Testing，而不是系统安装的 Chrome。编辑判断：这意味着 CI 不必预装浏览器，但仍要执行 `npx playwright install` 下载对应的构建，缓存策略会影响每次流水线的启动时间。
 
 ## 边界与风险
 
-Apache-2.0，但浏览器二进制体积大，CI 要预留下载和缓存时间。它不负责测试策略，定位器写错仍会脆弱；MCP/CLI 是独立包，和测试运行器的版本要分别管理。编辑判断：Web 自动化的默认选项之一。
+许可证是 Apache-2.0。浏览器二进制由 `npx playwright install` 单独下载，README 未说明安装体积和磁盘占用；编辑判断：CI 需要预留下载与缓存时间，否则首次构建会明显变慢。跨浏览器表列出 Chromium 159.0.8154.13、Firefox 159.0、WebKit 27.2，且 Chromium 默认用 Chrome for Testing。
+
+README 没有讨论测试策略、定位器维护成本或 Agent 访问浏览器时的权限边界。编辑判断：定位器写得依赖脆弱 DOM 结构，仍会随页面改版失效；把 MCP 或 CLI 接给有权访问内网和登录态的 Agent，需要自己决定沙箱和凭据范围。它也不是“装上就有覆盖率”的工具，测试用例仍需人来设计。
+
+trace、截图和视频默认只在失败时保留（`trace: 'on-first-retry'`），CI 需要把这些产物存成 artifact 才能事后回放；README 未说明保留策略和体积上限，也未说明浏览器缓存的默认位置和复用方式。对其他语言用户，README 说明有 Python、.NET、Java 版本，但它们的文档和 API 入口与这份 README 不同。
 
 ## 来源
 

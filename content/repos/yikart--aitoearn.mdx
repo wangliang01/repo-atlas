@@ -14,19 +14,51 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-AiToEarn 是面向一人公司（OPC）的 AI 内容营销智能体，围绕 Monetize、Publish、Engage、Create 四条链路。它按 CPS/CPE/CPM 结算内容任务，一键分发到国内外 14+ 平台，用浏览器插件自动互动，再用 Agent 生成视频/图文。
+AiToEarn 是面向“一人公司”（OPC）和内容创作者的 AI 内容营销平台。它把四件事放进一条链路：Monetize 接商单变现、Publish 多平台发布、Engage 自动互动、Create 用模型生成视频和图文。
+
+覆盖的平台分国内外两组：国内是抖音、小红书、快手、B站、视频号、公众号；海外是 TikTok、YouTube、Facebook、Instagram、Threads、X、Pinterest、LinkedIn。变现侧按 CPS（成交）、CPE（互动）、CPM（播放）结算创作者完成推广任务的内容。
+
+它和单纯的多平台排期工具不同：除了发布，还做内容交易市场、浏览器插件自动互动，以及 Agent 批量创作；和纯 Agent 框架也不同，它自带平台连接器、账号授权和一套面向内容生意的业务流程。README 的定位是“Monetize · Publish · Engage · Create 一站式”。
+
+项目从 2025 年 2 月的 v0.1.1 起步，最初只支持小红书、抖音、快手、视频号一键发布；v1.3.2 成为首个可完全使用的开源版本，v2.1 加入 MCP，v2.5 拆分 Relay 并新增开放平台。
 
 ## 怎么上手
 
-可以直接用网页版，或接 MCP（Claude Desktop/Cursor 等），也可以 Docker 私有化部署；还提供一套“创作→剪辑→发布→变现”的插件与技能包，粘贴安装地址让 Agent 装。
+三条路径，按成本从低到高：
+
+1. 直接用网页版：`aitoearn.cn`（国内）或 `aitoearn.ai`（国际），注册登录后把需求发给对话框，例如让它写一篇小红书图文并发布。
+2. 接 MCP：先在设置里创建 API Key，再把 MCP 地址配到 Claude Desktop、Cursor 或其他支持 MCP 的助手。地址必须和 Key 的环境匹配，否则会 `401`。国内是 `https://aitoearn.cn/api/unified/mcp`，国际是 `https://aitoearn.ai/api/unified/mcp`，认证头为 `x-api-key`。
+3. Docker 私有化：
+
+```bash
+git clone https://github.com/yikart/AiToEarn.git
+cd AiToEarn
+docker compose up -d
+```
+
+启动前要按 `DOCKER_DEPLOYMENT_CN.md` 配置必填认证密钥并导出 `JWT_SECRET`，之后访问 `http://localhost:8080`。
+
+第一次跑通的卡点主要在授权：README 强烈建议配置 Relay，借用官方凭据完成抖音、小红书、TikTok 等平台的 OAuth，省去逐个申请开发者账号；自部署用户要把 MCP 地址换成自己的域名或 `localhost:8080`。MCP 同时提供 HTTP 和 SSE 两种地址；README 的 Node badge 是 20.18.x，源码用 TypeScript。另外，Engage 的自动点赞、关注依赖浏览器插件；Create 要接视频或图片模型；批量发布前最好先用小号验证平台风控。
 
 ## 值得注意的设计
 
-它把内容平台的发布、互动和变现做成统一工作流：统一日历排期、跨平台发布、自动点赞/收藏/关注、AI 回复评论和挖掘“求链接”等高转化信号。对矩阵账号和批量内容，这是主要卖点。
+AiToEarn 把内容生意拆成四个可编排的角色，而不是一个“万能 Agent”。Publish 用统一日历管理 14+ 平台的排期；Engage 通过浏览器插件在各平台执行点赞、收藏、关注和评论回复，并识别“求链接”“怎么购买”这类高转化信号；Create 把 Grok、Veo、Seedance 等视频模型和 Nano Banana 等图片模型接进创作流程，支持批量并行，面向矩阵账号。
+
+Relay 是架构上的关键抽象。它把平台 OAuth 和 AI 模型调用从自部署实例里分离出来：v2.5 拆成 Server Relay（发布授权）和 AI Relay（平台提供的模型），让没有开发者账号的用户也能完成授权。代价是引入一个由官方维护的中间层，账号授权和数据流会经过它。
+
+MCP 端点则把平台能力暴露成工具，统一走一个 `/api/unified/mcp` 地址；国内和国际两套环境用不同域名隔离。这个设计让 Claude、Cursor 等外部 Agent 可以直接调用发布、创作能力，而不需要把业务逻辑搬进 AiToEarn。
+
+仓库还提供一套“插件与技能包”，覆盖创作、剪辑、发布、变现；安装方式是在 AI 助手里粘贴一段请求，让它自己拉取 `skills` 目录、索取 API Key 并验证。这降低了非开发者配置 MCP 的门槛，但也把配置权限交给了 Agent。README 还提到 WorkBuddy 用户不用安装，直接用它内置的“自媒体运营增长变现专家”；其它助手则通过同一段粘贴指令拉取技能包。
 
 ## 边界与风险
 
-MIT。自动互动和批量发布很容易触碰平台条款，导致限流或封号；CPS/CPE/CPM 的结算、内容合规和广告声明由使用者负责；生成模型和 API Key 有额外成本。编辑判断：能力很全，但先小号试水，别把主账号直接接进去。
+许可证是 MIT。README 明确说暂不接受外部 Pull Request，新功能和修复由官方团队排期；这意味着你可以自部署和改代码，但上游合并和长期维护依赖官方。
+
+编辑判断：平台风险是首要的。自动互动、批量发布和多账号矩阵很容易触发平台的风控或服务条款，导致限流、封号；README 没有给出各平台的合规边界、频率限制或申诉流程。CPS、CPE、CPM 的结算规则、内容合规、广告标识和税务，也都要使用者自己承担，README 只定义了三种计费方式的含义。
+
+成本方面，Docker 自部署本身不收费，但视频或图片生成模型、LLM、Relay 和代理服务可能产生费用；README 未说明平台抽成、订阅价格或免费额度。数据会流向目标社交平台、模型服务商和 Relay，隐私政策和保留周期 README 未说明。
+
+不适合谁：不能接受账号风险的主账号运营者；受监管行业里需要可审计合规流程的团队；以及希望完全离线、所有数据留在内网的用户。编辑判断：能力覆盖面很全，但先用小号、小预算跑通一条平台链路，再决定是否把主业务接进去。
 
 ## 来源
 

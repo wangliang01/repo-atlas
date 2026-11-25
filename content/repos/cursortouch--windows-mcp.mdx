@@ -14,19 +14,66 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-Windows-MCP 是 AI Agent 和 Windows 之间的轻量 MCP 桥。Agent 通过它读取 Windows UI 状态、打开应用、控制窗口并模拟键鼠，做文件导航、应用控制、UI 交互和 QA 测试；它不依赖传统计算机视觉或专用微调模型，任何 LLM 都能用。
+Windows-MCP 是一个 MCP Server，把 Windows 桌面能力暴露给任何支持 MCP 的 Agent。Agent 可以通过它读 Windows UI 状态、打开应用、控制窗口、模拟键鼠、读写文件和注册表、执行 PowerShell，用来做文件导航、应用控制、UI 交互和 QA 测试。
+
+给谁用？在 Windows 上跑 Claude Desktop、Claude Code、Codex、Gemini CLI 等客户端，想让 Agent 直接操作桌面的用户和团队。它的差异点是不依赖传统计算机视觉或专用微调模型，而是走 Windows UI Automation 的无障碍树；README 称因此任何 LLM 都能用，视觉是可选的。
+
+核心组成是一组 MCP 工具：输入类（`Click`、`Type`、`Scroll`、`Move`、`Shortcut`）、状态类（`Screenshot`、`Snapshot`、`DisplayInventory`、`WaitFor`）、应用与系统类（`App`、`PowerShell`、`FileSystem`、`Registry`、`Process`、`Clipboard`、`Notification`），以及多选和批量输入（`MultiSelect`、`MultiEdit`）。另外有一个桌面控制层，用策略决定哪些操作需要先取得桌面所有权。
 
 ## 怎么上手
 
-需要 Windows 10/11 和 Python 3.14+，装 uv 后 `uvx windows-mcp serve` 走 stdio，也可以指定 SSE 或 streamable HTTP。还提供 Windows-Use 这个基于它的 Agent 和 MCP Registry 条目。
+前置条件是 Windows 10/11、Python 3.14+ 和 uv。README 提醒首次安装要装 `pyproject.toml` 里的依赖，可能花一两分钟，第一次运行可能超时，忽略并重启即可。
+
+直接运行：
+
+```shell
+uvx windows-mcp serve
+```
+
+需要网络访问时用 SSE 或 Streamable HTTP：
+
+```shell
+uvx windows-mcp serve --transport sse --host localhost --port 8000
+uvx windows-mcp serve --transport streamable-http --host localhost --port 8000
+```
+
+Claude Code 里注册：
+
+```shell
+claude mcp add --transport stdio windows-mcp -- uvx windows-mcp serve
+```
+
+然后用 `claude mcp list` 或 `/mcp` 确认已连上。想在登录时自动启动，可以 `windows-mcp install`，它会创建一个名为 `windows-mcp-server` 的每用户计划任务和 `~/.windows-mcp/start-server.cmd` 包装脚本，日志在 `~/.windows-mcp/` 下。
+
+常见卡点：Claude Code 等待 MCP Server 启动只有 30 秒（`MCP_TIMEOUT`），第一次 `uvx` 要下载依赖，可能显示失败，可以先用 `uv tool install windows-mcp` 再注册，或临时把 `MCP_TIMEOUT` 调大；Windows Store 版 Claude Desktop 会把 `%APPDATA%` 虚拟化，配置路径和 `uvx.exe` 都要写全路径；在 WSL 里跑 Claude Code 时，Server 仍要由 Windows 侧的 `powershell.exe` 启动。
 
 ## 值得注意的设计
 
-它用 Windows UI Automation 读状态、模拟输入、开应用，并给出窗口/UI 快照；浏览器场景有 `use_dom=True` 的 DOM 模式，过滤浏览器 UI，只留网页内容。README 称动作间延迟约 0.2–0.5 秒。
+第一层是“用无障碍树而不是截图”。`Snapshot` 返回可交互元素 id、可滚动区域和 UI 树，`Screenshot` 则更快、更省 token，适合只需要视觉上下文时。README 建议默认先截屏；需要元素 id 时才用 Snapshot。浏览器场景有 `use_dom=True`，过滤浏览器 UI 只留网页内容，支持 Chrome、Edge 和 Firefox（Firefox 走 IAccessible2 回退，因为它不通过 UIA 暴露 `RootWebArea`）。
+
+第二层是桌面控制（desktop control）。默认开启 `relaxed` 策略：直接输入、点击、滚动、移动、快捷键、应用切换和调整窗口需要先取得桌面所有权；背景类工具可以在你使用电脑时继续跑。策略还有 `balanced` 和 `strict`。取得控制前屏幕边缘会变琥珀色并倒计时，可以允许、拒绝或让倒计时走完；你明显移动鼠标或按 `Ctrl+Alt+Shift+Backspace` 就能收回控制。README 说得很直白：这只是协调机制，不是安全边界，PowerShell 之类已经启动的操作不会被取消，接管也不是排他的。
+
+第三层是安全配置。HTTP 传输可以配 bearer token、IP allowlist、TLS 和 OAuth 2.0 + PKCE（必须 S256，动态注册关闭，重定向只允许 loopback）。默认不发送 CORS 头，并做 Host 头校验防 DNS rebinding。工具可以白名单或排除，配置能写进 `~/.windows-mcp/config.toml`。`Scrape` 有 SSRF 防护，会拦私有 IP、loopback、link-local、URL 里带凭据和非 HTTP 协议。
+
+第四层是可调参数。`WINDOWS_MCP_SCREENSHOT_SCALE` 和 `WINDOWS_MCP_MAX_IMAGE_SIZE` 控制截图大小，因为 Claude Desktop 有 1 MB 的工具结果上限；`WINDOWS_MCP_EXCLUDE_PROCESSES` 可以把病态的无障碍树应用排除在遍历之外；`WINDOWS_MCP_MERGE_WORD_NODES` 能合并相邻单词节点，对 Electron/Chromium 里一个 CJK 字一个节点的场景很有用；UIA 连接和事务超时可以调整。
+
+代价是这套东西的能力面很宽：文件、注册表、PowerShell、剪贴板、进程终止都在工具列表里。README 自己也警告它拥有完整系统访问权限，可能执行不可逆操作。
 
 ## 边界与风险
 
-MIT。远程 SSE/HTTP 模式必须自己做鉴权和网络隔离，否则等于把桌面控制权暴露出去；UI 自动化可能点错、读屏也可能拿到敏感信息。编辑判断：Windows 桌面上最直接的 MCP 方案之一，但权限要给最小化。
+许可证是 MIT。它运行在完整系统权限下，README 把安全策略单独放在 `SECURITY.md`，并建议部署前通读。编辑判断：这是这类工具里最需要认真读安全文档的一个，因为它的默认能力包括注册表写入、PowerShell 和进程终止。
+
+远程访问是最大的风险面。README 为远程 SSE/HTTP 模式提供了鉴权、IP allowlist 和 TLS 选项，但没有默认替你打开；使用前要自己加鉴权和网络隔离。编辑判断：把 8000 端口暴露到公网又不做限制，等于把桌面控制权交出去。
+
+无障碍树有固有局限。README 列出的限制包括：无法选择段落里的特定文字片段、`Type` 面向普通文本输入而不是在 IDE 里写代码（它会把整段程序一次性敲进文件）、不能用来玩视频游戏。另外，某些应用的无障碍提供者会卡住遍历，排除进程是缓解而不是根治。
+
+权限方面，Windows-MCP 不会自我提权；目标是管理员权限的应用时，操作可能失败，README 说会返回错误而不是假装成功。`SetCursorPos` 被系统拒绝时也会报错。
+
+遥测默认开启（`ANONYMIZED_TELEMETRY=true`），README 说只收集匿名使用数据，不收集个人信息、工具参数或输出；可以用环境变量关闭。对合规敏感的团队，仍应确认这一点是否符合自己的策略。
+
+README 称 Windows-MCP 在 Claude Desktop 扩展里达到“2M+ 用户”，并称动作间延迟约 0.2–0.5 秒。这两项都是项目自述，没有给出测量方法；延迟会随活跃应用数量、系统负载和模型推理速度变化。编辑判断：Python 3.14+ 这个门槛也意味着它要求较新的运行时。
+
+README 未说明无头服务器、远程桌面或多用户并发场景的支持情况，也未说明企业集中管理方案。
 
 ## 来源
 

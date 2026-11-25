@@ -14,19 +14,54 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-Archify 把任何想理解、规划或分享的东西变成可交互视觉：可以是一个想法、一张旅行路线、一份学习地图，也可以是一个真实仓库的架构图。它输出单个 HTML，可探索、可改、可分享。
+Archify 是一个面向编码 Agent 的 Skill，把一段描述、一个计划、一个问题或一个代码仓库变成可交互的单页 HTML：可以是架构图、流程图、时序图、数据流、生命周期、ERD、类图、树、时间线或瀑布图，也可以是一页“解释器（explainer）”。README 的定位很直接：把任何你想理解、规划或分享的东西变成可探索的视觉。
+
+它面向用 Cursor、Claude Code、Codex、OpenCode 等 Agent 写设计文档、做评审、讲 PR 或写事故复盘的开发者。核心组成包括 Skill 本身、一个渲染器、内置的校验与布局规则、带类型的 JSON IR、一个零依赖 CLI（`archify/bin/archify.mjs`），以及内置的 Code Analysis 模块。和 Mermaid 或通用绘图工具相比，它的差别不在“能画几种图”，而在生成方式：布局与层级由 Agent 判断，产物经过 schema、布局、HTML/SVG、路由和标签避让等校验，交互只复用作者写下的拓扑，不假装知道运行时影响。
 
 ## 怎么上手
 
-让 Agent 读 `llms.txt` 安装，或按文档选择 Cursor/Claude Code/Codex/OpenCode 的安装方式。装好后直接说“Use Archify to diagram …”；不需要现成仓库，也可以让 Agent 读仓库生成带源码引用的架构图。
+安装方式以 Agent 为主。把下面这句发给 Agent，让它读 `llms.txt` 自行安装：
+
+```text
+Install Archify for me by reading https://raw.githubusercontent.com/tt-a1i/archify/main/llms.txt
+```
+
+也可以非交互安装，指定一个或重复 `--agent`（`cursor`、`codex`、`claude-code`、`opencode`、`github-copilot`）：
+
+```bash
+npx -y skills@latest add https://archify.si --skill archify --agent cursor --global --copy --yes
+```
+
+只想试用可运行 `npx skills use tt-a1i/archify@archify --agent codex`。要 PR 讲解，再装可选的 `archify-pr`。装好后直接说 “Use Archify to diagram …”，不需要现成仓库；要“有源码依据”的架构图，就让 Agent 读仓库并指定组件数量、主路径、外部依赖和信任边界。第一次的产物是一个自包含 HTML，双击即可打开，支持聚焦节点、上下游追踪、路径、角色对比、演示模式和明暗主题；四种视觉风格，可导 PNG、WebP、JPG 长图或打印 PDF。
+
+仓库内的 CLI 可以这样自检和试跑：
+
+```bash
+cd archify
+node bin/archify.mjs doctor
+node bin/archify.mjs demo /tmp/archify-demo
+node bin/archify.mjs guide "Show CI/CD checks, approval, deploy, and rollback"
+```
+
+常见卡点：Claude.ai 里上传 `archify.zip` 依赖沙箱内能跑 Node.js，能力会受限；Project Knowledge 只能走“提示词驱动的架构回退”；更新检查会发起网络请求，可用 `ARCHIFY_UPDATE_CHECK_DISABLED=1` 关闭。README 没有给出主 Skill 对 Node 版本的具体下限，也没有说明生成质量如何度量。
 
 ## 值得注意的设计
 
-除了图，它还能生成 “explainer”：结论先行，每个面板回答一个问题，表格、步骤、图表和代码并排；仓库摘录钉到具体 commit，来源编号可点。输出一个 HTML，四种风格、明暗主题，可导 PNG/WebP/JPG 长图或打印 PDF。
+生成链路是“带类型的 JSON IR → 校验 → 渲染 → 交付”。每个渲染模式都有 schema 和可复现的源文件；交付前要在同目录生成候选文件并检查，只有全部通过才原子替换目标，失败则保留上一版可用产物。可选的 preview 只监听随机的 `127.0.0.1` 端口，监视一个 JSON 文件，只有通过全部校验的版本才刷新，失败时继续显示 last-good。这个设计把“好看的失败页面”挡在交付之外，代价是迭代时必须按规则改源文件，不能随手拖拽。
+
+失败会带“维修单”。`validate --json` 和 `deliver --json` 返回稳定的规则码、具体对象、测量证据，以及只包含受支持修复动作的 `diagnostics[]`；README 要求只按这些 `supportedFixes` 修，且 Skill 内只允许两轮修正，视觉审查另算。这比“模型看着报错猜一次”更可控，但也限制了自由发挥。
+
+“诚实交互”是另一条原则。focus、上下游、路径、角色对比和 story 都只复用作者写下的节点与关系，不推断运行时影响；Timeline 和 Waterfall 示例用的是示意数据，README 明确说只有来自日志或 trace 的时间才能当真。Code Analysis 会读仓库，支持 JS/TS、Python、Java、Go、Rust、C/C++，给出依赖环、耦合、复杂度热点和分层违规，并链接到源码，还能把问题数标到架构图组件上；仓库摘录钉在某个 commit 上，来源编号可点。这些约束适合评审材料，但不等于系统真相。
+
+十种图类型各有必填信息，例如 ERD 要求每列的类型和主/外/唯一键，Architecture 的 `deployment-ownership` 配置在缺少归属、区域、私有数据库范围或跨域连接时会 fail closed。架构变更还能用 `compare` 生成带机器回执的 Before/Delta/After 对比。范围也划得很清楚：自动解析 Mermaid、通用自动布局、托管分享和所见即所得编辑都不在计划内。
 
 ## 边界与风险
 
-Apache-2.0。生成内容里的架构判断和来源仍需人核对；大仓库可能被截断，复杂系统一张图也装不下。README 提到的第三方在线服务和付费计划不属于官方，编辑判断：适合做评审材料和解释页，不适合当唯一文档。
+许可证是 Apache-2.0，历史 MIT 授权继续有效；第三方组件保留各自许可，软件许可不改变你创作内容的所有权，也不授予 Archify 商标使用权。README 还特别区分官方与第三方：`archify.si` 提供项目信息、示例和安装指引，第三方在线服务与付费计划的定价、数据处理和支持由各自提供方负责，名字或域名相似不代表官方关联。
+
+更新检查是一个需要知情的网络行为：它会 GET 固定的稳定版 manifest 来显示可选提醒，从不下载或安装更新；成功检查约 24 小时一次，活跃使用下失败会按 6 小时、24 小时重试；服务器只看到普通 HTTP 元数据（IP 和时间），不接收版本、Agent、项目数据、提示词、账号或设备 ID，也不接收 ETag。介意的话设置环境变量关闭。
+
+其余风险更多是使用边界。README 没有说明生成架构图的准确性基准，也没有承诺大仓库的规模上限；校验保证的是内部一致和渲染正确，不是“架构判断为真”。编辑判断：它很适合做评审、PR 讲解和解释页，能显著降低沟通成本；但不适合当唯一文档，生成内容里的架构结论和来源仍需人核对，复杂系统一张图也装不下。
 
 ## 来源
 

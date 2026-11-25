@@ -1,0 +1,76 @@
+---
+repo: "mattpocock/skills"
+title: "Grill Me：把设计树问到每个分支都有答案"
+summary: "mattpocock/skills 里的 /grill-me：让 Agent 按轮次追问你的计划或设计，直到每个决策分支都有答案；同仓库还有带文档产出的 /grill-with-docs 和可复用的 grilling 原语。"
+domains: ["编码与开发", "通用与跨领域"]
+forms: ["Skill / 提示词包", "工作流 / 方法论"]
+peers: ["Spec-Kit"]
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "f7038f139299985eea6c3e18398dbafb379a0010"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+`/grill-me` 是 `mattpocock/skills` 里的一个用户触发 Skill，目标是在动手前把计划或设计问清楚。它本身只有几行：真正的工作交给同仓库的 `grilling` 原语，由后者把设计当成一棵决策树，按轮次追问。
+
+这个仓库不只有 `/grill-me`。它是 Matt Pocock 日常使用的 Agent Skills 集合，按工程和生产力分类；`grill-with-docs` 在 grilling 的基础上顺手维护 `GLOSSARY.md` 和 ADR，`grilling` 还被 `triage`、`wayfinder` 等 Skill 复用。README 说这些 Skill 故意做小、可改、可组合，不接管整个开发流程；它把 GSD、BMAD、Spec-Kit 这类“拥有流程”的方案作为对照。
+
+你之前看到的 `RobMitt/grill-me-skill` 是另一个独立 Skill。本文按 `mattpocock/skills` 里的 `/grill-me` 建档，两者不要混为一谈。
+
+## 怎么上手
+
+先选一种安装方式，不要同时装插件和 `skills.sh`，否则每个 Skill 会出现两次。Claude Code：
+
+```bash
+claude plugin install mattpocock-skills@claude-plugins-official
+```
+
+Codex：
+
+```bash
+codex plugin marketplace add mattpocock/skills
+codex plugin add mattpocock-skills@mattpocock
+```
+
+其他 Agent 用 `skills` CLI：
+
+```bash
+npx skills@latest add mattpocock/skills -a <agent>
+```
+
+安装时把 `setup-matt-pocock-skills` 一起选上，然后在每个仓库里运行一次 `/setup-matt-pocock-skills`。它会问你用哪种 issue tracker、triage 用哪些标签、文档存在哪里。配置完后，在 Agent 里输入 `/grill-me`，再说清楚你要做的计划或设计即可。
+
+`/grill-me` 是 user-invoked Skill，只有你主动输入时才会出现；README 的 `disable-model-invocation: true` 就是用来阻止模型自行触发它的。
+
+## 值得注意的设计
+
+核心机制是 **design tree + frontier + rounds**。Agent 把每个决策看成树上的节点，只问“前置决策已经确定、现在就能回答”的问题；这一批问题叫 frontier。它会把当前 frontier 一次性问完，而不是问一个等一个。
+
+每个问题都有编号、标题、正文和推荐答案，格式大致是：
+
+```text
+❓ Q1 - <问题标题>：<问题正文，可以包含多个选项>
+
+➡️ <推荐答案>
+```
+
+推荐答案会写成“你同意就回答 yes”的形式，减少来回。你回答后，已经确定的决策把 frontier 往外推，Agent 重新计算下一轮；依赖未决问题的问题留到后面，不会在同一轮里混着问。
+
+README 还把“找事实”和“做决定”分开：需要查文件、工具或环境的事实，Agent 应该自己派子 Agent 去查，不该问你；真正需要你拍板的决策才交给你。会话结束的条件是 frontier 为空——每个分支都走过，没有默默假设。此时它也不会直接开工，要等你确认双方理解一致。
+
+这套设计解决的是“Agent 没做我要的东西”。README 认为根因是沟通缺口，所以先 grilling，再写代码。`/grill-with-docs` 是同一套访谈加文档产出：访谈过程中同步维护领域词汇和 ADR；`/grill-me` 则更轻，只做访谈，不写文档。
+
+## 边界与风险
+
+MIT。`/grill-me` 是访谈工具，不是规格生成器，也不写代码或验证事实；它产出的是一轮轮问答和共同理解。问题质量取决于模型能否正确建树，也取决于你的回答；你如果给出含糊答案，它仍可能带着错误假设往前走。
+
+“relentless” 的风格不适合所有团队。长时间追问会很累，赶时间的人可能更想要 `/to-spec` 这种直接整理已有讨论的 Skill。`/grill-with-docs` 会改 `GLOSSARY.md` 和 ADR，使用前要确认这些文件在版本控制里，改完要 review。
+
+README 说这些 Skill 能配任何模型，但没有给出不同模型下的效果对比；也没有说明一次完整 grilling 大概要多少 token。安装方式二选一、每仓库跑一次 setup 这两点 README 写得很清楚，但升级和卸载步骤分散在各客户端的插件文档里，主 README 没有统一说明。编辑判断：它适合在需求还模糊、改动代价高的时候用；如果需求已经很清楚，直接写 spec 更省时间。
+
+## 来源
+
+GitHub：[mattpocock/skills](https://github.com/mattpocock/skills)（README sha f7038f139299）

@@ -14,19 +14,52 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-PDFMathTranslate 做的是科学 PDF 的版式保留翻译：公式、图表、目录和批注尽量不动，译文放回原位置。它支持多语言和多种翻译服务，提供命令行、交互界面、Docker，以及 MCP 和 Zotero 集成。
+PDFMathTranslate 做的是科学 PDF 的版式保留翻译：公式、图表、目录和批注尽量不动，译文放回原来的位置，同时输出纯译文版和双语对照版。它面向要读外文论文、教材和技术文档的研究者和学生，也适合需要批量处理 PDF 的团队。README 称它是“世界上第一个在翻译科学文档时保留版式的开源软件”，相关论文被 EMNLP 2025 System Demonstrations 收录。
+
+它没有把 PDF 当作纯文本处理，而是先把页面拆成版式区域，识别哪些是正文、标题、图表、公式和批注，只替换文字层。入口很多：命令行、浏览器 GUI、Docker、Windows 打包版、Zotero 插件，以及 MCP 模式。翻译服务可选 Google、DeepL、Ollama、OpenAI、MiniMax 等，README 默认用 Google。
 
 ## 怎么上手
 
-可以直接用 pdf2zh.com 或 HuggingFace/ModelScope demo 试；本地用 uv 或 pip 安装，Python 3.11+，也有 Windows 打包版和 GUI。翻译服务可选 Google、DeepL、Ollama、OpenAI 等。
+想先看效果，README 推荐 `https://pdf2zh.com/` 的免费在线服务，或 Immersive Translate 的 BabelDOC 页面；也有 HuggingFace 和 ModelScope demo，但 README 提醒 demo 算力有限、不要滥用。
+
+本地安装要求 Python 3.11 到 3.12。两条等价路径：
+
+```bash
+pip install uv
+uv tool install --python 3.12 pdf2zh
+```
+
+或者：
+
+```bash
+pip install pdf2zh
+```
+
+然后直接翻译，产物落在当前工作目录：
+
+```bash
+pdf2zh document.pdf
+```
+
+预期在输出目录得到纯译文版和双语版两个 PDF，README 的例子是 `example-mono.pdf` 与 `example-dual.pdf`。常用参数包括 `-p` 只翻部分页、`-li`/`-lo` 指定源语言和目标语言、`-s` 换翻译服务、`-o` 指定输出目录，完整列表在 README 的 advanced options 表里。想用网页界面执行 `pdf2zh -i`，浏览器打开 `http://localhost:7860/`。Docker 用户执行 `docker pull byaidu/pdf2zh` 和 `docker run -d -p 7860:7860 byaidu/pdf2zh`，再访问同一个端口；Docker Hub 不可用时 README 给出 GitHub Container Registry 的替代镜像。Windows 用户可下载 `pdf2zh-version-win64.zip` 解压运行 `pdf2zh.exe`，打不开时先装 `vc_redist.x64.exe`。Zotero 集成由独立的 `zotero-pdf2zh` 项目提供，README 只给出链接。
+
+最常见的卡点是模型下载：程序依赖 `wybxc/DocLayout-YOLO-DocStructBench-onnx`，部分地区下载失败，README 给的绕法是设置 `HF_ENDPOINT=https://hf-mirror.com`（PowerShell 用 `$env:HF_ENDPOINT = https://hf-mirror.com`）。另外扫描件要先装 OCR 可选依赖，见下一节。
 
 ## 值得注意的设计
 
-它的核心不是“把 PDF 转成文本再翻”，而是识别版式后把译文放回原位置；2.0 起提供 OCR、`--ultrafast` 和 `--mode precise` 等模式，扫描版和原生文本版走不同路径。
+默认路径是“版式检测 + 文字层替换”。PDF 先用 DocLayout-YOLO 之类的模型识别布局，再把正文段落送去翻译，最后按原框回填。公式、图表和批注保持不动，这是它能保留排版的根本原因；代价是复杂双栏、跨页语义和极端排版仍可能错位，README 没有承诺逐页完美。
+
+扫描件走实验性 OCR。装 `pip install 'pdf2zh[ocr]'` 后，快模式会先对选中的纯图片页跑本地 OCR，原生文本页、已有 OCR 层和空白页跳过，双语输出里的原始页不变。OCR 用 PyMuPDF 提供的引擎，可选依赖只是加 Pooch 做缓存，不需要单独装 Tesseract；第一次遇到扫描页会从 Tesseract `tessdata_fast` 4.1.0 下载对应语言包到 `~/.cache/pdf2zh/tessdata/4.1.0`，之后离线复用。识别出的词会在检测到的版式区域里重新组成段落，合并换行和软连字符；译文从源文字号的中位数开始，必要时缩小以塞回原框。README 明确它的边界：只针对白底扫描件，混有文字的页面上的局部扫描会跳过，手写体和行内公式可能识别错误。
+
+`--ultrafast` 是另一条路径，专为已经有原生文字层的 PDF 设计。它用 `pdf-inspector` 读文字位置做启发式布局，跳过 ONNX 布局检测和 OCR；没有原生文字的页面原样保留。优点是快，代价是输出 PDF 更大（自动跳过字体子集化），且只适用于快模式 CLI，不能和 `--mode precise`、`--babeldoc`、server/GUI 或 `--onnx` 组合。README 建议复杂表格和公式仍用普通模式。线程上它默认 16 个 worker，普通模式默认 4 个，可用 `-t` 覆盖。
 
 ## 边界与风险
 
-AGPL-3.0。README 明确说 2.0 已迁到 `PDFMathTranslate-next`，本仓库是旧主线，选版本时要看清；复杂公式、双栏、扫描件仍可能错位，翻译质量取决于服务。文档可能含敏感内容，用云服务前要确认隐私和费用。
+许可证元数据是 AGPL-3.0。编辑判断：AGPL 对通过网络提供服务有源码提供义务，若把修改后的版本做成对外服务，需要确认开源义务；README 本身没有展开许可证解释。
+
+版本选择要特别小心。README 明确说 2.0 已迁到组织下的新仓库 `PDFMathTranslate/PDFMathTranslate-next`，并已发布正式版；当前这个仓库是稳定版原始主线。README 还区分了两个 fork：`Byaidu/PDFMathTranslate` 是稳定发布，next 仓库带 web-ui 和更多功能、处理大量边缘情况，但“仅供开发、不解决兼容性、不为社区贡献设计”。编辑判断：普通用户应优先用在线服务或稳定版，追新功能再去 next，但不要把它当稳定依赖。
+
+隐私和成本取决于翻译服务。文档内容会发给你选的翻译服务；用 Google 默认服务、OpenAI 或其他云端 API 时，敏感论文、未发表数据和企业文档应先确认服务条款与数据处理方式，README 未说明隐私政策。Ollama 等本地模型可以避免外发，但质量和速度另算。GUI 的 `--share` 会生成公开链接，`--authorized` 才加授权，公网部署前要看清。OCR 模式要额外下载模型和语言包，离线环境需预先准备；README 未说明磁盘占用。最后，它做的是翻译和排版，不保证术语一致或译文准确，关键论文仍需人工校对。
 
 ## 来源
 

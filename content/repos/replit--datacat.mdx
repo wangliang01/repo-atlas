@@ -14,26 +14,48 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-DataCat 是自托管可观测性平台：指标、日志、分布式追踪、仪表盘、基础设施和告警在一个地方。数据存在 PostgreSQL（遥测可选 ClickHouse），接收 OpenTelemetry 和 Datadog 兼容 agent 流量，不需要托管账号。
+DataCat 是 Replit 开源的观测平台，把指标、日志、分布式追踪、仪表盘、主机地图和告警放在同一处。它跑在你自己的基础设施上，业务数据默认存 PostgreSQL，遥测数据可以选择 ClickHouse，接收 OpenTelemetry 和 Datadog 兼容 agent 的流量，README 明确说不需要托管账号或外部服务。
+
+编辑判断：它更适合想保留数据控制权、又不想自己拼装 Prometheus、Loki、Jaeger 和告警系统的团队。和 Datadog 这类 SaaS 的差别是部署位置和成本结构：README 没有提到计费，自托管意味着成本转到基础设施和人力；备份、升级、鉴权和容量也都归你。产品内自带组织、本地邮箱密码账号、一次性邀请链接和 API/application key，不需要外部身份提供商。README 声明它与 Datadog, Inc. 没有关联或背书，提 Datadog 只是为了描述协议兼容。
 
 ## 怎么上手
 
-用 Docker Compose 起服务：
+最快的路径是 Docker Compose。前置条件按 README 是 Docker Engine 加 Compose 插件、Git 和 OpenSSL。完整命令如下：
 
-1. clone 仓库，复制 `.env`。
-2. 生成 Postgres 密码和 session secret。
-3. 运行 `docker compose up -d --build`。
-4. 打开 3000，建管理员和 organization，再用日志里的 setup token 初始化。
+```sh
+git clone https://github.com/replit/datacat
+cd datacat
+cp .env.example .env
+sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 24)/" .env
+sed -i "s/^SESSION_SECRET=.*/SESSION_SECRET=$(openssl rand -hex 32)/" .env
+chmod 600 .env
+mkdir -p downloads
+docker compose up -d --build
+```
 
-源码运行需要 Node 22.15+、pnpm 10.11.0、PostgreSQL 14+。
+起来后打开 `http://localhost:3000`，创建管理员账号和组织，然后在 Organization Settings 里建 API key。初始化会要求 setup token，它默认打印在服务日志里，可用 `docker compose logs datacat | grep "setup token"` 查，也可以提前设 `DATACAT_SETUP_TOKEN`。准备邀请同事或远程安装 agent 前，先把 `PUBLIC_URL` 设成外部可达的 HTTPS 地址。
+
+预期结果是能看到指标浏览器、日志、APM 和告警界面。agent 二进制和 SDK 包是单独的 release 资产，要放进 `downloads/`（连同 `SHA256SUMS`）才能从你的实例分发。
+
+从源码跑要求 Node.js 22.15+、pnpm 10.11.0、PostgreSQL 14+；README 特别说明 Node 20 不被当前 SDK 支持。步骤是 `corepack enable`、`corepack prepare pnpm@10.11.0 --activate`、`pnpm install --frozen-lockfile`、`BASE_PATH=/ pnpm run build:selfhost`，配好 `DATABASE_URL`、`SESSION_SECRET`、`PUBLIC_URL` 后运行 `NODE_ENV=production PORT=3000 pnpm start`。服务启动前会自动迁移数据库，没有独立前端服务；开发时 API 要求单独的 `DATABASE_URL`，README 建议使用独立的开发数据库。常见卡点是 `.env` 里的密码和 secret 必须自己生成、`downloads/` 目录必须先建、对外访问必须配 HTTPS。
 
 ## 值得注意的设计
 
-它把 API、Web UI、安装器和下载放在一个生产进程里，降低自托管复杂度；支持 OTLP/HTTP 和 Datadog intake，提供 host agent 和 Node/Python instrumentation；组织、邀请、API key 和告警都在产品内。
+接入层同时支持两种协议，这是它降低迁移成本的关键。Datadog 兼容走公开 intake API，OpenTelemetry 走 OTLP/HTTP 的 `/v1/traces`、`/v1/metrics`、`/v1/logs`，也接受 `/otlp/v1/*` 前缀。README 给出了兼容性表：Datadog Agent 7.56.2 在 CI 式运行中测过，7.85.4 用捕获的 payload 测过（包括较新的 string-table trace 格式），7.57 到 7.84 没有逐版测试；如果 trace 格式读不了，会返回 422，而不是静默接受 202。编辑判断：这个“失败要显式”的选择比假装兼容更可信，但也意味着升级 Datadog Agent 前应先验证。
+
+部署形态很薄：一个生产进程同时提供 API、Web UI、安装器和下载。没有独立前端服务器，数据库 schema 在监听前自动迁移。好处是自托管步骤少、组件少；编辑判断：代价是这个进程同时承担查询、摄取和静态分发，容量规划时不能按微服务那样单独扩容。README 未说明横向扩展或高可用方案。
+
+可观测性产品自己也带了基准工具。`bench/kit` 会把指标、日志和 trace 送进 DataCat，再逐项核对已知值，报告吞吐、查询延迟和数据变成可搜索所需的时间，PostgreSQL 和 ClickHouse 两种存储都测；`bench/` 下还有正确性、韧性、告警、浸泡和隔离测试，原始结果放在 `bench/evidence/`。编辑判断：这比只给一张营销曲线更有说服力，不过 README 未说明这些数字对应的硬件规模。
+
+README 还说明 CI 在每个 PR 上跑类型检查、单元测试、依赖与漏洞审计、两种存储选项的端到端检查、库和 agent 测试、Docker 构建以及 secrets 扫描。
 
 ## 边界与风险
 
-Apache-2.0。自托管意味着备份、升级、鉴权和容量都要自己负责；Datadog 兼容只对列出的版本做过测试，其他版本可能 422。编辑判断：想用一套轻量替代 Datadog 的团队可以试，但要先算存储和运维成本。
+许可证是 Apache-2.0，第三方依赖保留各自许可证。自托管的核心风险都在运维侧：备份策略、升级路径、TLS、账号与邀请管理、密钥轮换、存储容量和保留周期都要自己负责。README 把 Ubuntu 安装、环境变量、备份、systemd、agent 安装和 webhook 告警的细节放在 `docs/SELF_HOSTING.md`，但没有承诺托管支持或 SLA。
+
+数据接入的兼容性有明确边界：只有列出的 Datadog Agent 版本经过测试，7.57 到 7.84 未逐版验证，格式不兼容会得到 422。OpenTelemetry 路径的端点写得清楚，但采样、批处理和保留策略的效果 README 未说明。`GET /api/v1/intake/stats` 能按 intake 路径看已存和丢弃的数量，适合上线后核对，但不能替代完整的摄取监控。README 也未说明告警通知的重试和静默策略。
+
+成熟度需要自己判断。仓库创建时间很新，README 说明它用 Replit Missions 构建，功能列表完整但未提生产用户规模或长期维护承诺；编辑判断：适合想低成本替掉部分 Datadog 能力、且有能力自己运维 PostgreSQL/ClickHouse 的团队，不适合没有数据库运维经验或需要厂商兜底的场景。私有部署还要自行评估多租户隔离、审计日志和合规要求，README 未涉及这些。存储成本取决于数据量和保留期，README 未给出估算。
 
 ## 来源
 

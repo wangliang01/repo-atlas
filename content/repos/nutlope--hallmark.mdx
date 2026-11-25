@@ -14,19 +14,39 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-Hallmark 拒绝看起来像 AI 生成的页面。它从 50 套主题里发三套，按访客来页面要做的事搭结构，然后在真实浏览器里 lint 那些“机器味”特征——每个标题上的 eyebrow、字距夸张的大写标签、标题里一个彩色词、满屏空框或只有照片、hero 撑不满屏、每页末尾都塞邮件订阅。
+Hallmark 是一个网页设计 Skill，目标写在第一行：拒绝看起来像 AI 生成的页面。它由 Together AI 制作，可装在 Claude Code、Codex、Cursor 和 OpenCode 里，用一句话触发建页、改版或审查。适合能写代码但没有专职设计师的团队，也适合想把 AI 生成页面从“模板感”里拉出来的个人开发者。
+
+它把设计约束拆成一套可执行的流程，而不是给一段“要好看”的提示词：先立一层永不放行的 Floor，再从 50 套主题里发三套，按访客来页面要完成的事搭结构，最后在真实浏览器里逐项检查机器味特征。README 列出的机器味包括每个标题上方的 eyebrow、字距拉开的全大写标签、标题里一个彩色词、整页空框或只有照片、hero 撑不满屏、每页末尾都塞邮件订阅、表单说“谢谢”却没真的提交。检查完还有一个全新上下文的 reviewer 做终审。
 
 ## 怎么上手
 
-按 README 安装 Skill 后在 Claude Code 里用 `/hallmark`，也可以用 `redesign` 和 `audit` 子命令。它会读项目里的字体、配色、框架和锁定的 `design.md`，先问一次素材（照片、截图、真实数字），不自己编。
+安装一条命令：
+
+```
+npx skills add nutlope/hallmark -g
+```
+
+`-g` 装到用户目录、所有项目可用，去掉则只装当前项目。README 要求 Node 18 或更高。浏览器检查和截图还需要 `npm i -g puppeteer-core` 以及 Chrome；不装这两个，静态检查仍能跑，只是少了真实渲染这一层。
+
+装好后按宿主调用：Claude Code 落在 `~/.claude/skills/hallmark`，用 `/hallmark <prompt>` 或直接描述要建的页面；Codex CLI 用 `$hallmark <prompt>`；Cursor 和 OpenCode 会自动找到上面的副本。只想装一个宿主可加 `--agent claude-code`（或 `codex`、`opencode`、`cursor`、`github-copilot`）；也能作为 Claude Code 插件装。一个常见卡点是 Skill 没有自动触发，README 的建议是点名它：用 “use hallmark to build ...” 开头。
+
+第一次跑的预期流程是：读取项目里的字体、配色、框架和锁定的 `design.md`，只问一次素材（照片、截图、真实数字），不自己编；`scripts/theme.mjs deal` 给出三套合适主题，`draw` 按页面任务决定结构；先把 hero 单独做出来并冷审，再铺整页；最后 `scripts/sloplint.mjs --render` 在八个宽度下检查。产物是自包含的 HTML 和 CSS，第一行 CSS 注释里记录这次做过的决定。
 
 ## 值得注意的设计
 
-门槛分三层：Floor 永不放行（对比度、焦点、减少动效、编造事实、手机布局坏掉），Reflex 是模型常犯的默认套路、有理由可以在记录里推翻，Finish 是工艺细节、不阻塞发布。最后还有一个 fresh-context reviewer 做终审。
+门槛分三层，这是它和普通设计提示词最大的区别。**Floor** 永不放行，包括对比度、键盘焦点、减少动效、编造事实和手机布局损坏。**Reflex** 是模型容易落入的默认套路，构建时若有理由可以在记录里明确推翻。**Finish** 只是工艺细节，不阻塞发布。分层的好处是“必须对”和“最好有”分开，不会因为一个字号问题卡住整个页面。
+
+主题的定位也值得注意：一套主题是一种材质，包含纸张、字体、颜色、表面、组件和纹理，并配一张成品页截图；它不规定页面放什么、按什么顺序放。README 说同一主题下两个提示词会得到两张不同的页面，构建时只读一个主题文件，每个文件不超过 8 KB。这意味着主题提供的是视觉语言，结构仍由页面任务决定，避免了“套模板”的同质化。
+
+改版和审查是另外两条路径。`/hallmark redesign ./src/app` 保留内容和连线、替换设计与布局；`/hallmark audit ./index.html` 只报告不改。`sloplint --before` 会先记录所有链接、字段、事件处理和标题，`--kept` 在改版后如果少了任何一个就判失败，交付时给前后对照。编辑判断：这个“不许丢功能”的检查比视觉规则更有工程价值，能防止 AI 改版时顺手删掉表单或导航。
+
+还有一条 **Custom** 路径：说 “custom” 就完全不用主题，没有预设结构、组件或配色配方，只保留 Floor、各层 gate 和 `direction.md` 里的一段方向，要求模型找到只有这个客户才有的一个概念来驱动整页。
 
 ## 边界与风险
 
-MIT。审美规则是作者的选择，不是普适标准；浏览器 lint 要 Playwright，生成页面仍要人看事实和品牌。编辑判断：和 [unslop](https://github.com/heydamir/unslop) 同类，但更偏“从主题出发搭页面”，适合没有设计师的团队。
+许可证是 MIT。照片库来自 Wikimedia Commons，只存元数据不存图片，每张照片保留自己的许可证（CC0、公有领域、CC BY 或 CC BY-SA），Hallmark 会在页面上署名；README 明确不用 Unsplash、Pexels、Pixabay，因为这些站点的条款禁止 AI 工具挑选其图片。编辑判断：CC BY 和 CC BY-SA 要求署名，发布前应确认页面上的 credit 没有被删掉；商用前也值得逐张核对许可证。
+
+审美规则是作者的选择，不是普适标准。Floor 里的对比度和焦点有可验证的依据，但“eyebrow 一律不要”“标题不能有一个彩色词”属于风格判断，可能不适合所有品牌。浏览器 lint 依赖 Chrome 和 puppeteer-core，CI 或没有图形环境时需要自己解决；README 未说明无头环境的配置方式。最后那个 fresh-context reviewer 是子代理，不是人类设计师，它能抓一致性问题，但不能替你做品牌决策。它也不负责内容真实性：README 说素材要由你提供、不编造，但页面上的数字和说法仍要人来核对。
 
 ## 来源
 

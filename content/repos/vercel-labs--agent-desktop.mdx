@@ -14,19 +14,63 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-agent-desktop 给 Agent 桌面 computer use，但不靠截图和像素匹配。它读取应用的无障碍树，返回带 ref 的 JSON；Agent 点 ref、再读一次 UI 验证结果，循环写在 Agent 里，agent-desktop 本身不含模型。
+agent-desktop 是 Vercel Labs 出的桌面 computer use 工具。它不靠截图和像素匹配，而是读取操作系统给应用暴露的无障碍树，把可操作元素转成带 `ref` 的 JSON；Agent 对 `ref` 执行点击或输入，再读一次界面确认结果。
+
+目标用户是写桌面自动化 Agent 的开发者，以及需要让 Agent 操作 Finder、Slack 这类原生应用的团队。它本身不含模型，观察—行动—验证—重试的循环留在调用方。交付形态有三类：CLI、C 库 `libagent_desktop_ffi`，以及可通过 stdio 暴露的 MCP 服务。README 把输出定义为一个 JSON envelope，成功与否、命令名和数据都在同一层，便于 Agent 统一解析。
+
+与基于视觉的 computer use 相比，无障碍树给出的是角色、名称和可用动作，Agent 不需要理解像素坐标。编辑判断：token 成本和误点概率通常更低；代价是依赖目标应用是否把界面暴露给 AX、UI Automation 或 AT-SPI。README 未说明对自绘界面的兜底方案，但提供了 `find`、`list-surfaces` 等命令，先帮 Agent 定位可操作的界面。
 
 ## 怎么上手
 
-`npm install -g agent-desktop`，然后 `agent-desktop status` 看平台、权限和可用 surface；macOS 用 `agent-desktop permissions --guide` 走辅助功能授权。也可以从 Releases 下原生包，或 `brew install agent-desktop`。
+前置条件：macOS 13+、Windows 10 1809+ 或 Ubuntu 24.04+，以及相应的辅助功能权限。安装：
+
+```bash
+npm install -g agent-desktop
+agent-desktop status
+agent-desktop permissions --guide   # macOS 辅助功能授权
+```
+
+也可以用 Bun、Yarn、pnpm 安装；包内带 x64 和 ARM64 的原生二进制与平台辅助程序。想绕开 JavaScript 启动器，可从 GitHub Releases 下对应原生包，但要把 helper 放在可执行文件旁边。macOS 和 Linux 还支持 `brew install agent-desktop`；README 说官方没有 Scoop 包，也不再维护自定义 Homebrew tap 或 Scoop bucket。macOS 完成辅助功能授权后，`status` 会显示平台、权限和当前可用的 surface。
+
+第一次跑通用 Finder 做最小闭环：
+
+```bash
+agent-desktop snapshot --app Finder -i
+agent-desktop click @s8f3k2p9:e8
+agent-desktop snapshot --app Finder -i
+```
+
+每条命令输出一个 JSON envelope。`snapshot` 会返回 `snapshot_id`、`ref_count` 和树；`ref` 形如 `@s8f3k2p9:e8`，前半段绑定这一次快照。执行后用新的 `snapshot` 验证，而不是复用旧 `ref`。
+
+常见卡点：
+
+- 只写 `@e8` 会被拒绝，返回 `INVALID_ARGS`；界面变化后旧 `ref` 会得到 `STALE_REF` 或 `AMBIGUOUS_TARGET`。
+- 多个窗口时先处理 `AMBIGUOUS_TARGET`，用 `snapshot` 报出的窗口 id 配 `--window-id`。
+- 密集应用先 `snapshot --skeleton --app Slack -i --compact` 看骨架，再用 `--root @...:e3` 下钻。
+- PowerShell 里每个 `ref` 要加引号，因为裸 `@token` 是 splatting 操作符。
+- 默认 headless，不移动指针、不抢焦点；需要真实输入时加全局 `--headed`。
+
+C 库 `libagent_desktop_ffi` 适合在自己的进程里调用，README 给了 Python `ctypes` 示例，初始化时要校验 `AD_ABI_VERSION_MAJOR`。
 
 ## 值得注意的设计
 
-ref 绑定快照，UI 变了会返回 `STALE_REF` 或 `AMBIGUOUS_TARGET`，逼 Agent 重新观察；默认 headless，通过无障碍 API 操作，不移动指针、不抢焦点；密集应用可以先 `--skeleton` 再局部下钻。还提供 C 库和 MCP。
+核心抽象是“快照加 ref”。ref 只在所属快照内有效，UI 一变就失效，这逼着 Agent 重新观察，避免在过期坐标上盲操作。错误码也服务于这个循环：`STALE_REF` 表示重新快照，`AMBIGUOUS_TARGET` 表示目标不唯一或窗口不明；只有当 `error.disposition.retry` 为 `safe` 时才建议重试。README 还提供 `CONCEPTS.md` 统一 ref、surface、session 等词，避免 Agent 和人对同一个词理解不同。
+
+架构上，CLI 和 C 库走同一个 core，再通过 `PlatformAdapter` 接口落到编译期选定的平台 crate：macOS 用 AX API，Windows 用 UI Automation，Linux 用 AT-SPI。因此每个二进制只针对一个 OS 构建，跨平台支持靠分别构建，而不是运行时探测。
+
+对 Agent 友好是另一条设计线：二进制内置与版本匹配的说明，`agent-desktop skills get desktop` 讲循环和重试规则，`skills get platform` 讲平台差异；还可以把 skill 装进 Claude Code、Cursor 等 harness。README 建议在 `AGENTS.md` 里写明先运行 `skills get desktop` 和 `skills get platform`，再按说明操作。`agent-desktop mcp` 则把每条命令映射成 `desktop_snapshot`、`desktop_click` 这样的 MCP 工具，返回同样的 JSON envelope。
+
+命令面很宽。README 说有 61 个命令名、57 个可操作命令，覆盖观察、ref 操作、键鼠、窗口、通知、剪贴板、等待、会话、沙箱和系统信息。通知相关的有 `list-notifications`、`dismiss-notification`，剪贴板有 `clipboard-get/set/clear`，还有 `sandbox exec` 和可一次执行多条命令的 `batch`；README 提醒批量 JSON 里的文本会出现在进程参数中，不适合放密钥。`key-down` 等四个命令在守护进程能释放按键或按钮前会拒绝执行，这是为了防止按键卡住。
 
 ## 边界与风险
 
-Apache-2.0。快照、剪贴板、截图和调试产物可能包含隐私内容，README 明确要求别进公开日志；跨平台无障碍树质量不一，某些自绘界面可能读不到。编辑判断：比纯视觉方案更稳、更省 token，但仍要按应用适配。
+许可证是 Apache-2.0。平台限制是硬性的：macOS 13+、Windows 10 1809+、Ubuntu 24.04+。每个平台能 headless 做什么、什么必须 `--headed`、什么直接拒绝，要看对应平台页，README 没有汇总成一张表。
+
+隐私风险 README 主动写明：快照、剪贴板读取、截图、命令输出和调试产物都可能含桌面私密内容，不要进公开日志或上传。它默认不移动鼠标、不抢焦点，但这只是交互方式，不是权限隔离；Agent 仍能读到当前桌面能读到的内容。
+
+安全边界 README 未说明：没有提到操作确认、审计日志、命令白名单或沙箱逃逸模型。编辑判断：把 `click`/`type` 直接暴露给自主 Agent 前，应在测试账号和低权限环境里跑，并对删除、发送、支付类操作加人工确认。
+
+适用性取决于应用的无障碍实现。自绘 UI、游戏、部分 Electron 或 Canvas 应用可能只暴露很少节点；这类场景仍要回退到截图或专用 API。README 未说明对这类应用的成功率或兜底策略，也没有给出各平台无障碍树的节点上限或快照大小；超大窗口通常要靠 skeleton 和局部下钻控制。
 
 ## 来源
 
