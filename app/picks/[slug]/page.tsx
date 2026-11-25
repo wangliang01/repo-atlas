@@ -62,7 +62,8 @@ export default async function RepoDetailPage({ params }: PageProps) {
 
   const { data, body } = detail;
   const source = await preprocessCode(body);
-  const headings = extractHeadings(body);
+  // 「来源」留在正文，但目录只列五问：它是书目条目，不该占内容节的一格
+  const headings = extractHeadings(body).filter((heading) => heading.text !== "来源");
   const entry = getPicksSnapshot()?.entries.find((item) => item.repo === data.repo);
 
   return (

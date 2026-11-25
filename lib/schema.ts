@@ -53,7 +53,18 @@ export const repoDetailFrontmatter = z.object({
 
 export type RepoDetailFrontmatter = z.infer<typeof repoDetailFrontmatter>;
 
-export const REPO_DETAIL_SECTIONS = ["它是什么", "怎么上手", "值得注意的设计", "边界与风险", "来源"] as const;
+/** 详情页目录：五问 + 来源；来源留在正文，但不进右栏目录 */
+export const REPO_DETAIL_SECTIONS = [
+  "它是什么",
+  "它替掉了什么麻烦",
+  "跑起来要几步",
+  "它把复杂度放在哪",
+  "什么时候别用它",
+  "来源",
+] as const;
+
+/** 迁移期仍兼容旧标题；T-030 全量迁完后删除 */
+export const LEGACY_REPO_DETAIL_SECTIONS = ["它是什么", "怎么上手", "值得注意的设计", "边界与风险", "来源"] as const;
 
 // 精选是数据驱动的雷达：字段全部来自 GitHub API，唯一手写的是可选的 why
 export const pickEntry = z.object({

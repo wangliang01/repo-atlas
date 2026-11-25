@@ -14,15 +14,27 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-`/grill-me` 是 `mattpocock/skills` 里的一个用户触发 Skill，目标是在动手前把计划或设计问清楚。它本身只有几行：真正的工作交给同仓库的 `grilling` 原语，由后者把设计当成一棵决策树，按轮次追问。
+`/grill-me` 是 `mattpocock/skills` 里的一个用户触发 Skill，作用是在动手之前，让 Agent 围绕你的计划或设计持续追问，直到设计树的每个分支都有答案。README 把它归在 productivity 分类，定位是“非代码场景”的访谈工具。
 
-这个仓库不只有 `/grill-me`。它是 Matt Pocock 日常使用的 Agent Skills 集合，按工程和生产力分类；`grill-with-docs` 在 grilling 的基础上顺手维护 `GLOSSARY.md` 和 ADR，`grilling` 还被 `triage`、`wayfinder` 等 Skill 复用。README 说这些 Skill 故意做小、可改、可组合，不接管整个开发流程；它把 GSD、BMAD、Spec-Kit 这类“拥有流程”的方案作为对照。
+这个仓库本身是 Matt Pocock 日常使用的 Agent Skills 集合，分 engineering 与 productivity 两类。README 说这些 Skill 故意做小、容易改、可组合，能配任何模型，也不接管整个开发流程。`/grill-me` 只负责发起访谈，真正的访谈纪律放在 `grilling` 这个 model-invoked（模型可自动调用）Skill 里；`grilling` 还被 `grill-with-docs`、`triage`、`wayfinder`、`improve-codebase-architecture` 复用。
 
-你之前看到的 `RobMitt/grill-me-skill` 是另一个独立 Skill。本文按 `mattpocock/skills` 里的 `/grill-me` 建档，两者不要混为一谈。
+三者关系可以这样理解：`grilling` 是可复用的访谈原语；`/grill-me` 是最薄的用户入口；`/grill-with-docs` 是同一场访谈加上文档产出，会同步打磨术语、更新 `GLOSSARY.md` 和 ADR。README 还说用户触发型 Skill 的职责是编排，它可以调用模型触发型 Skill，但不能再调用另一个用户触发型 Skill，所以 `/grill-me` 调用 `grilling` 是允许的。README 还把 `grill-with-docs` 里的共享语言称为可能是这个仓库最酷的技术。
 
-## 怎么上手
+给谁用：任何准备改东西、又担心 Agent 理解偏差的人。README 的原话是每次想做一个改动都该用它们。另需区分：`RobMitt/grill-me-skill` 是另一个独立 Skill；README 未提及它，本文按 `mattpocock/skills` 里的 `/grill-me` 建档，两者不要混为一谈。
 
-先选一种安装方式，不要同时装插件和 `skills.sh`，否则每个 Skill 会出现两次。Claude Code：
+## 它替掉了什么麻烦
+
+它替掉的是“Agent 没做我要的东西”这类返工，办法是在写代码前先补上人和 Agent 之间的沟通缺口。README 把“最常见的失败模式”称为 misalignment：你以为对方知道你要什么，等看到成品才发现它根本没理解。到了 AI 时代，你和 Agent 之间同样存在 communication gap。
+
+README 没有描述在此之前大家具体用什么替代流程，只引了《程序员修炼之道》里那句“没人确切知道自己想要什么”，然后把修复方式定为 grilling session：让 Agent 就你要做的东西提出详细问题。它认为对齐要发生在动手之前，而且要真的往深里想这次改动。
+
+这和 GSD、BMAD、Spec-Kit 这类流程方案不是同一路线。README 说它们试图靠“拥有整个流程”来帮忙，代价是拿走你的控制权，并且让流程本身的 bug 很难排查。仓库里的 Skill 反过来：小、可改、可组合，用的是几十年工程经验沉淀的做法，你可以随便改。仓库内也有现成对照：`/to-spec` 明确“No interview, just synthesizes what you've already discussed”，适合讨论已经很充分、只差落成规格的场合。
+
+## 跑起来要几步
+
+跑起来是三步：装一次、每个仓库配置一次、之后用 `/grill-me` 触发访谈。
+
+安装按 Agent 选一种，不要同时装插件和 `skills.sh`，README 说同时装会让每个 Skill 出现两次。Claude Code：
 
 ```bash
 claude plugin install mattpocock-skills@claude-plugins-official
@@ -35,41 +47,37 @@ codex plugin marketplace add mattpocock/skills
 codex plugin add mattpocock-skills@mattpocock
 ```
 
-其他 Agent 用 `skills` CLI：
+其他 Agent 或想要可编辑文件，用 `skills` CLI：
 
 ```bash
 npx skills@latest add mattpocock/skills -a <agent>
 ```
 
-安装时把 `setup-matt-pocock-skills` 一起选上，然后在每个仓库里运行一次 `/setup-matt-pocock-skills`。它会问你用哪种 issue tracker、triage 用哪些标签、文档存在哪里。配置完后，在 Agent 里输入 `/grill-me`，再说清楚你要做的计划或设计即可。
+插件会自己更新；`skills.sh` 把可编辑文件拷进项目，需要你手动维护。安装时把 `setup-matt-pocock-skills` 一起选上。然后在每个仓库里运行一次 `/setup-matt-pocock-skills`，它会问你三件事：用哪种 issue tracker（GitHub、GitLab、本地文件或你描述的其他方式）、triage 时打哪些标签、文档存在哪里。
 
-`/grill-me` 是 user-invoked Skill，只有你主动输入时才会出现；README 的 `disable-model-invocation: true` 就是用来阻止模型自行触发它的。
+配置完成后，在 Agent 里输入 `/grill-me`，再说明你要做的计划或设计。README 未说明卸载步骤，也没有统一的升级说明；用 `skills` CLI 时可用 `npx skills@latest update` 更新，插件则由客户端自己管。README 把安装这一节叫作 30-second setup，配完 setup 就表示可以开始了。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-核心机制是 **design tree + frontier + rounds**。Agent 把每个决策看成树上的节点，只问“前置决策已经确定、现在就能回答”的问题；这一批问题叫 frontier。它会把当前 frontier 一次性问完，而不是问一个等一个。
+复杂度不在安装，而在访谈：Agent 要把你的计划或设计当成一棵 design tree，持续问到你不再有未解决的分支。README 对 `/grill-me` 的完整描述只有一句“Get relentlessly interviewed about a plan or design until every branch of the design tree is resolved”；对 `grilling` 原语，则把对象扩到 plan、decision、idea。
 
-每个问题都有编号、标题、正文和推荐答案，格式大致是：
+具体到 frontier、rounds 和问题格式，README 未说明。`frontier` 在 README 里只出现一次，位于 `implement-spec` 的描述中，指并发执行实现子 Agent 的 ready frontier，和访谈怎么分批提问没有关系。问答是否分轮、每轮问几个、问题是否带编号和推荐答案，这份 README 都没有交代；要确认只能去读 `skills/productivity/grilling/SKILL.md` 等源文件。
 
-```text
-❓ Q1 - <问题标题>：<问题正文，可以包含多个选项>
+“找事实”和“做决定”的分工同样 README 未说明。它没有讲 Agent 是否该自己查文件、查工具，还是把事实问题也抛给用户；也没有讲访谈中途发现事实缺口该怎么处理。仓库里另有 model-invoked 的 `research` Skill，会针对高可信一手信源调查并把结论写成带引用的 Markdown，但 README 没有把它和 grilling 串起来。
 
-➡️ <推荐答案>
-```
+结束条件 README 说得相对明确：每个分支都被解决，才算访谈完成。它没有说明结束后是否自动开工，也没有承诺产出规格、代码或验证结果；README 对 `/grill-me` 的定位始终是访谈。编辑判断：这也是它最容易被误解的地方，访谈完成只代表双方理解对齐，不代表事情已经做完。设计树越往下越宽，问题数量会随分支增长，这是这种做法的固有代价，README 未给出上限。
 
-推荐答案会写成“你同意就回答 yes”的形式，减少来回。你回答后，已经确定的决策把 frontier 往外推，Agent 重新计算下一轮；依赖未决问题的问题留到后面，不会在同一轮里混着问。
+## 什么时候别用它
 
-README 还把“找事实”和“做决定”分开：需要查文件、工具或环境的事实，Agent 应该自己派子 Agent 去查，不该问你；真正需要你拍板的决策才交给你。会话结束的条件是 frontier 为空——每个分支都走过，没有默默假设。此时它也不会直接开工，要等你确认双方理解一致。
+只想把已经聊清楚的内容整理成规格，或者团队受不了高强度追问时，别用它。README 把 `/grill-me` 写成 relentlessly interviewed，并建议每次改动都用；编辑判断：这适合需求还模糊、改错代价高的场景，不适合赶时间、只需要归档结论的场景，此时 `/to-spec` 更直接。
 
-这套设计解决的是“Agent 没做我要的东西”。README 认为根因是沟通缺口，所以先 grilling，再写代码。`/grill-with-docs` 是同一套访谈加文档产出：访谈过程中同步维护领域词汇和 ADR；`/grill-me` 则更轻，只做访谈，不写文档。
+许可证：README 未说明。这份抓取文本从开头到 Reference 都没有出现 license 或 MIT 字样，使用前应去仓库根目录确认 LICENSE，不能从本文推断。
 
-## 边界与风险
+模型依赖：README 称这些 Skill 能配任何模型，但没有给出不同模型下的效果对比，也没有说明弱模型是否还能正确推进设计树。访谈成本：README 未说明一次完整 grilling 要多少轮、多少 token、多长时间；relentlessly 本身就意味着它会一直追问，时间和注意力由使用者承担。
 
-MIT。`/grill-me` 是访谈工具，不是规格生成器，也不写代码或验证事实；它产出的是一轮轮问答和共同理解。问题质量取决于模型能否正确建树，也取决于你的回答；你如果给出含糊答案，它仍可能带着错误假设往前走。
+会改文件的风险集中在 `/grill-with-docs`：README 说它在访谈中同步更新 `GLOSSARY.md` 和 ADR。编辑判断：如果这些文件在版本控制里，改完必须 review，避免访谈中的临时措辞直接进入长期文档；`/grill-me` 本身不写这些文档，风险小得多。
 
-“relentless” 的风格不适合所有团队。长时间追问会很累，赶时间的人可能更想要 `/to-spec` 这种直接整理已有讨论的 Skill。`/grill-with-docs` 会改 `GLOSSARY.md` 和 ADR，使用前要确认这些文件在版本控制里，改完要 review。
-
-README 说这些 Skill 能配任何模型，但没有给出不同模型下的效果对比；也没有说明一次完整 grilling 大概要多少 token。安装方式二选一、每仓库跑一次 setup 这两点 README 写得很清楚，但升级和卸载步骤分散在各客户端的插件文档里，主 README 没有统一说明。编辑判断：它适合在需求还模糊、改动代价高的时候用；如果需求已经很清楚，直接写 spec 更省时间。
+不适合谁：想要“流程托管”的团队更适合 GSD、BMAD、Spec-Kit 那类方案，代价是 README 所说的控制权；已经想清楚、只差落规格的人适合 `/to-spec`；把 `/grill-me` 当成规格生成器或代码生成器的人也会失望，README 没有给它这些职责。把 `RobMitt/grill-me-skill` 和它混用的人，先分清是哪一个仓库的 Skill。
 
 ## 来源
 

@@ -63,6 +63,20 @@ test("缺少正文小节时抛错，并指出缺哪几节", () => {
   assert.throws(() => parseRepoDetail("owner--project", body), /缺少小节 边界与风险/);
 });
 
+test("五问式六节也能通过校验", () => {
+  const fixture = FIXTURE.replace(
+    "## 怎么上手\n\n示例。\n\n## 值得注意的设计\n\n示例。\n\n## 边界与风险\n\n示例。",
+    "## 它替掉了什么麻烦\n\n示例。\n\n## 跑起来要几步\n\n示例。\n\n## 它把复杂度放在哪\n\n示例。\n\n## 什么时候别用它\n\n示例。",
+  );
+  const detail = parseRepoDetail("owner--project", fixture);
+  assert.match(detail.body, /## 它替掉了什么麻烦/);
+});
+
+test("详情页目录过滤掉「来源」", () => {
+  const page = readFileSync(new URL("../app/picks/[slug]/page.tsx", import.meta.url), "utf8");
+  assert.match(page, /heading\.text !== "来源"/);
+});
+
 test("缺必填字段时抛错", () => {
   const body = FIXTURE.replace("verdict: watch\n", "");
   assert.throws(() => parseRepoDetail("owner--project", body), /verdict/);
