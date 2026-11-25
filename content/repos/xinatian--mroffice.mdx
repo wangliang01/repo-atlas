@@ -14,7 +14,11 @@ sources: [github]
 
 ## 它是什么
 
-MR Office 是一套面向真实文件的 AI 办公套件，覆盖 Word、Excel、PowerPoint 和 PDF，提供网页版与免费桌面应用，AI 可以在文档旁工作，也支持多人实时协同。这个仓库开放的是其中五个编辑器的源码：文档、表格、演示、PDF 和代码，外加共享的 `@mrnote/core`、浏览器 playground、Electron 桌面外壳和 MCP server。README 的说法是，这些就是 MR Office 实际运行的同一套编辑器，可以自行构建、运行和嵌入。仓库采用 AGPL-3.0 加 NOTICE 附加条款，同时提供商业许可证。它适合两类读者：想把 Office 编辑能力嵌进自己产品的开发者，以及想让 Claude、ChatGPT、Cursor、Codex 等 Agent 直接读写 Office 文件的 AI 应用作者。
+MR Office 是一套面向真实文件的 AI 办公套件，覆盖 Word、Excel、PowerPoint 和 PDF，提供网页版与免费桌面应用，AI 可以在文档旁工作，也支持多人实时协同。这个仓库开放的是其中五个编辑器的源码：文档、表格、演示、PDF 和代码，外加共享的 `@mrnote/core`、浏览器 playground、Electron 桌面外壳和 MCP server。README 的说法是，这些就是 MR Office 实际运行的同一套编辑器，可以自行构建、运行和嵌入。
+
+编辑器本身的能力 README 也逐项列了：文档是分页文字处理器，支持字体、段落、表格、图片、形状、SmartArt、图表、批注、页眉页脚和公式，保存自有 `.mrdoc`；表格支持单元格公式与实时计算，保存 `.mrsheet` 并能读写 CSV/TSV；演示保存 `.mrslides`；PDF 支持阅读、演示、打印、搜索、复制和批注；代码编辑器带语法高亮、大纲和问题列表。开源编辑器与完整能力之间还有一层：Word、Excel、PowerPoint 文件的读写、完整公式引擎、图表和 SmartArt 由免费桌面应用或托管 embed 的 Free 计划提供。
+
+它给谁用？README 面向两类读者：想把 Office 编辑能力嵌进自己产品的开发者，以及想让 Claude、ChatGPT、Cursor、Codex 等 Agent 直接读写 Office 文件的 AI 应用作者。和同类方案的差别，README 给的是价格与授权形态的对比：ONLYOFFICE Docs Developer Edition 按约每年 6,000 美元、250 并发连接报价，Univer Pro 未公布价格；MR Office 则把开源编辑器放在 AGPL-3.0 下，另提供托管的 embed 免费额度和商业授权。编辑判断：它的核心卖点不是「完整开源一个 Office」，而是「开源编辑器 + 商业组件和托管服务」的分层。README 也给出面向个人和小团队的免费范围：网页版和桌面应用免费，AI 有每日免费额度，更重的使用才进入付费计划。
 
 ## 怎么上手
 
@@ -27,15 +31,12 @@ npm run build
 npm run preview
 ```
 
-`preview` 默认监听 5178 端口，`npm run dev` 启动同一地址的开发服务器，`npm run smoke` 检查构建。README 未说明所需的 Node 版本。桌面外壳构建后用 `npm run desktop` 启动；完整桌面能力还需要从 Releases 下载免费的 MR Office 组件，否则只会运行开源编辑器本身。
+`preview` 默认监听 5178 端口，`npm run dev` 启动同一地址的开发服务器，`npm run smoke` 检查构建。README 说明 `npm run fonts` 装的是 Office 字体的开源替代品。首跑预期看到的是浏览器里并排可切换的文档、表格、演示、PDF 和代码五个编辑器。README 未说明所需的 Node 版本。桌面外壳构建后用 `npm run desktop` 启动；完整桌面能力还需要从 Releases 下载免费的 MR Office 组件，否则只会运行开源编辑器本身。
 
 让 Agent 通过 MCP 操作文档，可以在 Claude Code 或 Codex 里注册：
 
 ```bash
 claude mcp add mroffice -- npx -y mroffice-mcp
-```
-
-```bash
 codex mcp add mroffice -- npx -y mroffice-mcp
 ```
 
@@ -45,7 +46,7 @@ codex mcp add mroffice -- npx -y mroffice-mcp
 { "mcpServers": { "mroffice": { "command": "npx", "args": ["-y", "mroffice-mcp"] } } }
 ```
 
-也可以走 [托管端点](https://mcp.mroffice.ai/mcp) 并登录 MR Office 账号。把编辑器嵌入自己的网页应用时，README 推荐先运行 `npx mroffice-embed init` 写入应用密钥，再由服务端调用 `createSessionToken` 签发短期会话令牌，页面用 `open()` 打开编辑器。`mroffice-docs`、`mroffice-sheets`、`mroffice-slides`、`mroffice-pdf`、`mroffice-code` 也作为 React 组件发布在 npm。
+也可以走托管端点 `https://mcp.mroffice.ai/mcp` 并登录 MR Office 账号。把编辑器嵌入自己的网页应用时，README 推荐先运行 `npx mroffice-embed init` 写入应用密钥，再由服务端调用 `createSessionToken` 签发短期会话令牌，页面用 `open()` 打开编辑器。`mroffice-docs`、`mroffice-sheets`、`mroffice-slides`、`mroffice-pdf`、`mroffice-code` 也作为 React 组件发布在 npm。README 给的安装示例是 `npm i mroffice-docs mroffice-core`，每个包的 README 说明如何嵌入。
 
 ## 值得注意的设计
 
@@ -55,13 +56,17 @@ MCP server 源码在 `apps/mcp`，暴露 `create_document`、`open_document`、`
 
 嵌入模式把 AGPL 边界放在托管服务一侧：编辑器由 MR Office 托管，用户的服务端只负责签发短期 session token，`mro_sk_...` 密钥不出服务器，保存结果通过签名回调送回。README 明确表示，作为托管服务使用不会给调用方应用带来 AGPL 义务。身份层则是一个 OAuth 2.1 授权服务器，支持 PKCE、client ID metadata documents 和动态注册。
 
+桌面层也做了同样的拆分：`apps/desktop` 是 Electron 外壳，装上从 Releases 下载的免费组件后就是带登录和 AI 的 MR Office 桌面应用；不装组件则只运行开源编辑器，打开 `.mrdoc`、`.mrsheet`、`.mrslides`、CSV、HTML、Markdown 和 PDF。README 强调外壳和编辑器是 AGPL 源码，组件是免费下载项。
+
+AI 侧除了逐编辑器 Copilot，README 还描述了一个能引用工作区文件的 AI 窗口，以及保存人物、项目和决策的记忆图谱，用来避免每次对话从零开始。模型按对话选择，README 只笼统写「today's leading AI models」，没有列具体提供商。
+
 ## 边界与风险
 
-许可证是 AGPL-3.0，并附带 NOTICE.md 的额外条款：通过网络提供修改版时，必须向用户提供完整源码，同时保留 MR Office 署名和指向官网的链接，且不获得名称与 logo 的使用权。商业授权需联系支持邮箱。README 把「使用托管 embed 可规避 AGPL 义务」作为卖点，但这是产品方的表述，选用前应由法务确认自身场景。
+许可证是 AGPL-3.0，并附带 NOTICE.md 的额外条款：通过网络提供修改版时，必须向用户提供完整源码，同时保留 MR Office 署名和指向官网的链接，且不获得名称与 logo 的使用权。商业授权需联系支持邮箱。README 把「使用托管 embed 可规避 AGPL 义务」作为卖点，但这是产品方的表述，编辑判断：选用前应由法务确认自身场景。
 
 开源与商业能力有明确分层。自托管的开源编辑器主要打开自有格式 `.mrdoc`、`.mrsheet`、`.mrslides`，以及 CSV、HTML、Markdown 和 PDF；Word、Excel、PowerPoint 文件、完整公式引擎、图表、SmartArt 和自动化 API 由免费桌面应用或托管 embed 的 Free 计划提供。README 说开源编辑器会保留文件中的公式、图表和 SmartArt，但完整计算与 Office 格式读写并不完全在自托管路径里。桌面完整版还依赖从 Releases 下载的免费组件，README 未说明该组件是否开源及其许可证。
 
-托管服务带配额和商业条款：Free 计划在 localhost 每月 1,000 个会话、自有域名 100 个、最多 2 个应用，付费从每月 29 美元起。README 未说明 SLA、数据驻留地区、日志保留期或合规认证；AI 功能只写「today's leading AI models」，没有列出具体提供商和计价方式。构建侧也未说明 Node 版本、浏览器兼容范围与自托管部署要求。计划把这些编辑器用于生产前，需要把许可证、数据路径和商业配额一起核对。
+托管服务带配额和商业条款：Free 计划在 localhost 每月 1,000 个会话、自有域名 100 个、最多 2 个应用，付费从每月 29 美元起，README 说明 Free 计划不需要信用卡。README 未说明 SLA、数据驻留地区、日志保留期或合规认证；AI 功能只写「today's leading AI models」，没有列出具体提供商和计价方式。构建侧也未说明 Node 版本、浏览器兼容范围与自托管部署要求。编辑判断：计划把这些编辑器用于生产前，需要把许可证、数据路径和商业配额一起核对。
 
 ## 来源
 

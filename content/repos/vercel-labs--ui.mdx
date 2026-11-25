@@ -14,11 +14,17 @@ sources: [github]
 
 ## 它是什么
 
-UI SDK 不是一个现成组件库，而是一组「行为」原语。README 把键盘导航、焦点、选择、关闭、弹窗、拖放以及它们所需的 ARIA 都放在 `@ui-sdk/core` 里，再提供 React、Vue、Svelte、Solid 和 Web Components 五种适配。每个界面组件都由这些行为组合出来：先定义 primitive，再由适配层把它映射成框架里的 parts。README 的示意图把环境选择器拆成 `createPopup`、`createSelection`、`createTypeahead` 三个行为，说明它想提供的是可组合的交互能力，而不是某一套视觉风格。项目目前处于 beta，文档地址是 ui-sdk.dev。
+UI SDK 是一个「行为库」，不是成套的视觉组件库。README 说，它把键盘导航、焦点、选择、关闭、弹窗、拖放以及这些交互所需的 ARIA 放进 `@ui-sdk/core`，再提供 React、Vue、Svelte、Solid 和 Web Components 五种适配器。每个界面组件由这些行为组合出来：先在 core 里定义 primitive，再由适配层把 primitive 映射成框架里的 parts。
+
+它解决的是跨框架复用交互逻辑的问题。传统做法是每个框架各写一套组件，键盘、焦点和 ARIA 细节重复且容易漏；这里把行为抽成与渲染无关的一层，同一份 primitive 可以被五种框架消费。README 的示意图把「环境选择器」拆成 `createPopup`、`createSelection` 和 `createTypeahead` 三个行为，说明它卖的是可组合的交互能力，而不是某一套设计语言。项目目前是 beta，文档在 ui-sdk.dev。
+
+它明确指出受众：为 Agent 构建和驱动下一代界面而准备。README 的原话是「你不需要学会怎么写这些，你的 Agent 会」。因此它同时是一次工作流实验——行为定义交给 Agent 生成，人负责组合、审阅和收口。
+
+与替代方案的差别：常见 UI 库交付的是带样式的组件和设计系统；Radix、Headless UI 一类交付无样式但绑定单一框架的原语；UI SDK 把「无样式」再往前推一层，交付的是框架无关的行为定义。代价是抽象更多，调试时要同时理解 primitive 契约和适配层映射。
 
 ## 怎么上手
 
-README 只给出 npm 安装命令，没有标注具体的 Node 版本要求。先安装 core 和对应框架的适配包：
+README 只给出 npm 安装命令，没有标注 Node 版本要求。先装 core 和对应框架的适配包：
 
 ```bash
 npm install @ui-sdk/react @ui-sdk/core
@@ -30,15 +36,50 @@ npm install @ui-sdk/react @ui-sdk/core
 npx skills@latest add vercel-labs/ui --skill ui-sdk
 ```
 
-接着用 `definePrimitive` 定义状态、api 和 slots，例如示例中的搜索框；然后在框架侧调用 `createParts`，把 input、clear 等 part 绑定到具体元素，再像普通组件一样使用。五种框架的 parts 名称一致，Web Components 则通过 `createParts` 注册自定义元素，并可用 `wrappedButton`、`wrappedChild` 指定内部目标。README 给出的搜索框示例包含输入、清空和焦点恢复三部分，可以作为自己写 primitive 的起点；更完整的说明在 ui-sdk.dev/docs。
+接下来分两步。第一步用 `definePrimitive` 定义行为，README 的搜索框示例包含 `name`、`state`、`api` 和 `slots` 四个字段：`state` 保存 `value`；`api` 暴露 `set` 方法，并用 `createFocusRecovery` 在相关元素被移除后把焦点还给输入框；`slots` 声明 `input` 和 `clear` 两个插槽，分别绑定 attrs、事件、显隐条件和 bind。第二步在框架侧调用 `createParts`，把 input、clear 映射到具体元素。
+
+```tsx
+const parts = createParts(searchField, { input: "input", clear: "button" })
+const SearchField = parts.Root
+const SearchFieldInput = parts.Input
+const SearchFieldClear = parts.Clear
+```
+
+五种框架的 parts 名称一致。Web Components 略有不同：`createParts` 接收 tag 和 target，还可以用 `wrappedButton`、`wrappedChild` 指定内部目标，然后直接写自定义元素标签。
+
+```ts
+createParts(searchField, {
+  root: "search-field",
+  input: { tag: "search-field-input", target: wrappedChild("input") },
+  clear: { tag: "search-field-clear", target: wrappedButton },
+})
+```
+
+预期看到的是一个不带样式的可用搜索框：输入时清空按钮出现，点击清空，焦点在元素被移除后回到输入框。README 没有给完整运行示例或 starter 命令，常见卡点会是「primitive 写出来了但 part 没绑上」——症状是事件不触发或插槽不显示，需要对照 `slots` 的 `attrs`、`on` 和 `present` 逐个检查。
 
 ## 值得注意的设计
 
-核心抽象是 primitive：`state()` 保存状态，`api()` 暴露方法，`slots()` 声明各插槽的 attrs、事件、显隐条件和 bind。示例里的 `createFocusRecovery` 会在相关元素被移除后把焦点还给输入框，说明行为层负责的是这类容易漏掉的交互细节，而不是样式。适配层只做一件事：用 `createParts` 把 part 映射到元素或组件，因此同一份 primitive 能在五种框架里复用。映射写法因框架而异：React、Vue、Svelte、Solid 传元素名，Web Components 传 tag 与 target。README 还明确说这些代码不需要人手工学，「Agent 会写」，也就是说设计目标是把行为定义交给 Agent 生成、人只做组合与审阅。
+核心抽象是 primitive 的三段式：`state()` 保存状态，`api()` 暴露方法，`slots()` 声明各插槽的行为。这种拆法把「状态」和「DOM 绑定」分开，使同一份定义能跨框架复用。README 示例里的 `createFocusRecovery` 很能说明边界：它关心的是元素被移除后焦点去哪，属于容易漏掉的交互细节，而不是颜色和间距。
+
+适配层只做一件事：用 `createParts` 把 part 映射到元素或组件。React、Vue、Svelte、Solid 传元素名，Web Components 传 tag 与 target。映射层薄，意味着框架特有的优化和惯用法不会自动带进来；换来的是行为逻辑只有一份。
+
+另一个关键选择是把 ARIA 放进 core。README 说键盘导航、焦点、选择、关闭、弹窗、拖放「以及它们所需的 ARIA」都在 core 里，这意味着可访问性不是适配层各写一遍，而是随行为一起交付。代价是 core 必须理解这些交互的完整语义，抽象责任更重。
+
+数据流是单向的：事件进入 slot 的处理器，调用 `api` 改 `state`，`attrs`、`present` 等再根据新状态重算。示例中 `input` 的 `on.input` 调用 `api.set`，`clear` 的 `present` 依赖 `state.value !== ""`。这套模型简单、可预测，但也要求每个 primitive 自己维护状态更新，复杂组件可能出现状态和 DOM 短暂不一致，需要在 `bind` 里处理。
+
+从示例还能看出契约的边界：`slot` 的可选项包括 `attrs`、`on`、`present`、`press` 和 `bind`；`attrs` 的返回值落到元素属性上，`present` 决定插槽是否渲染，`press` 处理按压语义，`bind` 留给需要命令式接入的能力，示例把 `recovery.bind(el, part)` 放在这里。README 没有说明这些字段的完整类型、默认值和错误处理，编辑判断是应以源码和类型声明为准，而不是把示例当完整 API 文档。代价是行为作者要自己维护状态与 DOM 的同步，适配层不会替它兜底；好处是同一份契约在五种框架里含义一致，出问题时也更容易判断该看 core 还是看适配层。
+
+README 还明确说这些代码不需要人手工学，「Agent 会写」。这是设计目标而非实现细节：它把生成行为定义的成本转给模型，人只做组合与审阅。编辑判断：这让它更像 Agent 时代的基础设施，而不是传统意义上供人手写的组件库；如果团队没有相应的 Agent 能力和审阅流程，仍要自己理解 primitive 的契约。
+
+另一个容易忽略的点是样式：core 只交付行为和 ARIA，组件不带任何视觉样式，团队仍要自己接设计系统或 CSS；这既是卖点，也是采用门槛。README 没有给出示例之外的完整类型定义或测试工具，编辑判断是应从 `state`、`api`、`slots` 三者的契约入手，而不是把示例当完整 API 文档。
 
 ## 边界与风险
 
-README 把 beta 状态写得很清楚：框架、API、文档和行为都可能在上线前变化，并受 Vercel beta 条款约束。它没有承诺跨浏览器兼容范围，也没有给出完整的可访问性说明，只说 core 带上所需的 ARIA。README 中没有许可证信息，使用前需要到仓库确认授权。整套工作流依赖 Agent 生成 primitive，如果团队没有相应的 Agent 能力或审阅流程，仍然要自己理解 primitive 的契约。项目也没有公布版本节奏或支持政策，README 里同样没有测试覆盖、浏览器兼容矩阵或迁移指南，beta 期间升级前应先读发布说明。
+项目处于 beta，README 写得很清楚：框架、API、文档和行为都可能在上线前变化，并受 Vercel beta 条款约束。README 没有承诺跨浏览器兼容范围，没有测试覆盖、浏览器兼容矩阵或迁移指南，也没有版本节奏或支持政策。它只说 core 带上所需的 ARIA，没有给出完整的可访问性声明；编辑判断是「带 ARIA」不等于「通过审计」，上线前仍需自行验证。
+
+许可证是首要盲点：README 没有许可证信息，使用前需要到仓库确认授权。README 也没有说明包体积、tree-shaking 效果和最低 Node 版本；这些会影响生产采用。
+
+工作流风险在于依赖 Agent 生成 primitive。如果团队没有相应能力或审阅流程，仍然要自己理解 `state`、`api`、`slots` 的契约，否则出错时无法定位是行为定义还是适配映射的问题。五框架同构也意味着不能假设某个框架的最佳实践自动生效。README 还说明安全漏洞应走 SECURITY.md 和指定邮箱，不要开公开 issue。编辑判断：适合愿意跟随 beta API、且把交互行为视为可复用资产的团队；不适合需要稳定支持承诺或现成视觉组件的项目。
 
 ## 来源
 

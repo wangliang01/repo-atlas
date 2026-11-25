@@ -14,9 +14,11 @@ sources: [github]
 
 ## 它是什么
 
-rust-anything 是一个面向已有应用的 Rust 迁移工具链，同时提供 CLI、MCP 服务和给编码 Agent 用的 skill。它不翻译代码，而是先记录原程序的行为，再让 Agent 或人一段段写 Rust，每写完一块都要对录制结果回放，全部匹配并通过 gate 才允许继续。覆盖 Node.js 的 TypeScript/JavaScript、Python、C、Go、Ruby、Java、Kotlin、PHP、PowerShell 和 C#，目标可以是整个 CLI、HTTP 服务、库，也可以只是性能热点。
+rust-anything 是一个面向已有应用的 Rust 迁移工具链，同时提供 CLI、MCP 服务和给编码 Agent 用的 skill。它不翻译代码，而是先记录原程序的行为，再让 Agent 或人一段段写 Rust，每写完一块都要对录制结果回放，全部匹配并通过 gate 才允许继续。README 的定位是「Rewrite your app in Rust, and prove it still behaves the same」：它供应的是 Agent 猜不准的东西——时间花在哪里、先搬哪一块、桥接层怎么保持原 API、怎样算搬完。
 
-它适合想把现有服务或工具迁到 Rust、但担心行为漂移的团队。README 把价值说得很直接：Agent 猜不准的是时间花在哪里、先搬哪一块、桥接层怎么保持原 API、以及怎样算搬完，rust-anything 提供的正是这些约束，而不是替你写代码。
+覆盖 Node.js 的 TypeScript/JavaScript、Python、C、Go、Ruby、Java、Kotlin，以及 PHP、PowerShell 和 C#。迁移目标可以是整个 CLI、HTTP 服务、库，也可以只是性能热点。它给谁用？README 说得很直接：适合想把现有服务或工具迁到 Rust、但担心行为漂移的团队，也适合只想把最慢的一段搬到 Rust 的人。和「让模型直接改写成 Rust」的差别在于验收方式：不是看代码像不像，而是看一组可重复执行的具体行为是否一致。
+
+README 给出的真实案例可以作为能力参照：Prettier 3.6.2 跑 2,360 个 JS/TS 文件从 128.6 秒降到 6.9 秒；json-server 整个 Node 服务内存从 74 MB 降到 3.5 MB、冷启动从 79 到 85 毫秒降到 8 到 10 毫秒；Fuse.js 在 5 万条字符串上每次查询从 91.2 毫秒降到 2.8 毫秒。README 说明这些数字在 Apple M4 上测得，每次计时前都比较过输出。
 
 ## 怎么上手
 
@@ -33,18 +35,19 @@ rust-anything setup
 npm install -g rust-anything
 ```
 
-在 Claude Code 中还可以作为插件安装 MCP 服务与 skill，前提是 CLI 已在 PATH 上：
+`setup` 会向 Claude Code、Codex、Cursor、Gemini CLI 和 OpenCode 添加 MCP 服务，并把工作流 skill 放到对应目录；README 列出了每种 Agent 会改哪个文件，例如 Claude Code 写 `~/.claude.json`、Codex 写 `~/.codex/config.toml`。修改已有文件前会生成 `.rust-anything.bak` 备份，重复运行是安全的，`--remove` 可以撤销，`--no-backup` 跳过备份。在 Claude Code 中还可以作为插件安装 MCP 服务与 skill，前提是 CLI 已在 PATH 上：
 
 ```bash
 /plugin install rust-anything --marketplace erkamyaman/rust-anything
 ```
 
-`setup` 会向 Claude Code、Codex、Cursor、Gemini CLI 和 OpenCode 添加 MCP 服务，并把工作流 skill 放到对应目录；修改已有文件前会生成 `.rust-anything.bak` 备份，`--remove` 可以撤销。手动流程通常是这样一条链：
+Codex 用户也可以从仓库的 `.agents/plugins/marketplace.json` 安装：`codex plugin marketplace add erkamyaman/rust-anything`，再 `codex plugin add rust-anything@rust-anything`。其它 MCP 客户端则手动把 `rust-anything mcp` 加为 stdio server。
+
+手动流程通常是这样一条链：
 
 ```sh
 rust-anything profile . -- node bench.mjs
 rust-anything bridge . src/fuzzy.ts --batch fuzzyScore:text
-# 编写 src/port.rs，或交给 Agent
 rust-anything record rust/fuzzy-rs && rust-anything build rust/fuzzy-rs
 rust-anything diff rust/fuzzy-rs
 rust-anything fuzz rust/fuzzy-rs --time 60 --keep
@@ -52,23 +55,29 @@ rust-anything bench rust/fuzzy-rs
 rust-anything gate rust/fuzzy-rs
 ```
 
-只想搬走慢函数时，可以直接让 `go` 分析一次运行并自动挑出最外层值得迁移的函数，例如 `rust-anything go --agent claude -- python3 app.py`。不加 `--agent` 时它会写一份 TASK.md 然后停下，等人接手。
+先 profile 出热点和调用关系，再由 bridge 生成 crate 与保持原 API 的包装，写好 `src/port.rs` 后录制、构建、回放、用新输入 fuzz、跑基准，最后 gate 判定是否完成。只想搬走慢函数时，可以直接让 `go` 分析一次运行并自动挑出最外层值得迁移的函数，例如 `rust-anything go --agent claude -- python3 app.py`；不加 `--agent` 时它会写一份 TASK.md 然后停下，等人接手。首跑预期看到的是每个阶段的具体产物和通过与否，而不是一个黑箱结论。
 
 ## 值得注意的设计
 
 核心机制是「录制即契约」。`record` 会在生成的边界输入、语义陷阱和用户自己的输入上运行原程序，保存返回值与抛出的异常；`diff` 重放全部用例，`gate` 作为完成门槛。这样迁移的验收标准不是「看起来一样」，而是一组可重复执行的具体行为。`app record --effects` 还会记录邮件、Webhook 之类的副作用，README 用「输出相同但发了两封欢迎邮件」的例子说明为什么只看输出不够。
 
-第二个机制是桥接层生成。`bridge` 会生成 Rust crate 和一层保持原 API 的包装，调用方不需要改业务代码。底层按语言选择 napi-rs、PyO3、wasm-bindgen、JNI、FFI 或 P/Invoke，例如 TypeScript 走 napi-rs 或 wasm-bindgen，Python 走 PyO3，Java/Kotlin 走 JNI，PHP、PowerShell 和 C# 走 JSON 调度。热路径还可以生成 batch 包装，把整批数据一次送进 Rust，避免每个小调用都跨语言。
+第二个机制是桥接层生成。`bridge` 会生成 Rust crate 和一层保持原 API 的包装，调用方不需要改业务代码。底层按语言选择 napi-rs、PyO3、wasm-bindgen、JNI、FFI 或 P/Invoke，例如 TypeScript 走 napi-rs 或 wasm-bindgen，Python 走 PyO3，Java/Kotlin 走 JNI，PHP、PowerShell 和 C# 走 JSON 调度。热路径还可以生成 batch 包装，把整批数据一次送进 Rust，避免每个小调用都跨语言；README 说明除 C、PHP、C#、PowerShell 外的语言都支持 `--batch`。
 
-第三个机制是渐进式收口。每一块通过回放后可以单独启用或关闭，`disable` 能按字节级回到原实现；当整个应用都通过且没有 fallback 时，`app lift` 把它变成纯 Rust 应用，原项目不被修改。README 还提供 `report` 生成 REPORT.md 和卡片，便于在 pull request 里说明迁移结果。
+第三个机制是渐进式收口。每一块通过回放后可以单独启用或关闭，`disable` 能按字节级回到原实现；当整个应用都通过且没有 fallback 时，`app lift` 把它变成纯 Rust 应用，原项目不被修改。README 还提供 `report` 生成 REPORT.md 和卡片，便于在 pull request 里说明迁移结果。代价是迁移被拆成很多小块，工程管理和回放数据的维护本身成为成本。
+
+语言和类型也是自动判断的。README 说明它会看 `go.mod`、`pom.xml`、`build.gradle`、`.csproj`、`pyproject.toml`、`Gemfile`、`composer.json`、`package.json`，都没有时看最常见的源文件，`--lang` 可以覆盖；类型从 TypeScript 类型、Python hints、Java/Kotlin/C# 签名以及 PHP 的 phpdoc 推断，未标注但按数字使用的参数会被当作数字处理。
+
+README 还提到用 `map` 跟进原项目的后续变化，避免移植后原实现继续演进造成分叉；打包方面 `rust-anything package` 能把一个 CLI 前门做成可分发的包，仓库自己也用这套方式发布了 `eslint-rs` 和 `prettier-rs`，前者覆盖 90 条规则、其余交给固定版本的 ESLint。
 
 ## 边界与风险
 
-README 反复强调，它只能捕获录制覆盖到的行为。未覆盖的分支、时序、并发和外部依赖变化都可能漏掉，文档专门有一节 What it can't catch。`record` 和 `app record` 会真实执行原代码，每个用例都可能写文件、连数据库或访问网络，因此必须在项目副本、测试数据库和无生产凭据的环境里运行。
+README 反复强调，它只能捕获录制覆盖到的行为。未覆盖的分支、时序、并发和外部依赖变化都可能漏掉，文档专门有一节 What it can't catch。`record` 和 `app record` 会真实执行原代码，每个用例都可能写文件、连数据库或访问网络，README 警告要在项目副本、测试数据库和无生产凭据的环境里运行。`app record` 会把每个用例跑两遍，文件、数据库或网络操作的副作用也各发生一次，这也是它要求隔离环境的原因。
 
 性能收益有条件。README 指出，每个小函数调用一次 Rust 通常比 JIT 还慢，工具要找的是值得搬的循环或批量路径；PHP、C# 和 PowerShell 每次调用都要跨 JSON，约 1 微秒到数毫秒不等，小函数反而更慢。C 的收益主要在安全性而非速度，README 给出的 libavutil 案例也只是接近 C 的性能。PHP 和 C# 目前还没有 `shadow`，部分语言特性会留在原语言并附带原因。
 
-平台与工程约束方面，Android 的 JNI 构建需要 NDK、Rust target 和 adb 设备，Activity、Compose 和 XML UI 不在迁移范围。项目采用 MIT 许可证，README 明确说用户仓库里的移植代码归用户所有。文档覆盖安装、打包、整应用迁移、真实案例和 FAQ，但具体迁移成本仍取决于项目自身的可录制程度。
+平台与工程约束方面，Android 的 JNI 构建需要 NDK、Rust target 和 adb 设备，README 说明 `--api` 最低 26，Activity、Compose 和 XML UI 不在迁移范围；iOS 的桥接方案 README 未说明。项目采用 MIT 许可证，README 明确说用户仓库里的移植代码归用户所有。文档覆盖安装、打包、整应用迁移、真实案例和 FAQ，但具体迁移成本仍取决于项目自身的可录制程度。
+
+README 还提醒 `fuzz` 是补录制盲区的手段，用新输入去打已经写好的 Rust，看录制漏了什么；`bench` 的结论只说明快慢，不替代 `gate` 的行为一致性判定。C 语言的录制方式是把原程序编成共享库、通过 ctypes 调用，并且每个用例单独 fork，避免状态互相污染。编辑判断：把迁移当成一个持续的工程流程而不是一次性重写，才符合这套工具的设计。
 
 ## 来源
 

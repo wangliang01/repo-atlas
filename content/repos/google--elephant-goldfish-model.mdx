@@ -14,11 +14,15 @@ sources: [github]
 
 ## 它是什么
 
-Elephant-Goldfish Model（EGM）是面向 AI 助手的开源插件，核心是把设计过程拆成两种记忆状态。Elephant 持有项目背景、需求和此前决策，负责探索问题并起草规格；Goldfish 审查员只看到文档及其引用的源材料，不带上游对话，因此更容易发现未写明的假设、含糊要求和实现风险；人负责解决取舍、批准设计。README 说明内置的起草与设计评审流程面向软件规格，其他文档可以用 `/egm-review-loop` 自选审查员和标准，bootstrap 与 drift 报告则面向软件代码库。
+Elephant-Goldfish Model（EGM）是面向 AI 助手的开源插件，核心是把设计过程拆成两种记忆状态。README 的比喻是「用大象做设计，用金鱼做评审」。Elephant 持有项目背景、需求和此前决策，负责探索问题并起草规格；Goldfish 审查员只看到文档及其引用的源材料，不带上游对话，因此更容易发现未写明的假设、含糊要求和实现风险；人负责解决取舍、批准设计。
+
+它解决的问题是：同一个会话里的模型会延续自己的假设，很难真正「换一双眼睛」。EGM 把评审者放进全新上下文，用结构性遗忘换取独立视角。和只在同一会话里让模型自评相比，差别是把「评审者不知道前文」做成流程约束；和通用代码评审 Agent 相比，它评审的是设计文档与源材料的对应关系，而不是实现 diff。README 说内置的起草与设计评审流程面向软件规格；其他文档可以用 `/egm-review-loop` 自选审查员和标准，bootstrap 与 drift 报告则面向软件代码库。
+
+组成是一组可独立使用的技能，而不是强制流水线：Brainstorm 测试想法并写概念简报，Draft 把简报变成设计文档，Resolve 处理评审发现，Bootstrap 为现有代码库补文档，Lite 处理小改动和缺陷，Review 用五个阶段做设计审查，Review loop 运行自定义审查组，Drift report 对比已提交文档与当前源码。它面向希望把设计评审变成固定流程的团队。和普通代码评审插件的差别在于：评审的输入是「文档加源材料」而不是完整对话，而且评审员必须来自新上下文。
 
 ## 怎么上手
 
-前置条件是一个能创建全新子代理上下文的编码代理，Goldfish 评审依赖这一点。按代理选择安装方式，README 要求安装完整插件，让技能能读取审查员提示和文档标准。Claude Code：
+前置条件是一个能创建全新子代理上下文的编码代理，Goldfish 评审依赖这一点。README 要求安装完整插件，让技能能读取审查员提示和文档标准。Claude Code：
 
 ```bash
 claude plugin marketplace add google/elephant-goldfish-model
@@ -31,7 +35,7 @@ Antigravity CLI：
 agy plugin install https://github.com/google/elephant-goldfish-model
 ```
 
-Codex CLI 使用对应的 `codex plugin marketplace add` 与 `codex plugin add egm@egm`。ChatGPT 和 Codex 桌面版可以直接从已发布的插件列表安装，Claude Cowork 与 ChatGPT Work 另有设置指南。安装后要新开会话。
+Codex CLI 使用对应的 `codex plugin marketplace add` 与 `codex plugin add egm@egm`。ChatGPT 和 Codex 桌面版可直接从已发布的插件列表安装；Claude Cowork 与 ChatGPT Work 另有设置指南。安装后要新开会话。README 注明桌面版的插件列表只支持桌面；Antigravity App 与 VS Code 扩展要先运行 `/plugin` 或按安装文档操作。不同 harness 的入口并不统一，跨团队推广时要按代理分别写步骤。
 
 对已有设计文档做一次快速评审，不需要先写新规格：
 
@@ -40,21 +44,23 @@ Codex CLI 使用对应的 `codex plugin marketplace add` 与 `codex plugin add e
 /egm:egm-drift-report docs/designs/
 ```
 
-完整设计流程依次是 `/egm-brainstorm`、`/egm-draft` 和 `/egm-review design_draft.md`。前两步分别产出 `concepts_brief.md` 和 `design_draft.md`，评审后由人决定采纳哪些问题。Antigravity 与 Claude Code 使用 `/egm:` 前缀；Codex 在技能选择器里选对应 EGM 技能。README 特别提醒 agy CLI 1.4.8 不会自动补前缀，1.4.10 才会。
+完整流程依次是 `/egm-brainstorm`、`/egm-draft` 和 `/egm-review design_draft.md`。前两步分别产出 `concepts_brief.md` 和 `design_draft.md`，Draft 会在每一节后暂停听取反馈；评审后由人决定采纳哪些问题，批准后再让 Agent 实现，批准稿可存到 `docs/designs/`。Antigravity 与 Claude Code 使用 `/egm:` 前缀；Codex 在技能选择器里选对应技能。README 特别提醒 agy CLI 1.4.8 不会自动补前缀，1.4.10 才会。常见卡点是会话不能创建子代理时评审会直接停止，而不是退化成本会话自检。README 的文档入口还包含 getting started、setup、architecture、TESTING.md 和 ACCESSIBILITY.md；原始想法来自 Dave Rensin 的文章。
 
 ## 值得注意的设计
 
-「新上下文」不是建议，而是硬约束。README 写明 Goldfish 评审必须使用全新的子代理上下文；如果代理无法创建，EGM 会停止评审，而不是退化成同一会话里的自我检查。这条规则把「换一双眼睛」落实成可验证的运行时条件。
+「新上下文」不是建议，而是硬约束。README 写明 Goldfish 评审必须使用全新的子代理上下文；如果代理无法创建，EGM 会停止评审。这条规则把「换一双眼睛」落实成可验证的运行时条件，代价是评审能否运行取决于 harness 能力，而不是插件本身。
 
-技能被拆成可独立使用的单元，而不是一条强制流水线。Brainstorm 测试想法并写概念简报，Draft 把简报变成设计文档，Resolve 处理评审发现，Bootstrap 为现有代码库补文档，Lite 处理小改动和缺陷，Review 用五个阶段做设计审查，Review loop 运行自定义审查组，Drift report 对比已提交文档与当前源码。团队可以只调用需要的部分。
+技能被拆成可独立使用的单元。团队可以只调用需要的部分：例如只跑一次 Review 看现有文档，或只跑 Drift report 查文档与代码的分歧。Lite 面向小迭代、规格修订、重构和缺陷修复；Resolve 负责逐条处理评审发现并形成修改共识。README 说这些技能都能单独调用，不要求按顺序走完。Review 用五个阶段分别检查设计本身、清晰度、与代码的契合度以及实现计划，避免把所有问题混成一次笼统的「看看这设计」。Drift report 逐份比较目录中的文档和当前源码，报告分歧点，由人决定改文档还是改代码，这样文档漂移被当作持续问题处理，而不是一次性检查。Bootstrap 则用于为已有代码库创建或更新文档，适合先补历史项目再进入设计流程；Review loop 按具体审查任务配置一组审查员，不限定软件规格。这两条路径都不要求先走完 Brainstorm 与 Draft。
 
-文档与代码的漂移被当作持续问题处理。Drift report 逐份比较目录中的文档和当前源码，报告分歧点，由人决定改文档还是改代码。评审阶段的五阶段流程则分别检查设计本身、清晰度、与代码的契合度以及实现计划，避免把所有问题混成一次笼统的「看看这设计」。
+角色分工也很明确：Elephant 拿项目上下文，Goldfish 只拿文档与引用材料，人拿目标与约束。README 用一张表把三者的上下文和责任写死。这样一来，评审发现的问题更容易归因：是需求没写清、实现计划有漏洞，还是文档与代码不一致。编辑判断：这种设计适合重视设计文档、愿意为评审多花一轮模型调用的团队；对只想让 Agent 快速出代码的人，流程会显得偏重。
 
 ## 边界与风险
 
-EGM 对代理能力有明确要求：不能创建全新子代理的会话无法完成 Goldfish 评审，README 把支持状态与验证限制放在单独文档里，正文没有给出所有 harness 的完整能力矩阵。内置流程主要针对软件规格，bootstrap 和 drift 只适用于软件代码库；其他类型文档需要自行配置审查员和标准。
+EGM 对代理能力有明确要求：不能创建全新子代理的会话无法完成 Goldfish 评审。README 把支持状态与验证限制放在单独文档里，正文没有给出所有 harness 的完整能力矩阵，也没有版本兼容表；跨版本使用时容易踩到调用语法问题，README 只指向 harness 文档。
 
-README 明确说评审不能替代测试或人的判断。它也没有给出评审结论的量化标准，最终仍是人选择要处理哪些发现。项目采用 Apache 2.0 许可证，但 README 声明它不是 Google 官方支持的产品，维护承诺与普通 Google 产品不同。不同代理的命令前缀和技能选择方式存在差异，跨版本使用时容易踩到调用语法问题；README 未说明具体版本兼容表，只指向 harness 文档。
+README 明确说评审不能替代测试或人的判断，也没有给出评审结论的量化标准，最终仍是人选择处理哪些发现。内置流程主要针对软件规格，bootstrap 和 drift 只适用于软件代码库；其他类型文档需要自行配置审查员和标准。这意味着它不是一个通用的文档审查器。
+
+许可证是 Apache 2.0，但 README 声明它不是 Google 官方支持的产品，维护承诺与普通 Google 产品不同。README 未说明发布节奏、长期支持政策，以及每个技能需要多少 token、一次完整评审的耗时，也没有给出评审质量的度量。隐私方面，文档与源材料会进入所选模型的上下文，README 未展开数据留存策略，敏感项目需要按模型提供商的政策自行评估。编辑判断：它适合把设计评审制度化的团队，不适合要求开箱即用、或无法创建子代理的轻量会话环境。
 
 ## 来源
 

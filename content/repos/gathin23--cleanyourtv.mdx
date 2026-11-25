@@ -16,7 +16,11 @@ sources: [github]
 
 CleanYourTV 不是应用商店里的成品 App，而是一套给 Android TV 与 Google TV 用的去广告、去预装工具集。它利用电视自带的调试桥，先备份已安装包与设置，再用 `pm disable-user` 停用厂商遥测、广告服务、内容推荐行和预装杂项，最后安装一个原生启动器并设为默认桌面。README 的核心承诺是：不需要 root，不需要拆机接线，不卸载任何东西，改主意时有一条命令恢复。
 
-它面向愿意在电脑上动手的电视用户，也照顾不写代码的人。仓库提供一段写给编码助手的 PROMPT.md，助手会自行发现电视上的预装项、逐步征求确认、构建并安装启动器。没有编码助手时，同一套脚本可以手动运行；没有电脑时，README 列出了几个由独立开发者基于这些电视清单构建的社区 App。
+它面向愿意在电脑上动手的电视用户，也照顾不写代码的人。仓库提供一段写给编码助手的 PROMPT.md，助手会自行发现电视上的预装项、逐步征求确认、构建并安装启动器。没有编码助手时，同一套脚本可以手动运行；没有电脑时，README 列出了几个由独立开发者基于这些电视清单构建的社区 App。README 明确说官方入口只有 cleanyour.tv 和这个仓库，cleanyourtv.com、clean-your-tv.net 等域名不归项目所有，也没有在任何应用商店发布 App。
+
+换上的桌面是这个项目的一半卖点。README 描述的效果包括：纯黑背景和一个圆角 dock，放四个常用应用；顶部 shelf 用大字显示当前聚焦的应用，并从其封面取色做环境光；按向下键滑出其余应用的网格；一个玻璃高亮块在磁贴间移动；三个磨砂按钮分别打开输入源（HDMI、AV、直播电视）、网络和设置；还有问候语、细时钟和日期，使用 Outfit 字体。它没有赞助行、没有 Discover 推荐、没有回传分析，也没有用户没要求的预装应用。
+
+和「进设置里手动关应用」或「装一个通用去广告 App」相比，它的差别在于提供了按机型维护的清单、可回放的恢复记录，以及一个替换桌面。README 称清单已覆盖 508 个电视型号、139 个品牌；编辑判断：这些数字说明社区贡献很活跃，但具体机型是否可用仍取决于对应清单的测试质量。
 
 ## 怎么上手
 
@@ -34,23 +38,37 @@ tools/restore.sh examples/xiaomi-mi-tv-4a/debloat.txt
 launcher/build-and-install.sh
 ```
 
-`TV_HOST` 换成电视的实际 IP。更省事的方式是克隆仓库后把 PROMPT.md 粘给 Claude Code、Codex、Gemini CLI 等助手，并填入电视型号，由它完成备份、清理、构建、安装和截图核对，README 称大约十五分钟。Windows 下每个脚本都有对应的 PowerShell 版本，例如 `launcher\build-and-install.ps1` 和 `tools\disable.ps1`。
+`TV_HOST` 换成电视的实际 IP。`--probe` 会读型号、Android 版本和固件；`pm list packages` 可以跑单条 shell 命令；`check.py` 用来对比固件更新后哪些包被带回来了，加 `--fix` 会重新停用。更省事的方式是克隆仓库后把 PROMPT.md 粘给 Claude Code、Codex、Gemini CLI 等助手，并填入电视型号，由它完成备份、清理、构建、安装和截图核对，README 称大约十五分钟。电视上会出现「Allow USB debugging?」，接受后还要回答一份清单：哪些应用在用、dock 大小和应用顺序、是否保留语音助手、Chromecast 和更新。
+
+Windows 下每个脚本都有对应的 PowerShell 版本：
+
+```powershell
+python -m venv tools\venv; tools\venv\Scripts\python.exe -m pip install -r tools\requirements.txt
+powershell -ExecutionPolicy Bypass -File launcher\build-and-install.ps1 -TvHost 192.168.1.50
+powershell -ExecutionPolicy Bypass -File tools\disable.ps1 -TvHost 192.168.1.50 examples\xiaomi-mi-tv-4a\debloat.txt
+```
+
+没有电脑的人可以用社区 App：Clean Your TV app 和 Tellyscope 面向 Android 手机，TidyTV 在 Google Play，CleanMyTV 支持 Mac 和 Windows。README 说它们各自独立、按自己的许可证提供，不属于 CleanYourTV。
+
+常见卡点有三个。macOS 可能报 No route to host，即使端口是开的，原因是本地网络隐私权限属于终端 App，需要在系统设置里允许 Terminal、iTerm2 或 VS Code，然后重启该 App。其次，必须等新启动器装好并运行后再停用原厂桌面，否则 Home 可能落到工厂测试应用上；安装脚本会替你排序。第三，Google TV 的 setupwraith 可能抢走 Home 并导致系统崩溃循环，停用前要先用 `dumpsys wifi` 确认 Wi-Fi 网络不是它保存的，否则会删掉网络。
 
 ## 值得注意的设计
 
-最关键的设计是「只禁用，不卸载」。所有改动都通过 Android 自带的 `pm disable-user` 完成，等价于设置里的停用应用。执行前脚本会把电视当时的状态记录到 `~/.cleanyourtv/`，`tools/restore.sh` 再按记录回放，原本就被用户停用的包不会被误启用，Home 也会回到原来的组件。这使整个操作具备可逆性，而不是一次性刷机。
+最关键的设计是只禁用、不卸载。所有改动都通过 Android 自带的 `pm disable-user` 完成，等价于设置里的停用应用。执行前脚本会把电视当时的状态记录到 `~/.cleanyourtv/`，`tools/restore.sh` 再按记录回放，原本就被用户停用的包不会被误启用，Home 也会回到原来的组件。恢复后启动器仍留在电视上，需要的话要去设置里手动删除。这使整个操作具备可逆性，而不是一次性刷机。
 
-第二个设计是 Home 守卫。脚本只停用自己认识的五个原厂启动器，并在清单包含当前 Home 所有者、且没有其他应用能响应 HOME 时跳过该条目，避免把电视变成没有桌面可启动的状态。在 Google TV 上还要处理 setupwraith 抢走 Home 的情况，README 专门说明了先检查 Wi-Fi 网络归属再停用它的原因。
+第二个设计是 Home 守卫。脚本只停用自己认识的五个原厂启动器，并在清单包含当前 Home 所有者、且没有其他应用能响应 HOME 时跳过该条目，避免把电视变成没有桌面可启动的状态。在 Google TV 上还要处理 setupwraith 抢走 Home 的情况，README 专门说明了先检查 Wi-Fi 网络归属再停用它的原因。设置向导、设置应用、厂商的 FallbackHome 和工厂测试应用也会响应 HOME，但不算数。
 
-第三个设计是极简启动器本身。它用纯 Java 编写，约 572 KB，面向 1 GB 内存的电视，没有模糊、视频、网络权限或后台服务，最低支持 Android 8.0。桌面布局、壁纸和主题由一份 `config.json` 通过 Wi-Fi 推送，不需要重新构建。仓库还附带纯 Python 的 ADB 客户端 `tools/tv.py`，在原厂 `adb` 被拦截时仍能执行 shell、推送、拉取和截图。
+第三个设计是极简启动器本身。它用纯 Java 编写，约 572 KB，面向 1 GB 内存的电视，没有模糊、视频、网络权限或后台服务，最低支持 Android 8.0。桌面布局、壁纸和主题由一份 `config.json` 通过 Wi-Fi 推送，不需要重新构建；仓库自带 33 个主题，支持 31 种语言和希伯来语的完整 RTL 镜像。它还有可选的应用库、磁贴菜单、模块卡片、时钟屏保和遥控器按键保留。
+
+工具链也值得一看。纯 Python 的 ADB 客户端 `tools/tv.py` 在原厂 adb 被拦截时仍能执行 shell、推送、拉取和截图；`tools/relay.py` 给进不了局域网的助手转发端口；`tools/privacy.py` 审计语音、ACR 和遥测候选并输出证据；`tools/adb-closed.py` 确认调试关闭后 5555 端口确实不可达；还有用于构建的 Docker 脚本、基准测试、Perfetto trace 和截图像素对比工具。README 说这些脚本共享同一条 Home 保护规则。
 
 ## 边界与风险
 
-支持范围写得很清楚：只适用于 Android TV 和 Google TV。Fire TV 只能做去预装那一半，因为 Fire OS 不会把 Home 交给第三方启动器，2015 年的 Fire TV Box 连这一半也会失败。部分中国市场的 TCL 机型拒绝安装任何启动器。Samsung Tizen、LG webOS、Roku、Vizio 和 Hisense VIDAA 没有 ADB，完全不在支持范围，README 建议改用系统设置关闭追踪。
+支持范围写得很清楚：只适用于 Android TV 和 Google TV。Fire TV 只能做去预装那一半，因为 Fire OS 不会把 Home 交给第三方启动器，2015 年的 Fire TV Box 连这一半也会失败。部分中国市场的 TCL 机型拒绝安装任何启动器。Samsung Tizen、LG webOS、Roku、Vizio 和 Hisense VIDAA 没有 ADB，完全不在支持范围，README 建议改用系统设置关闭追踪或做 DNS 过滤。
 
-风险主要在 ADB 与系统包两点。网络 ADB 在 5555 端口上是明文传输，某些固件下局域网内任何设备都能拿到 shell，因此用完后必须关闭调试、撤销授权、重启电视，并用仓库的 `tools/adb-closed.py` 确认端口已关闭。停错系统包可能让电视功能异常，所以清单要小批量应用并随时准备恢复；最坏情况下可以进恢复菜单做恢复出厂设置。固件更新会把停用的包带回来，需要用 `tools/check.py` 对比并按需修复。
+风险主要在 ADB 与系统包两点。网络 ADB 在 5555 端口上是明文传输，某些固件下局域网内任何设备都能拿到 shell，因此用完后必须关闭调试、撤销授权、重启电视，并用 `tools/adb-closed.py` 确认端口已关闭。停错系统包可能让电视功能异常，所以清单要小批量应用并随时准备恢复；最坏情况下可以进恢复菜单做恢复出厂设置。固件更新会把停用的包带回来，需要用 `tools/check.py` 对比并按需修复。README 也没有对保修作承诺，只提醒修改电视软件可能影响保修或支持。
 
-仓库不提供预编译 APK，需要自己用脚本构建；也没有给出对电视保修的影响承诺，README 只提醒修改电视软件可能影响保修或支持。项目采用 MIT 许可证，内置字体使用 SIL Open Font License。README 对安全、恢复、远程协助和固件更新都有专门文档，但具体机型的兼容性仍取决于贡献者提交的清单。
+仓库不提供预编译 APK，需要自己用脚本构建。项目采用 MIT 许可证，内置字体使用 SIL Open Font License。README 的 Legal 章节强调它只使用电视向所有者开放的设置，不 root、不刷固件、不绕过锁或 DRM，仓库里也不含厂商软件、固件或 APK。隐私方面，README 提到可以用 Android 的 Private DNS 配合广告拦截解析器做系统级拦截，但该解析器会看到电视的全部 DNS 查询，而且这不能去掉 YouTube 内的广告。README 未说明具体机型在长期使用中的稳定性，只给出贡献者提交的清单；编辑判断：先在次要电视上验证恢复流程，再处理主力设备，是更稳妥的顺序。
 
 ## 来源
 

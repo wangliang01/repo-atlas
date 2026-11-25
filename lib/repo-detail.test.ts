@@ -73,18 +73,20 @@ test("summary 为空时抛错", () => {
   assert.throws(() => parseRepoDetail("owner--project", body), /summary/);
 });
 
-test("新收录页有足够正文：至少 1000 字，并区分 README 与编辑判断", () => {
+test("详情页正文有足够深度，并区分 README 与编辑判断", () => {
   const dir = new URL("../content/repos/", import.meta.url);
   const files = readdirSync(dir).filter((file) => file.endsWith(".mdx"));
   for (const file of files) {
     const src = readFileSync(new URL(file, dir), "utf8");
-    if (!src.includes("sources: [github, toutiao]")) continue;
-    const body = src
-      .split("---")[2]
-      .split("## 来源")[0]
-      .replace(/```[\s\S]*?```/g, "")
-      .replace(/\s/g, "");
-    assert.ok(body.length >= 1000, `${file} 正文只有 ${body.length} 字，太短`);
+    const isNew = src.includes("sources: [github, toutiao]");
+    const raw = src.split("---")[2].split("## 来源")[0].replace(/```[\s\S]*?```/g, "");
+    const body = raw.replace(/\s/g, "");
+    const cjk = (raw.match(/[一-鿿]/g) ?? []).length;
+    if (isNew) {
+      assert.ok(body.length >= 1000, `${file} 正文只有 ${body.length} 字，太短`);
+    } else {
+      assert.ok(cjk >= 1500, `${file} 旧页正文只有 ${cjk} 个汉字，少于 1500`);
+    }
     assert.match(src, /README/, `${file} 没有说明内容依据 README`);
     assert.match(src, /编辑判断|README 未说明/, `${file} 没有区分编辑判断或未说明项`);
   }

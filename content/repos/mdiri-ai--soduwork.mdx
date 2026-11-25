@@ -13,7 +13,11 @@ sources: [github]
 
 ## 它是什么
 
-SoduWork 是自托管的多 harness、多代理工作台。它的主张是「聊天以回答结束，SoduWork 请求以提问者签收结束」：每个请求先带验收标准，由代理执行，再由另一个模型或 harness 做独立 AI 复核，最后交给人签收。README 列出 7 种 harness：内置的 Pi，以及按需安装的 OpenCode、DeepSeek Harness、Qwen Code、Kimi Code、Codex Harness 和 Codex。它面向希望把个人或团队的 AI 工作从聊天记录变成可追踪、可复用流程的人，提供 Windows 桌面客户端、macOS/Linux 安装包和 Docker 团队部署。
+SoduWork 是自托管的多 harness、多代理工作台。它的主张是「聊天以回答结束，SoduWork 请求以提问者签收结束」：每个请求先带验收标准，由代理执行，再由另一个模型或 harness 做独立 AI 复核，最后交给人签收。README 列出 7 种 harness：内置的 Pi，以及按需安装的 OpenCode、DeepSeek Harness、Qwen Code、Kimi Code、Codex Harness 和 Codex。harness 指执行工作的 agent 运行时，不等同于模型；SoduWork 通过一个适配器接口把它们接进来，因此问题、插件和复核都不依赖某一种 harness。
+
+它给谁用？README 列了四类角色：单人开发者把请求丢进池子、只负责签收；专家把跑通的方法保存成插件发布给团队；管理者提交请求、由 AI 补全验收标准并分派；新成员直接使用团队已沉淀的插件按标准做事并改进。由哪些部分组成：Hub（唯一事实源，存放问题、工作流、审批和证据）、runner（通过 WebSocket 连接 Hub 执行任务）、管理控制台、桌面客户端，以及可直接运行的本地 SQLite 形态；团队部署时用 Docker 加上 PostgreSQL。
+
+和同类方案的差别，README 自己做了一张对比表：相对低代码 agent builder，它没有画布和节点连线，强调「完成一次真实任务再保存成插件」；相对编码 agent harness，它不替代它们，而是把它们当作 harness 跑在团队工作台里，补上请求到签收的流程、独立复核、插件审查与分发、带审计的访问控制；相对多代理编排器，步骤和检查点由人设定，由请求者按证据验收。README 也区分了 plugin 与 app：plugin 是可版本化的方法包，app 是带自己 UI 和 AI 侧栏的插件。
 
 ## 怎么上手
 
@@ -25,9 +29,9 @@ cd SoduWork
 sh start.sh --desktop
 ```
 
-Windows PowerShell 使用 `.\start.cmd --desktop`，命令提示符使用 `start.cmd --desktop`。首次运行会安装依赖，并在这台电脑上启动 Hub、管理控制台和桌面客户端；按提示为 `admin` 账号设置 12 到 128 位密码。然后在管理控制台的 Model catalog 添加模型提供方，回到客户端新建会话并试一个小任务。
+Windows PowerShell 使用 `.\start.cmd --desktop`，命令提示符使用 `start.cmd --desktop`。首次运行会安装依赖，并在这台电脑上启动 Hub、管理控制台和桌面客户端；按提示为 `admin` 账号设置 12 到 128 位密码。然后在管理控制台的 Model catalog 添加模型提供方，回到客户端新建会话并试一个小任务。README 给出的首个小任务是：把一段虚构会议记录整理成带负责人和截止日期的行动表，并把缺失信息标注为未确认。
 
-如果已经有 API key，还需要在 `Capabilities → Model catalog` 里为对应服务添加具体模型、填写提供方的精确 model ID 并选择 Chat model。只保存服务凭据不会产生可选模型。Codex 使用自己的 OpenAI 账号，不会自动复用 SoduWork 的 API key；首个消息建议使用兼容 OpenAI 协议的聊天模型配 Pi。
+如果已经有 API key，还要注意一个常见卡点：只保存服务凭据不会产生可选模型，必须在 `Capabilities → Model catalog` 里为对应服务添加具体模型，填写提供方的精确 model ID 并选择 Chat model。Codex 使用自己的 OpenAI 账号，不会自动复用 SoduWork 的 API key；首个消息建议使用兼容 OpenAI 协议的聊天模型配 Pi。README 也给了排障线索：Agent 列表为空看 Agent management 和 Runner 连接，模型列表为空看模型是否存在、是否启用、两个界面是否连到同一个 Hub。
 
 团队部署可以用 Docker，在仓库根目录执行：
 
@@ -36,23 +40,23 @@ python3 ops/self-host/deploy.py up
 python3 ops/self-host/deploy.py credentials
 ```
 
-这会在一台服务器上启动 Hub、管理控制台和 PostgreSQL，README 要求在对外服务前加 HTTPS 反向代理。也可以从 Releases 下载 Windows、macOS 和 Linux 客户端，在登录页的 Connection 填入 Hub 地址。
+这会在一台服务器上启动 Hub、管理控制台和 PostgreSQL，`credentials` 显示初始管理员密码，README 要求在对外服务前加 HTTPS 反向代理。也可以从 Releases 下载 Windows、macOS 和 Linux 客户端，在登录页的 Connection 填入 Hub 地址。README 提供在线 demo（`https://service.soduwork.ai`），但只用于评估，不应上传真实业务数据或敏感信息。
 
 ## 值得注意的设计
 
 Hub 是唯一事实源，runner 负责执行。问题、工作流、审批和证据都存在 Hub 中，客户端因此看到同一份状态。runner 通过 WebSocket 连接 Hub，每次派发都有 ID，避免同一任务被领取两次；每个 harness 跑在独立子进程里，事件先在执行主机落盘再发送，断线后会重发。这套设计把「聊天界面」和「实际执行」分开，执行记录最终进入审计。
 
-harness 被抽象成一个适配器接口，上层不依赖具体运行时。支持 Agent Client Protocol（ACP）的程序可以通过 catalog 声明接入，README 说明可以在会话中途切换 harness，同时保留历史和当前工作目录。插件则把方法与运行环境分开：插件定义方法，harness、模型、runner 和密钥在绑定插件时才选择，插件版本不可变且可移植。这使同一套团队方法能在不同代理和模型上复用。
+harness 被抽象成一个适配器接口，上层不依赖具体运行时。支持 Agent Client Protocol（ACP）的程序可以通过 catalog 声明接入，README 说明可以在会话中途切换 harness，同时保留历史和当前工作目录。插件则把方法与运行环境分开：插件定义方法，harness、模型、runner 和密钥在绑定插件时才选择，插件版本不可变且可移植。README 还强调代理之间不会自行转交工作，步骤之间和人与人之间的流转按插件与受派人的约定进行。
 
-请求生命周期把验收写进流程。一个请求先由 AI 补全验收标准，再分配给人或代理；代理用团队插件执行，另一个 AI 按验收标准复核，最后由请求者签收。跑通后可以保存为插件，经过审查后发布到团队目录，按团队或个人授权。README 的示例插件用 JSON 描述 `ai`、`ai_review` 和 `publish` 节点，并指定不同 harness 承担起草与核查。谁提出、谁执行、用了哪个插件、谁批准都会留档。
+请求生命周期把验收写进流程。一个请求先由 AI 补全验收标准，再分配给人或代理；代理用团队插件执行，另一个 AI 按验收标准复核，最后由请求者签收。跑通后可以保存为插件，经过审查后发布到团队目录，按团队或个人授权。README 的示例插件用 JSON 描述 `ai`、`ai_review` 和 `publish` 节点，并指定不同 harness 承担起草与核查；谁提出、谁执行、用了哪个插件、谁批准都会留档。
 
 ## 边界与风险
 
 项目处于公开 beta，README 明确建议先评估再用于生产。云端交接只移动上下文，不移动进程：工作文件、对话和目标会转到 cloud runner，但正在运行的进程和浏览器会话不会，而且服务器要自备。README 也说明 runner 和技能不是通用沙箱，实际隔离取决于 harness 和环境，只应把 runner 连接到可信的 Hub。
 
-客户端的默认 Hub 是 `https://service.soduwork.ai`，运营请求会发往登录页 Connection 中选择的 Hub。README 说明目前没有单独设置可以关闭 Hub 的用量记账或已安装客户端的更新轮询，只有改用自建 Hub 才能让这些流量留在自己的部署内。在线 demo 仅用于评估，不应上传真实业务数据或敏感信息。
+数据路径方面，自托管时问题、插件和聊天记录存在自己的 Hub，模型请求从 runner 发往配置的提供方，每次运行使用短期凭据，密钥不以明文写入 harness 配置文件；但发给模型提供方或连接器的提示和文件对该服务可见。客户端的默认 Hub 是 `https://service.soduwork.ai`，用量记账包含会话 ID 与标题、Agent/模型/提供方标识、token 与成本计数和时间戳，已安装客户端每六小时检查一次更新。README 说明目前没有单独设置可以关闭 Hub 的用量记账或更新轮询，只有改用自建 Hub 才能让这些流量留在自己的部署内。
 
-自托管时问题、插件和聊天记录存在自己的 Hub，模型请求从 runner 发往配置的提供方，每次运行使用短期凭据，密钥不以明文写入 harness 配置文件；但发给模型提供方或连接器的提示和文件对该服务可见。README 未说明生产环境的高可用、备份恢复或正式 GA 时间表，只给出 Docker 部署、反向代理和路线图。代码采用 MIT 许可证，SoduWork 名称和 logo 是 MDiRi 的商标，不在 MIT 授权范围内；第三方组件保留各自许可。
+README 未说明生产环境的高可用、备份恢复或正式 GA 时间表，只给出 Docker 部署、反向代理和路线图。代码采用 MIT 许可证，SoduWork 名称和 logo 是 MDiRi 的商标，不在 MIT 授权范围内；第三方组件保留各自许可。编辑判断：如果团队对数据出境和审计有硬要求，应优先自建 Hub 并核对 runner 与模型提供方的边界。
 
 ## 来源
 

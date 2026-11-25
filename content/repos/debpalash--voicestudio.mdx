@@ -14,11 +14,17 @@ sources: [github]
 
 ## 它是什么
 
-VoiceStudio 是一个本地优先的 AI 语音工作台，覆盖声音克隆、音色设计、视频配音、听写、转录、旁白和批量任务。默认引擎是 k2-fsa/OmniVoice，Model Manager 里还列出数十种可切换的引擎；模型按需下载，应用在下载前会先询问。它不只是桌面软件：README 列出 macOS、Windows、Linux、Docker，以及仍属预览的 Android 和 iPhone/iPad 版本，还提供本地 API、MCP、可复用 recipes 和 watch folders，方便把语音能力接进其他流程。免费版不需要账号，Pro 和 Cloud 是可选的闭源服务。它适合播客、短视频、有声书和需要批量转录的团队，尤其是希望素材留在本机的人。
+VoiceStudio 是一个本地优先的 AI 语音工作台。README 说它覆盖声音克隆、用文字设计音色、视频翻译配音、听写、转录、旁白和批量任务，宣称支持 646 种语言，运行在笔记本、台式机、服务器、手机和平板等设备上。默认引擎是 k2-fsa/OmniVoice，Model Manager 里还列出数十种可切换引擎；模型按需下载，应用在下载前会先询问。
+
+它不是单一桌面软件。README 列出 macOS、Windows、Linux、Docker，以及仍属预览的 Android 和 iPhone/iPad 版本，还提供本地 API、MCP、可复用 recipes 和 watch folders，方便把语音能力接进其他流程。免费版本地运行、不需要账号；Pro 和 Cloud 是可选的闭源服务，Cloud 仍标注为「coming soon」。
+
+它适合播客、短视频、有声书、需要批量转录的团队，以及希望素材留在本机的人。和云端语音 API 的差别在于默认路径是本地推理：素材不上传，模型下载后离线可用；代价是要自己承担模型体积、下载时间和硬件适配。和单一 TTS 工具的差别在于它把克隆、设计、配音、转录、旁白和批处理放进同一个工作台，并允许切换引擎。
+
+README 还说明 Pro 的定位：面向跨多台机器的付费客户工作，提供代码商用许可、一个用户最多三台设备、把任务发到其他 GPU、优先获得新功能和修复；闭源、需要账号、7 天全额退款。Cloud 则是托管的声音和配音 API，不需要 GPU。
 
 ## 怎么上手
 
-macOS 可通过 Homebrew 安装，README 标注需要 macOS 13.3+ 和 Apple Silicon，本地引擎使用 Metal：
+macOS 最省事的是 Homebrew，README 标注需要 macOS 13.3+ 和 Apple Silicon，本地引擎使用 Metal（MPS）：
 
 ```sh
 brew tap debpalash/tap
@@ -32,21 +38,51 @@ Windows 10/11 x64 使用 PowerShell：
 irm https://voicestudio.sh/install.ps1 | iex
 ```
 
-Linux x64 可以走 AUR、Snap、DEB、AppImage 或一行脚本：
+Linux x64 可以走 AUR、Snap、DEB、AppImage、Nix 或一行脚本：
 
 ```sh
 curl -fsSL https://voicestudio.sh/install | sh
 ```
 
-Docker 用户可运行 `ghcr.io/debpalash/voicestudio:stable`，README 给出的本地 CPU 示例会把服务绑定到 `127.0.0.1:3900` 并要求设置 `OMNIVOICE_API_KEY`。从源码运行需要先克隆仓库，再执行 `bun run dev`，它会安装 JavaScript 依赖以及在受支持的本地后端下安装 Python 依赖，也可单独运行 `bun run setup:api` 重建 Python 环境。没有 GPU 时应用仍可完整使用，只是速度更慢；移动端要求 Android 10+ 或 iOS/iPadOS 17+，且属于预览状态。
+Docker 用户可运行 `ghcr.io/debpalash/voicestudio:stable`。README 的本地 CPU 示例会生成随机 API key、把服务绑定到 `127.0.0.1:3900`、挂载数据卷：
+
+```sh
+export OMNIVOICE_API_KEY="$(openssl rand -hex 32)"
+docker run -d --name omnivoice \
+  -p 127.0.0.1:3900:3900 \
+  -e OMNIVOICE_API_KEY \
+  -e OMNIVOICE_DATA_DIR=/app/omnivoice_data \
+  -v omnivoice-data:/app/omnivoice_data \
+  ghcr.io/debpalash/voicestudio:stable
+```
+
+启动后打开 `http://localhost:3900` 并填入打印出的 API key。移动端是预览：Android 10+ 可装 APK、走 Obtainium 或 F-Droid 仓库，iOS/iPadOS 17+ 需要下载 IPA 并自行签名侧载。
+
+从源码运行需要克隆仓库后执行 `bun run dev`，它会安装 JavaScript 依赖，并在受支持的本地后端下安装 Python 依赖；只想重建 Python 环境时运行 `bun run setup:api`。安装脚本还支持 `--version X.Y.Z`、`--main` 和 `--uninstall`（卸载应用但保留数据）。
+
+首跑路径很简单：打开 **Voice cloning**，选一个内置音色或添加干净的参考录音，输入文字并生成。应用会在下载任何模型前询问。常见卡点有四个：macOS 提示「已损坏」通常是 Gatekeeper 拦截而不是下载损坏；Intel Mac 只能运行界面并连接另一台机器的后端；Windows on ARM 是实验状态，x64 Python 后端在 CPU 上模拟运行；没有 GPU 也能完整使用，只是更慢。
 
 ## 值得注意的设计
 
-引擎与界面分离是这套工具的主轴：Electron 前端负责工作区、模型管理和导出，Python 后端负责推理，默认引擎只是 Model Manager 中的一个选项，用户可以只下载自己需要的模型。平台加速按引擎区分，原生 GGUF 引擎支持 AMD、Intel 和 NVIDIA 上的 Vulkan，Windows 与 Linux 上的 OmniVoice GGUF 会自动选择 GPU 和模型尺寸；ROCm 支持则是实验性的，只覆盖部分 RDNA 2 RX 6000 显卡，并把 GPU 转录交给独立的 CTranslate2 进程，以保留 CPU 回退路径。性能预设保存前会在离线的子进程里验证改动后的引擎选择，避免装坏的运行时把主流程一起拖垮。自动化方面，本地 API、MCP、recipes 和 watch folders 让配音、转录和旁白可以排成批处理任务。
+引擎与界面分离是主轴。README 说前端（Electron）负责工作区、模型管理和导出，Python 后端负责推理；默认引擎只是 Model Manager 中的一个选项，用户可以只下载自己需要的模型。这带来两个结果：一是同一套 UI 可以覆盖多种引擎和硬件；二是故障排查要区分前端、后端和具体引擎，任一环出问题都可能表现为「生成失败」。
+
+平台加速按引擎区分。原生 GGUF 引擎支持 AMD、Intel 和 NVIDIA 上的 Vulkan；OmniVoice GGUF 在 Windows 和 Linux 上会自动选择 GPU 和模型尺寸。README 还写了一个细节：Vulkan 探测会重试卡住的隐藏探测并给出原生摘要；Windows 和 Linux 桌面构建如果缺 Vulkan 模块会直接失败，而不是悄悄发布一个没有加速的版本。编辑判断：这是把「静默降级」改成「显式失败」，对排障友好，对首次安装的容错更差。
+
+ROCm 支持是实验性的，只覆盖部分 RDNA 2 RX 6000 显卡，目标 `gfx1030`、`gfx1031`、`gfx1032`，并明确排除 RX 6500 XT（`gfx1034`）。GPU 转录使用从上游源码构建、按 hash 固定的 CTranslate2 原生 `gfx1031` 内核，安装时会检查 GPU 内核是否真的执行；RX 6700 XT 的测试还覆盖原生 Torch 语音生成和 PyTorch Whisper。ROCm 10 的 faster-whisper 走独立推理进程，以保留安全的 CPU 选择和回退路径。
+
+性能预设有一个防御性设计：保存前会在离线的子进程里验证改动后的引擎选择，避免装坏的运行时把主流程一起拖垮；验证失败时保留回退。这个设计说明应用把「引擎可切换」当作核心能力，而不是附加项。
+
+自动化侧，本地 API、MCP、recipes 和 watch folders 让配音、转录和旁白可以排成批处理任务。代价是能力边界扩大：本地 API 和 MCP 是新的接入面，需要单独考虑认证和暴露范围；Docker 示例把服务绑定到回环地址，是一个安全默认值。
 
 ## 边界与风险
 
-应用代码采用 AGPL-3.0，允许按其条款商用，但 Pro 是闭源付费版本，Cloud 仍标注为「coming soon」；模型权重、音色和生成结果另有许可证，README 特别指出默认 OmniVoice 权重是 CC-BY-NC 非商用，接客户项目前必须在 Model Manager 中逐个确认。移动端、Windows on ARM 和 Intel Mac 的本地能力都有限制：前两者是预览或实验状态，Intel Mac 只能运行界面并连接另一台机器上的后端。ROCm 只支持列出的少数显卡，RX 6500 XT 被明确排除。声音克隆要求取得说话人许可，README 附有禁止未授权克隆、冒充和欺诈的声明。README 未给出统一的内存或显存下限，性能数据分散在单独文档中；部署前应结合目标引擎和硬件查看对应的性能说明。
+许可证是最需要分清的一层。应用代码采用 AGPL-3.0，README 说允许按其条款商用；Pro 是闭源付费版本，Cloud 尚未可用。模型权重、音色和生成结果另有许可证，README 特别指出默认 OmniVoice 权重是 CC-BY-NC 非商用，接客户项目前必须在 Model Manager 中逐个确认。编辑判断：AGPL 的商用许可和模型权重的非商用限制是两件事，不能因为「应用可商用」就默认生成物可商用。
+
+平台和硬件限制不少：macOS 本地引擎要求 Apple Silicon 和 13.3+；Intel Mac 只能连远程后端；Windows on ARM 是实验状态；Android 和 iOS 是预览；ROCm 只支持列出的少数显卡，RX 6500 XT 被明确排除。README 未给出统一的内存或显存下限，性能数据分散在单独文档中；部署前应结合目标引擎和硬件查看对应说明。
+
+隐私与合规方面，本地优先减少了素材上传，但并不意味着零外联：模型下载、可选的 Pro/Cloud 和 MCP 接入都会产生网络与第三方交互。声音克隆要求取得说话人许可，README 附有禁止未授权克隆、冒充和欺诈的声明，并说明开发者对滥用不承担责任。
+
+运维成本包括模型体积、下载时间、GPU 驱动和 Vulkan/ROCm 适配。README 提醒升级自 0.5.3 或更早的 Tauri 版本需要单独安装新应用；贡献前要签 CLA。它不适合需要开箱即用云端 SLA 的团队，也不适合没有权限确认模型许可证的商业项目。编辑判断：适合愿意管理本地运行时、且能逐个核对模型授权的创作者和小团队。
 
 ## 来源
 

@@ -14,7 +14,11 @@ sources: [github]
 
 ## 它是什么
 
-Impeccable 是给编码代理使用的一套设计词汇与命令。README 的出发点是代理在缺少指导时总会生成同一批默认样式：Inter 字体、紫蓝渐变、卡片套卡片、彩色背景上的灰字、每个标题上方的圆角图标块。它用 `critique` 和 `audit` 做设计评审，用 `polish`、`bolder`、`quieter`、`distill` 等命令描述想要的方向，再用一个不依赖 LLM 的检测器抓出模板化痕迹。README 说明它在已有界面上最强，也就是把代理指向一个页面或组件反复迭代，新页面也能做，但难度更高。
+Impeccable 是给编码代理使用的一套设计词汇与命令。README 的出发点是代理在缺少指导时总会生成同一批默认样式：Inter 字体、紫蓝渐变、卡片套卡片、彩色背景上的灰字、每个标题上方的圆角图标块。它用 `critique` 和 `audit` 做设计评审，用 `polish`、`bolder`、`quieter`、`distill` 等命令描述想要的方向，再用一个不依赖 LLM 的检测器抓出模板化痕迹。
+
+README 把它拆成三件东西。第一是「说出你想要什么」的词汇：一句 Make it pop 只能让代理猜，而 `/impeccable bolder the pricing cards` 会加载专门为这个动作写的 playbook，并把目标限定在一个区域。第二是评审员：`critique` 按可用性启发式打分并排序要修的地方，`audit` 检查无障碍、性能、主题和响应式行为，发现项按 P0 到 P3 排序。第三是 slop 检测器：62 条确定性规则，不需要 LLM 或 API key，除了上面那些 AI 味，还能抓出拥挤的间距、跳级标题等质量问题。
+
+README 说明它在已有界面上最强，也就是把代理指向一个页面或组件反复迭代；新页面也能做，但难度更高。它支持 Claude Code、Cursor、Codex CLI、GitHub Copilot、Devin、Replit Agent、Gemini CLI、Grok Build、OpenCode、Google Antigravity、Kiro、Trae、Rovo Dev、Qoder、Mistral Vibe、Pi、Hermes Agent、DeepSeek Harness 和 Veto。和一段泛泛的设计提示相比，它的差别在于把「上下文、命令、确定性检查」三件事分开：上下文落在项目文件里，命令描述具体动作，检测器给出可重复的结果。
 
 ## 怎么上手
 
@@ -26,7 +30,18 @@ npx impeccable install
 
 安装器会识别本机的编码工具，询问装到当前项目还是全局，并在支持的工具上提供设计 hook，README 建议接受。之后在代理里执行 `/impeccable init`（Codex 用 `$impeccable init`），它会读取代码，只询问无法推断的信息，并写出 `PRODUCT.md`。再运行 `/impeccable document` 把现有视觉系统记录到 `DESIGN.md`，后续命令都会读这两份文件。
 
-Node 只用于 `npx`；技能本身运行的是随附或首次下载到 `~/.impeccable/bin/` 的自包含引擎二进制。少数工具需要额外一步：Codex 要在 `/hooks` 批准项目 hook，Grok Build 要运行 `/hooks-trust` 或以 `--trust` 启动，Hermes Agent 要先启用 `impeccable-design-hook` 插件。检测器也能脱离代理在终端或 CI 运行：
+基本用法是「命令加目标」：
+
+```
+/impeccable critique the pricing cards
+/impeccable quieter the landing page
+/impeccable polish settings
+/impeccable harden checkout
+```
+
+也可以直接描述想要什么，例如 `/impeccable redo this hero section`。README 建议目标越窄效果越好：认真看一个 section 胜过扫一眼整页。常用命令可以用 `/impeccable pin audit` 固定成 `/audit` 快捷方式。
+
+检测器也能脱离代理在终端或 CI 运行：
 
 ```bash
 npx impeccable detect src/
@@ -36,23 +51,35 @@ npx impeccable detect --sarif src/
 npx impeccable detect --list-rules
 ```
 
-扫描 URL 时会调用本机已安装的 Chrome 或 Edge，因此可以先启动开发服务器，再对 `http://localhost:5173` 运行检测。README 还给出 GitHub Actions 配合 `upload-sarif` 的配置示例。
+扫描 URL 时会调用本机已安装的 Chrome 或 Edge，因此可以先启动开发服务器，再对 `http://localhost:5173` 运行检测。README 给出 GitHub Actions 配合 `upload-sarif` 的配置示例，并说明退出码：2 表示发现问题，1 表示目标无法扫描。源码文件如 JSX、TSX 只走模式规则；低对比度、过小字号等需要渲染页面的规则只在扫描 URL 时运行。
+
+部分工具需额外一步。Codex 要在 `/hooks` 批准项目 hook，更新改变 hook 后还要再批准；Grok Build 要运行 `/hooks-trust` 或以 `--trust` 启动；Hermes Agent 要先启用 `impeccable-design-hook` 插件。Node 只用于 `npx`，技能本身运行的是随附或首次下载到 `~/.impeccable/bin/` 的自包含引擎二进制。
+
+还有几种替代安装方式。Claude Code 可以 `/plugin marketplace add pbakaus/impeccable` 后从 `/plugin` 安装；GitHub Copilot 在 VS Code 里需要扩展、Copilot Chat 和受信任工作区，扩展要求 VS Code 1.109.3+；Grok Build 用 `grok plugin install pbakaus/impeccable#plugin --trust`。团队想固定版本可以用 git submodule 加 `npx impeccable link`，完全不用 Node 时也可以按 README 的表格手动复制 skills 目录。
+
+设计 hook 在模型审批之外运行，Claude Code 中即使拒绝模型自己的命令，已安装的 command hook 仍会执行，首次编辑还可能触发引擎下载，所以无人值守运行前要检查 hook，或用 `--settings '{"disableAllHooks": true}'` 临时关闭。另一个是手动复制不会带 hook 和 subagents，需要再跑一次 `npx impeccable install`。
 
 ## 值得注意的设计
 
-上下文先落盘，再执行命令。`init` 只问代理推断不出的产品受众、目标和约束，写进 `PRODUCT.md`；`document` 把现有视觉系统写进 `DESIGN.md`。这两份文件成为后续 critique、polish 等命令的共同输入，避免每次对话重新解释品牌和约束。`extract` 还能把重复出现的模式抽回设计系统。
+上下文先落盘，再执行命令。`init` 只问代理推断不出的产品受众、目标和约束，写进 `PRODUCT.md`；`document` 把现有视觉系统写进 `DESIGN.md`。这两份文件成为后续 critique、polish 等命令的共同输入，避免每次对话重新解释品牌和约束。`extract` 还能把重复出现的模式抽回设计系统。README 说 `init` 会记住一次构建路径的选择：新落地页可以先生成完整 comp 再照着写（更慢更贵），也可以直接在代码里搭（更轻更快），选择保存在 `.impeccable/config.json` 的 `buildPath`，并且只在 harness 能生成图片时才出现。
 
-检测器把「AI 味」变成可重复的规则。README 说有 62 条确定性规则，不需要 LLM 或 API key，可以在三个位置运行：代理编辑 UI 文件时的 hook、独立 CLI 或 CI、浏览器扩展覆盖层。需要渲染页面的规则（如低对比度、过小字号）只在扫描 URL 时运行，JSX、TSX 等源码只走模式规则。CLI 的退出码区分「发现问题」（2）和「目标无法扫描」（1），并支持 SARIF 2.1.0 与 GitHub Actions 注解。
+24 个命令按用途分组。Steer 组有 bolder、quieter、distill、colorize、typeset、layout、animate、delight、overdrive；Review 组是 critique 和 audit；Finish 组是 polish、harden、clarify、adapt、optimize、onboard；Iterate live 组是 live 和 generate；Plan and set up 组是 shape、init、document、extract。第 24 个 craft 已弃用，只是普通构建请求的别名。
 
-Live mode 把浏览器选择接回源码。`/impeccable live` 在运行中的开发服务器上打开覆盖层，选中元素后循环切换变体，接受后写回本地源码，支持 Vite、Next、SvelteKit、Astro、Nuxt 和普通 HTML。它把「描述想要什么」变成「在真实页面上挑选」，但 README 也明确限定它只应修改本地 checkout。
+检测器把「AI 味」变成可重复的规则。README 说有 62 条确定性规则，不需要 LLM 或 API key，可以在三个位置运行：代理编辑 UI 文件时的 hook、独立 CLI 或 CI、浏览器扩展覆盖层。需要渲染页面的规则只在扫描 URL 时运行；扫 HTML 文件时还会读取作为文字底图的本地背景图像素，所以白字压在近白照片上即使没有浏览器也会让 CI 失败；纯装饰图不管，远程图片从不抓取。忽略机制也做了防呆：`npx impeccable ignores add-value overused-font Inter --reason "Brand font"` 可以全局放行品牌字体，单文件可以用注释关闭规则，`--report-unused-ignores` 会列出已经不再匹配任何发现的过期豁免。
+
+Live mode 把浏览器选择接回源码。`/impeccable live` 在运行中的开发服务器上打开覆盖层，选中元素后循环切换变体，接受后写回本地源码，支持 Vite、Next、SvelteKit、Astro、Nuxt 和普通 HTML。它把「描述想要什么」变成「在真实页面上挑选」，但 README 也明确限定它只应修改本地 checkout，不要注入已部署的站点，也不要为了让它在生产环境工作而削弱 CSP。
+
+原生应用有单独的分支。把 `PRODUCT.md` 的 `## Platform` 设为 `ios`、`android` 或 `adaptive` 后，设计命令会改用 Apple HIG 或 Material 3，而不是 Web 惯例；`audit` 和 `adapt` 切换成原生版本，原生 audit 能直接读 SwiftUI、Compose、React Native 或 Flutter 源码。但检测器、live mode 的 generate 和编辑 hook 仍只支持 Web，因为它们依赖浏览器里的 HTML 和 CSS。`/impeccable doctor` 会找过期的上下文文件、未使用的设置和坏掉的 hook。
 
 ## 边界与风险
 
-Live mode 的 Apply 行为需要仔细审查。当聊天代理一分钟内没有轮询时，它会从 PATH 运行 `codex`，缺失时回退到 `claude`，并关闭审批、权限检查和沙箱（`--dangerously-bypass-approvals-and-sandbox` 或 `--permission-mode bypassPermissions`），同时继承当前环境。应用文案修改还会执行 `package.json` 里可选的 `impeccable:manual-edit-validate` 脚本。README 建议在不熟悉的仓库里先审查该脚本，并可用 `IMPECCABLE_LIVE_COPY_AGENT=chat` 或 `off` 改变行为。
+Live mode 的 Apply 行为需要仔细审查。当聊天代理一分钟内没有轮询时，它会从 PATH 运行 `codex`，缺失时回退到 `claude`，并关闭审批、权限检查和沙箱（`--dangerously-bypass-approvals-and-sandbox` 或 `--permission-mode bypassPermissions`），同时继承当前环境。应用文案修改还会执行 `package.json` 里可选的 `impeccable:manual-edit-validate` 脚本。README 建议在不熟悉的仓库里先审查该脚本，并可用 `IMPECCABLE_LIVE_COPY_AGENT=chat` 或 `off` 改变行为；这个环境变量只在 live server 启动时读取一次。
 
-设计 hook 在模型审批之外运行，Claude Code 中即使拒绝模型自己的命令，已安装的 command hook 仍会执行，首次编辑还可能触发引擎下载。README 建议在无人值守运行前检查 hook，或用 `--settings '{"disableAllHooks": true}'` 临时关闭。检测器也有范围限制：源码扫描只覆盖模式规则，对比度等规则需要浏览器；原生应用只有设计命令、audit 和 adapt 可用，检测器、live mode 的 generate 与编辑 hook 仍只支持 Web。
+设计 hook 的权限模型也值得注意。它在模型审批之外运行，Claude Code 中即使拒绝模型自己的命令，已安装的 command hook 仍会执行，首次编辑还可能触发引擎下载。README 建议在无人值守运行前检查 hook，或用 `--settings '{"disableAllHooks": true}'` 临时关闭。编辑判断：这相当于把一部分执行权交给项目级配置，团队应把 hook 当成代码来评审。
 
-遥测方面，新设计开始时技能会从 impeccable.style 目录拉取视觉方向。即使关闭遥测，这个请求仍会发生，关闭的只是「展示了哪些方向、最终选了哪个」的匿名记录；项目名、文件、代码和 `PRODUCT.md` 不会发送。项目采用 Apache 2.0 许可证，README 未说明各编码工具的最低版本与完整兼容矩阵，只给出安装和 hook 的文档入口。
+检测器有明确范围限制：源码扫描只覆盖模式规则，对比度等规则需要浏览器；原生应用只有设计命令、audit 和 adapt 可用，检测器、live mode 的 generate 与编辑 hook 仍只支持 Web。README 未说明各编码工具的最低版本与完整兼容矩阵，只给出安装和 hook 的文档入口；编辑判断：它不是设计师的替代品，62 条规则能挡住常见模板味，但无法判断品牌是否合适、信息架构是否成立。
+
+遥测方面，新设计开始时技能会从 impeccable.style 目录拉取视觉方向。即使关闭遥测，这个请求仍会发生，关闭的只是「展示了哪些方向、最终选了哪个」的匿名记录；项目名、文件、代码和 `PRODUCT.md` 不会发送。可以用 `npx impeccable telemetry off`、`DO_NOT_TRACK=1` 或 `.impeccable/config.json` 里的 `"telemetry": false` 关闭。项目采用 Apache 2.0 许可证，README 说它最初来自 Anthropic 的 frontend-design skill。
 
 ## 来源
 

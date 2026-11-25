@@ -14,11 +14,19 @@ sources: [github]
 
 ## 它是什么
 
-这是一个 Agent Skill，目标是把本地 LLM 服务器的推理速度「爬山」过程标准化，适用于任意硬件和量化方式。它覆盖单用户与并发解码、投机解码、prefill、KV cache 容量、启动时间和首 token 延迟，并要求在内存上限内工作，每个结果都要通过完整上下文稳定性检查。它既能被 Claude Code 等加载 `SKILL.md` 的 Agent 使用，也能让任意模型按 `PROMPT.md` 手动执行。README 强调它记录的是实际得到加速的做法，不是一份参数清单。
+这是一套写给 Agent 的「本地大模型推理调优」作业流程，不是可执行的一键调参器。README 说，它面向任意硬件、任意量化的本地 LLM 服务，目标是把「爬山」式的速度优化过程标准化：先算理论上限，再每次只改一个变量，交错对照测量，最后用长上下文与并发稳定性门槛验收。覆盖范围包括单用户与并发 decode、投机解码、prefill、KV cache 容量、启动时间和首 token 延迟；所有尝试都必须在某个内存上限内完成。
+
+它由三部分组成。`SKILL.md` 是主流程，写清盘点、上限、基本规则、循环和杠杆顺序，以及何时停手、如何验收和发布、怎样汇报。`references/` 是五份按需加载的参考：`ceilings.md` 讲怎么算 decode、prefill、TTFT、启动和 KV 的上限，附一个完整算例；`methodology.md` 讲测量陷阱，比如按 chunk 数 token、prompt 长度不对、接受计数器、漂移、统一内存口径；`levers.md` 按「通用 / 特定技术栈」标注每个杠杆和实测证据；`gotchas.md` 收集 vLLM、SGLang、llama.cpp、ExLlama 以及 Intel、NVIDIA、Apple、AMD 硬件上的坑；`publishing.md` 讲固定版本、干净构建、六项验收门槛和结果卡。`scripts/` 是一个只用标准库 Python 和 bash 的引擎无关工具集。
+
+它和「抄一份参数清单」的差别在于证据链。README 用一张表列出这套技能从哪些真实爬山过程里提炼出来：Intel Arc B390 笔记本 iGPU 上，Ornith-1.5-35B-A3B（EXL3 4 bpw、SGLang XPU + MTP）单用户 decode 从 43.6 升到 53 tok/s，4 用户从 84.7 到 103，32K prefill 从 1,037 到 1,660，256K 从 297 到 628，KV 从 264K token 扩到 4×256K，启动从 113 秒降到 43 秒；RTX 3090、Arc Pro B70 和 4×H200 NVL 也各有记录。README 强调每个数字都注明硬件、模型、量化和引擎，不能直接搬到别的组合。
+
+适合谁？README 的定位是已经在跑 OpenAI 兼容推理服务、想把 tok/s 或延迟再压一截的人，以及需要判断「目标是否超过物理上限」的工程师。它要求使用者能接受反复跑基准和写实验记录，而不是点一下按钮等结果。
 
 ## 怎么上手
 
-Claude Code 用户级安装：
+前置条件很明确：一台已经启动、可访问的 OpenAI 兼容推理服务，以及 Python 3 与 bash。README 没有列出 Python 最低版本，也没有说明原生 Windows 是否受支持——脚本是标准库 Python 加 bash，编辑判断是应在 Linux 或 WSL 下使用。
+
+Claude Code 的用户级安装：
 
 ```bash
 git clone https://github.com/sybil-solutions/inference-optimisation-skill
@@ -26,15 +34,40 @@ mkdir -p ~/.claude/skills
 cp -r inference-optimisation-skill/skills/inference-optimisation ~/.claude/skills/
 ```
 
-之后直接用自然语言提要求，例如「在 40 GiB 上限下为 :8000 上的模型爬升 decode 和 prefill」，或问「这台机器上该模型的理论最大 tok/s 是多少」。其他 Agent 可以指向 `skills/inference-optimisation/SKILL.md`，或把 `PROMPT.md` 作为任务提示。不用 Agent 时，README 给出脚本流程：先跑 `ceiling.py` 算上限，复制 config 并改 `base_url` 和 model，用 `bench.py run` 跑一次，再用 `queue.sh base cand base` 做交错 A/B，最后用 `bench.py show` 看账本。
+装完可以直接用自然语言下任务，README 给的两个例子是「在 40 GiB 上限下为 :8000 上的模型爬升 decode 和 prefill」和「这台机器上该模型的理论最大 tok/s 是多少」。其他 Agent 可以指向 `skills/inference-optimisation/SKILL.md`，或把 `PROMPT.md` 当任务提示。
+
+不用 Agent 时走脚本流程：
+
+```bash
+S=skills/inference-optimisation
+python3 $S/scripts/ceiling.py $S/examples/ceiling-ornith-b390.json
+mkdir -p configs && cp $S/examples/config-existing-server.json configs/base.json
+python3 $S/scripts/bench.py run configs/base.json --long 131072
+bash $S/scripts/queue.sh base cand base
+python3 $S/scripts/bench.py show
+```
+
+第一步算上限；第二步复制配置并改 `base_url` 和 model；第三步跑一次完整基准（`--long 131072` 表示长上下文检索测试）；第四步用 `queue.sh` 把 control、candidate、control 串行交错跑；最后 `bench.py show` 打印账本。预期看到的是 `ledger.jsonl` 里逐条记录，以及一张可比较的中位数表。
+
+常见卡点集中在测量口径。README 反复提醒单次测量有 ±5–10% 噪声，很多「提升」只是漂移；token 数必须取服务端 usage，不能数流式分片；prompt 长度要从 tokenizer 取真实值；统一内存 GPU 的占用 cgroups 看不到，要用 `mem.sh`。另外 `bench.py` 会标记循环输出、失败请求和电池供电运行，这些都会污染结果。
 
 ## 值得注意的设计
 
-流程的骨架是「先算理论上限」：用 bytes/token 除以带宽、FLOPs/token 除以峰值的一半、KV 容量等估算 decode、prefill、TTFT、启动和 KV 的最大值，再判断某个目标是否已经超过物理上限。之后每次只改一个变量，用串行、可脱离终端的队列交错运行 control、candidate、control，取中位数，只有同时赢过两侧对照、且没有任何指标回退超过 3% 才接受，结果写入 `ledger.jsonl`。通过后再过两关：精确匹配 needles 的长上下文检索，以及并发满 KV soak；最后固定一个干净构建，跑六项验收门槛才发布。配套脚本保持引擎无关：`bench.py` 面向任何 OpenAI 兼容服务，token 数取服务端 usage 而非流式分片；`mem.sh` 会算上 cgroup 看不到的统一内存驱动占用；参考文档按需加载，分别讲上限计算、测量陷阱、杠杆、各引擎坑和发布。
+整套方法的第一原则是「上限先行」。`ceiling.py` 用测得的内存带宽和 FLOPs 加组件尺寸，估算 bytes/token ÷ 带宽、FLOPs/token ÷ 峰值的一半、KV 容量等，从而给出 decode、prefill、TTFT、启动和 KV 的理论天花板。README 用 B390 的结果说明价值：算下来单用户 100 tok/s 只有在两个有效投机草稿时才够得着，而该模型草稿头在深度 2 的接受率约 14%，实际目标应是 88–97 tok/s；他们最终到约 55%，剩余差距来自 GEMV 内核效率。先算上限，Agent 才能在开工前告诉你目标是否已经超过物理。
+
+第二是「交错对照 + 单变量」。每轮只改一个设置，用 `queue.sh` 串行、可脱离终端地把 control、candidate、control 排成队列，至少 6 个样本取中位数；只有同时赢过两侧相邻对照，且没有任何指标回退超过 3% 才接受，结果写进 `ledger.jsonl` 和 `PLAN.md`。README 说 `PLAN.md` 最有价值的部分往往是「哪些做法没成功、为什么」。
+
+第三是验收门槛。性能通过后还要过两关：用精确匹配 needles 的长上下文检索，以及并发满 KV 的 soak；最后固定一个干净构建，跑六项验收门槛才发布。也就是说「跑得快」不等于「可以发布」。
+
+工具侧刻意保持引擎无关：`bench.py` 面向任何 OpenAI 兼容服务，测启动、短 prompt TTFT、c1 decode 中位数、cN 聚合 decode、多长度冷 prefill、长上下文检索和带内存看门狗的峰值内存；`mem.sh` 会补上统一内存驱动占用；参考文档按需加载，避免一次性把所有细节塞进上下文。代价是这套流程更像实验方法而非产品功能：收益取决于技术栈和硬件，投入的是反复基准的时间和一台稳定机器。
 
 ## 边界与风险
 
-README 中的加速数字都注明是在特定硬件、模型、量化和引擎上测得，不能直接套到别的组合；方法本身也提示单次测量有 ±5–10% 噪声，必须交错对照。它需要一台已经跑起来的 OpenAI 兼容推理服务，脚本依赖 Python 与 bash，整个优化过程要在内存上限下反复跑基准，耗时不会短。仓库给的是流程、参考文档和测量工具，不是自动调参器，实际收益取决于技术栈和硬件。六项验收门槛也意味着「跑得快」不等于「可以发布」，还要通过稳定性与可复现性检查。README 没有给出所支持引擎版本之外的兼容范围承诺。
+README 的数据都绑定具体硬件、模型、量化和引擎版本，不能外推；方法本身也承认噪声和漂移，因此要求交错对照。它不是自动调参器，不会替你选杠杆，也不保证一定能提速——B390 的 decode 就只到上限的约 55%。
+
+运行成本不低：需要一台已跑起来的推理服务，在内存上限下反复跑长上下文和并发 soak，整个过程可能持续很久。脚本依赖 Python 与 bash，README 未说明原生 Windows 的兼容范围、最低 Python 版本、所支持的引擎版本承诺，也未说明模型权重或数据集另有许可。许可证是 MIT，但只覆盖仓库代码。
+
+还有两类边界。第一，六项验收门槛意味着「快」和「可发布」是两件事，跳过门槛的收益不可信。第二，README 的贡献规则要求每个新杠杆都附硬件、模型、量化、引擎版本、前后数字、测法和原始数据链接；如果你只是想要一个能立刻见效的配置，这套东西会更像负担。编辑判断：适合愿意把优化当实验管理的人，不适合想要现成调参面板的团队。
 
 ## 来源
 

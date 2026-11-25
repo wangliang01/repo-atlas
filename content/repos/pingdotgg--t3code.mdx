@@ -15,51 +15,51 @@ sources: [github]
 
 ## 它是什么
 
-T3 Code 自称是 coding agents 的开源 control plane。它不是新的模型或 Agent，而是在本机运行你已经装好、已经登录的编码 Agent，再提供一个统一界面。README 列出的支持范围包括 Claude Code、Codex、Cursor、OpenCode、Grok Build、Antigravity、Kiro、Pi、Muse Code、fx，以及任何走 ACP 的 Agent。桌面端、网页端和 iOS/Android 客户端看到的是同一批线程，因此可以在电脑上开一个线程，出门后用手机批准下一步。README 明确说不转售 token，驱动的是用户自己的订阅。
+T3 Code 自称是 coding agents 的开源 control plane，README 的定位是「在你机器上运行编码 Agent，并给它们一个快速界面」。README 说它不转售 token，只驱动你已安装并登录的 Claude Code、Codex 等工具，并称「如果某个 Agent 已经在你电脑上配置好，T3 Code 就能控制它」。
+
+支持面很宽：Claude Code、Codex、Cursor、OpenCode、Grok Build、Antigravity、Kiro、Pi、Muse Code、fx，以及任何走 ACP 的 Agent。一个界面里可以中途换模型，也可以让 Claude 把任务交给 Codex。它面向同时在推进多个任务的个人或团队：在工位开线程，出门后用手机批准下一步；也可以把 Agent 跑在另一台机器上，通过局域网、Tailscale 或 T3 Connect 连接。
+
+组成上是一个本机 server 加多种客户端：桌面端覆盖 macOS、Windows 与 Linux，另有网页、iOS 和 Android。README 强调所有客户端看到同一批线程。它还内置 Git 流程：每个线程可在自己的 worktree 里工作，先看 diff，再一键 commit、push 和开 PR。和单纯把终端搬到浏览器里的工具相比，差别在于把「多 Agent、多设备、Git 审查」做进同一控制面。右栏把 Orca 列为同层对标是编辑补充，README 没有提到 Orca。
+
+README 还交代了项目动机：作者受到 Codex desktop app、Conductor、Claude Desktop 和 Cursor Glass 的启发，但认为它们都没达到自己的标准，于是想做「快、可远程、真正开放」的版本。它不绑定某个厂商的模型或订阅，代价是实际体验会随底层 Agent CLI 波动。README 说的 Open 指源码 MIT，不满意可以按自己的品牌 fork。
 
 ## 怎么上手
 
-前置条件是至少有一个已安装并登录的 Agent，例如 Claude Code 执行 `claude auth login`，或 Codex 执行 `codex login`。桌面端可从官网下载，也可以用包管理器安装：
+前置条件是至少有一个已安装并登录的 Agent。README 举例：Claude Code 执行 `claude auth login`，Codex 执行 `codex login`。桌面端可以从 t3.codes/download 下载，也可用包管理器：
 
 ```bash
 brew install --cask t3-code
-```
-
-```powershell
 winget install T3Tools.T3Code
+# 或 scoop install extras/t3code
 ```
 
-命令行安装会得到 `t3` 命令，运行后启动 server 并打开 web app：
+README 还列出 Arch Linux 的 `yay -S t3code-bin`、Nix 的 `nix profile add ...#t3code`，以及 Debian/Ubuntu 从 Releases 取 `.deb`。命令行安装会得到 `t3` 命令：
 
 ```bash
 curl -fsSL https://t3.codes/install.sh | sh
-```
-
-Windows PowerShell：
-
-```powershell
+# Windows PowerShell
 irm https://t3.codes/install.ps1 | iex
 ```
 
-不想安装可以先试 `npx t3@latest`。手机端从 App Store 或 Google Play 安装，再按 remote access 文档连回本机。装好后新建线程，选一个已登录的 Agent 即可开始；线程中可切换模型，也可以让 Claude 把任务交给 Codex。README 未说明 Node 版本、macOS 最低版本等前置要求。
+运行 `t3` 会启动 server 并打开 web app。不想安装可先试 `npx t3@latest`。手机端从 App Store 或 Google Play 安装，再按 remote access 文档连回本机。装好后新建线程，选一个已登录的 Agent 即可开始。README 的文档入口还包括安装与首跑、远程访问、权限模式、源码管理、通过 MCP 连接外部 Agent 以及 FAQ；nightly 构建、AppImage、WSL 和 NixOS 的步骤在安装文档里。对第一次使用的人，建议先只配一个 Agent 跑通线程，再开远程访问和 Git 集成，避免一次引入太多变量。README 未说明 Node 版本、macOS 最低版本等系统要求，也没有说明首次启动是否会要求创建账号或登录 T3 服务；各 provider 的配置步骤不在主 README，而在单独的安装文档里。
 
 ## 值得注意的设计
 
-架构上，它是「一个本机 server，多种客户端」的控制面。Agent 实际运行在用户机器上，桌面、网页、iOS、Android 只是同一 server 的客户端，所以线程状态一致；远程访问支持局域网、Tailscale 或 T3 Connect。这与把 Agent 会话托管到云端的做法不同，README 把「不转售 token、驱动已有订阅」作为卖点。
+架构是「一个本机 server，多种客户端」。Agent 实际运行在用户机器上，桌面、网页、iOS、Android 只是同一 server 的客户端，因此线程状态天然一致。远程访问支持局域网、Tailscale 或 T3 Connect。这和把 Agent 会话托管到云端的路线不同，README 把「不转售 token、驱动已有订阅」作为主要卖点，并用「Wait, what are you selling me?」一节回答：什么都不卖。
 
-Agent 接入依赖 ACP，也兼容各家自己的 CLI 登录态。README 的说法是：只要机器上配好了某个 Agent，T3 Code 就能控制它；同一线程里可以换模型，也可以把任务从一个 Agent 交给另一个。具体 provider 的配置步骤在单独的 provider 文档里，不在主 README。
+Agent 接入依赖 ACP，也兼容各家自己的 CLI 登录态。README 说同一线程里可以换模型，也可以把任务从一个 Agent 交给另一个。具体 provider 的配置放在单独文档里，README 正文不展开。线程内的模型切换和 Agent 交接是这套机制的延伸：界面把每个 Agent 当成可替换的执行端，所以换模型不需要重开线程。README 还把「通过 MCP 连接外部 Agent」单列成文档，说明它不只管理内置列表。Git 集成按线程隔离：每个线程可以在自己的 worktree 里工作，这样多个 Agent 并行改代码时，改动不会挤在同一个工作区。审查流程是看 diff、一键 commit、push 和开 PR。README 还把性能当作功能，称掉帧会被当作 bug 处理。
 
-Git 集成按线程隔离：每个线程可以在自己的 worktree 里工作，先看 diff，再用一个按钮完成 commit、push 和开 PR。这样多个 Agent 并行改代码时，改动不会挤在同一个工作区。README 还把性能当作功能来对待，称掉帧会被当作 bug 处理。
+权限模式决定 Agent 能自动执行哪些操作、哪些需要人批准，这正是手机远程批准的前提；但主 README 没有展开默认级别和规则。这种设计的代价是边界清楚但依赖外部：T3 Code 只提供控制面，Agent 的能力、额度和认证仍由底层 CLI 决定。如果 Claude Code 或 Codex 改了认证或接口，集成需要跟着更新，T3 Code 的升级节奏也会和多个 Agent CLI 的兼容性绑在一起。线程与 worktree 的自动清理、并行上限等运维细节，README 未说明。
 
 ## 边界与风险
 
-MIT 只覆盖源代码，不覆盖 T3 Tools 的商标、品牌和外观，包括 T3 Code 名称、字标、logo 和应用图标。README 对 fork 的要求很强硬：公开分支必须替换品牌，必须明确声明非官方，暗示官方身份会被追责。想基于它做商业发行，需要先读 TRADEMARK.md。
+许可证是 MIT，但 README 特别声明 MIT 只覆盖源代码，不覆盖 T3 Tools 的商标、品牌和外观，包括 T3 Code 名称、字标、logo 和应用图标。公开 fork 必须替换品牌，必须明确声明非官方；暗示官方身份会被追责。想基于它做商业发行，需要先读 TRADEMARK.md。
 
-它是一个客户端和编排层，实际能力受底层 Agent 限制。用户仍需自行安装并登录 Claude Code、Codex 等工具，也要承担各自的订阅费用；如果这些 CLI 改了认证或接口，集成可能需要跟着更新。远程访问意味着把能执行命令的 Agent 暴露给其他设备，README 链接了权限模式与远程访问文档，但主 README 未说明默认监听地址、认证方式和传输加密等细节。
+实际能力受底层 Agent 限制。用户仍需自行安装并登录 Claude Code、Codex 等工具，也承担各自的订阅费用。远程访问意味着把能执行命令的 Agent 暴露给其他设备，README 链接了权限模式与远程访问文档，但主 README 未说明默认监听地址、认证方式和传输加密等细节。README 也未说明版本号、发布节奏、系统要求和遥测策略，更没有展开 app.t3.codes 这类网页客户端的托管方式与数据路径。
 
-README 未说明版本号、发布节奏、系统要求和遥测策略，也未展开 [app.t3.codes](https://app.t3.codes) 这类网页客户端的托管方式与数据路径。贡献政策写明审阅能力有限，小而聚焦的修复更容易合并，新功能需要先通过讨论。整体更像一个快速迭代的产品仓库，而不是接口稳定的基础库。
+贡献政策写得很直白：审阅能力有限，小而聚焦的修复更容易合并，新功能需要先通过讨论。README 要求报告 bug 或开 PR 前先读 CONTRIBUTING.md，功能请求放到 Ideas 讨论区；开发构建和架构各有 runbook 与 overview，支持走 Discord。README 未说明线程数据存在哪里、如何备份或迁移，也未说明多用户共用一台 server 时的隔离方式；这些对团队落地比界面功能更关键。
 
-右栏把 Orca 列为同层对标，是编辑补充的参照，README 没有提到 Orca。两者是否真的可直接替代，需要单独对照，不在本文结论里。
+编辑判断：它适合已经付费使用多个编码 Agent、希望把它们收拢到一个可远程接管的界面的人；不适合想找托管模型服务、零配置云端 Agent，或要求稳定 API 的团队。如果团队的主要诉求是统一入口和远程批准，它已经覆盖；如果要求审计日志、细粒度 RBAC 或稳定 API，README 没有给出证据。整体更像快速迭代的产品仓库，而不是接口稳定的基础库。
 
 ## 来源
 

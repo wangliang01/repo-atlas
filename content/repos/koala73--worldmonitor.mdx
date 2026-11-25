@@ -14,17 +14,23 @@ sources: [github]
 
 ## 它是什么
 
-World Monitor 是一个实时全球情报仪表盘，把 AI 聚合的新闻、地缘政治监测和基础设施跟踪放进同一个态势界面。README 列出的能力包括按地区和主题组织的新闻源与 AI 简报、3D 地球与平面地图、军事与经济及灾害信号的跨流关联、面向 31 个 Tier-1 国家的 Country Instability Index、金融雷达、本地 Ollama 推理、多语言与 RTL 界面，以及从同一代码库生成的 world、tech、finance、commodity、happy、energy 六个站点变体。它面向需要持续观察全球事件的分析人员、研究者和想把情报接进脚本或代理的开发者。
+World Monitor 是一个实时全球情报仪表盘，把 AI 聚合的新闻、地缘政治监测和基础设施跟踪放进同一个态势界面。README 把它定位成统一态势感知界面：新闻按地区和主题组织，并被 AI 汇总成简报；地图同时提供 3D 地球和平面视图；军事、经济、灾害与升级信号可以跨流关联；另有一个名为 Country Instability Index 的指数，给出 31 个 Tier-1 国家的 CII v14 分数、区间和近 24 小时变动。README 的功能清单还包括金融雷达（股票交易所、商品、加密资产和一个市场综合指标）、可在本机运行的 Ollama 推理、多语言界面与 RTL 支持，以及面向具体领域的面板实现。
+
+它不只是一个网页。README 列出的入口包括：world、tech、finance、commodity、happy、energy 六个站点变体；Windows、macOS 和 Linux 的 Tauri 桌面应用；运行 `npx worldmonitor` 的终端面板；npm 与 Homebrew 分发的 CLI；Python、Ruby、Go 三个 SDK；托管在 https://worldmonitor.app/mcp 的 MCP server；以及 https://api.worldmonitor.app 的 REST API。终端面板提供世界地图、新闻、市场、冲突、军机、网络、气候、预测市场和直播电视，README 说它不需要 API key，并支持鼠标与配色主题。
+
+给谁用？README 没有直接写用户画像，但从入口设计可以推断：需要持续跟踪全球事件的分析人员、研究者，以及想把情报接进脚本或代理的开发者。编辑判断：和普通新闻聚合器相比，它的差别不在读新闻，而在把多类信号叠到同一张地图上，并提供可编程入口。
 
 ## 怎么上手
 
-最快的方式是用 Docker 自托管完整栈，脚本会克隆仓库、生成密钥、启动服务并灌入公开数据：
+最快的方式是用 Docker 自托管完整栈：
 
 ```bash
 curl -fsSL https://www.worldmonitor.app/install.sh | bash
 ```
 
-完成后打开 [http://localhost:3000](http://localhost:3000)。API key 是可选的；脚本支持 `--dir`、`--port`、`--no-seed`、`--no-build` 等参数。本地开发要求 Node.js 24（仓库 `.nvmrc` 固定了版本），旧发行版自带的 Node 18/npm 9.2.0 会在 `npm install` 时报 `Invalid comparator: file:vendor/braces`：
+脚本会克隆仓库（或复用已有 checkout）、生成所需密钥、启动仪表盘、Redis、AIS relay 并灌入公开数据，完成后打开 http://localhost:3000。API key 是可选的。脚本支持 `--dir`、`--port`、`--no-seed`、`--no-build` 等参数，需要放在 `bash -s --` 之后传入。README 建议生产环境先读 SELF_HOSTING.md。
+
+本地开发要求 Node.js 24，仓库的 .nvmrc 固定了版本。README 特意提醒：Debian 12 和 Raspberry Pi OS 自带 Node.js 18 与 npm 9.2.0，会在 `npm install` 时报 `Invalid comparator: file:vendor/braces`。本地启动命令是：
 
 ```bash
 git clone https://github.com/koala73/worldmonitor.git
@@ -33,23 +39,27 @@ npm install
 npm run dev
 ```
 
-开发服务器同样在 3000 端口，可用 `.env.local` 里的 `DEV_PORT` 覆盖。应用无需环境变量即可运行，但部分特性数据源需要凭据，清单在 `.env.example`。终端用户可以直接运行 `npx worldmonitor` 打开同一套实时数据的 TUI，README 说明它不需要 API key，并支持鼠标与配色主题。变体开发用 `npm run dev:tech`、`dev:finance`、`dev:commodity`、`dev:happy`、`dev:energy`。
+开发服务器同样在 3000 端口，可用 .env.local 里的 `DEV_PORT` 覆盖。应用无需环境变量即可运行，但部分特性数据源需要凭据，清单在 .env.example。变体开发用 `npm run dev:tech`、`dev:finance`、`dev:commodity`、`dev:happy`、`dev:energy`。
+
+如果只想在终端看数据，直接运行 `npx worldmonitor`；要装 CLI 可用 `npm install -g worldmonitor` 或 `brew install worldmonitor`，然后例如 `worldmonitor risk IR --api-key wm_xxx`。MCP 的 `tools/list` 是公开的，`tools/call` 需要用 `X-WorldMonitor-Key` 头或 OAuth 认证；API key 在 worldmonitor.app/pro 获取。桌面端提供 Windows、macOS Apple Silicon、macOS Intel 和 Linux AppImage（x64 与 ARM64）下载，装好后在应用内切换变体。README 还给出 Google Antigravity 的插件安装方式：仓库内附 `.antigravity-plugin/plugin.json` 与 `mcp_config.json`，用 `agy plugin install ./worldmonitor` 安装；Gemini 自定义应用则通过 Google 的 OAuth 回调登录。自托管的部署选项包括 Vercel、Docker 和静态站点。
+
+常见卡点一是 Node 24 的硬要求，二是部分功能在没有对应凭据时会缺数据，README 没有逐一列出哪些功能缺 key 会降级。
 
 ## 值得注意的设计
 
-地图层由两套引擎共享同一份目录。3D 地球使用 globe.gl 与 Three.js，平面地图使用 deck.gl 与 MapLibre GL，但地图图层目录是共用的。这意味着同一批数据层可以在两种视图间切换，而不是为每种视图维护两套渲染逻辑。README 把这一点列为「dual map engine」，并强调共享 catalog。
+地图层由两套引擎共享同一份目录。3D 地球使用 globe.gl 与 Three.js，平面地图使用 deck.gl 与 MapLibre GL，但地图图层目录是共用的。这样同一批数据层可以在两种视图间切换，而不是为每种视图维护两套渲染逻辑。README 把这一点列为 dual map engine，并强调共享 catalog。
 
-分析层不只做信息展示，还做信号收敛。Country Instability Index 提供 31 个 Tier-1 国家的 CII v14 分数、区间和近 24 小时变动，跨流关联则把军事、经济、灾害和升级信号放在一起看。这些指标和算法的细节没有写在 README 正文，而是指向完整文档，阅读时应把指数理解为一个有版本号的模型输出，而不是原始事实。
+分析层不只做信息展示，还做信号收敛。Country Instability Index 提供 CII v14 分数、区间和 24 小时变动，跨流关联把军事、经济、灾害和升级信号放在一起看。README 没有在正文写这些指标和算法的细节，而是指向完整文档。编辑判断：应把指数理解为一个有版本号的模型输出，而不是原始事实。
 
-单一代码库支撑多种交付形态。六个站点变体来自同一份代码，桌面端是一个 Tauri 2 二进制，安装后可在应用内切换变体，没有按变体拆分的下载包；终端面板与 CLI 发布为 npm 包；此外还有 REST API、Python/Ruby/Go SDK、MCP server 和面向代理的发现文件。缓存采用 Redis（Upstash）、三级缓存、CDN 与 service worker 的组合，适合这种多入口、强时效的数据产品。
+单一代码库支撑多种交付形态。README 说所有站点变体和桌面二进制来自同一份代码、走同一个发布流程；桌面端只有一个 Tauri 2 二进制，安装后可在应用内切换变体，刻意不提供按变体拆分的下载包。终端面板与 CLI 发布为 npm 包，由 `cli-v*` 标签从 `cli/` 目录发布。技术栈包括 Vanilla TypeScript、Vite、globe.gl + Three.js、deck.gl + MapLibre GL、Tauri 2（Rust）加 Node.js sidecar、Ollama / OpenRouter、浏览器侧 Transformers.js、Protocol Buffers 与 sebuf HTTP 注解，以及 Redis（Upstash）、三级缓存、CDN 和 service worker。这套组合针对的是多入口、强时效的数据产品。README 还列出 panel inventory，即在各变体里已经落地的具体面板实现，而不只是图层。数据源覆盖地缘政治、金融、能源、气候、航空、网络、军事、基础设施和新闻情报，并按 provider、feed-tier、license-posture 和 collection-method 编目。编辑判断：这类编目对判断某个信号是否可引用很重要，因为同一张地图上的数据在授权和时效上并不等价。面向代理的细节也写进了交付物：MCP server 通过草稿版 `io.modelcontextprotocol/skills` 扩展发布 `skills/list`、`skills/get` 和 `skill://` 资源读取，站点还提供 llms.txt、agent-skills manifest 与 api-catalog 三个发现文件，CLI 可以用 `npx worldmonitor tools` 直接列出全部 MCP 工具。
 
 ## 边界与风险
 
-代码采用 AGPL-3.0-only，商业或 SaaS 使用需要遵守 copyleft 与源码开放义务；如果需要闭源专有使用或官方品牌授权，要单独获得商业或商标许可。World Monitor 的名称和 wordmark 指向官方站点，README 明确要求不要把自己的 fork 包装成官方网站。版权归作者 Elie Habib 所有。
+代码采用 AGPL-3.0-only，README 的表格说明个人、研究、自托管、fork 和商业使用都可以，但商业与 SaaS 需要遵守 copyleft 和源码开放义务；如果需要闭源专有使用或官方品牌授权，要单独获得商业或商标许可。README 还明确要求不要把自己的 fork 包装成官方网站，World Monitor 的名称和 wordmark 指向官方站点。版权归作者 Elie Habib 所有。
 
-自托管的一行安装脚本通过 `curl | bash` 执行，生产环境应先阅读脚本与 `SELF_HOSTING.md`，并注意脚本默认会克隆、生成密钥和灌数据。README 未说明各上游数据源的准确性保证、更新频率 SLA 或断供后的降级策略，只说明会聚合带署名的来源并提供数据源目录；关键决策不应只依赖这个面板。部分特性数据源需要额外凭据，README 没有逐一列出哪些功能在没有 key 时会缺失。
+自托管的一行安装脚本通过 `curl | bash` 执行，生产环境应先阅读脚本与 SELF_HOSTING.md，并注意脚本默认会克隆、生成密钥和灌数据。README 未说明各上游数据源的准确性保证、更新频率 SLA 或断供后的降级策略，只说明会聚合带署名的来源，并提供数据源目录。README 的支持状态表把六个站点、桌面二进制和 npm 包都标为 Stable，并说明它们的 issue 走同一个 backlog。编辑判断：关键决策不应只依赖这个面板。
 
-环境要求偏严格：Node 24 是本地开发的硬前提，README 特意提醒 Debian 12 和 Raspberry Pi OS 的旧 Node 会导致安装失败。桌面端虽有 Windows、macOS 和 Linux 构建，README 未说明各平台的功能差异或签名策略；终端面板与 CLI 被标为稳定，但它们的版本节奏与 Web 端分开，由 `cli-v*` 标签发布。许可证为 AGPL-3.0-only，商业授权是另一条路径。
+环境要求偏严格：Node 24 是本地开发的硬前提，旧发行版会导致安装失败。桌面端虽有 Windows、macOS 和 Linux 构建，README 未说明各平台的功能差异或签名策略；终端面板与 CLI 被标为稳定，但版本节奏与 Web 端分开。数据方面，README 说航班数据由 Wingbits 提供；安全章节记录了一位研究者披露的三类问题，涉及 IPC 命令暴露、renderer 到 sidecar 的信任边界和 fetch patch 的凭据注入，说明桌面端的攻击面需要认真对待。
 
 ## 来源
 
