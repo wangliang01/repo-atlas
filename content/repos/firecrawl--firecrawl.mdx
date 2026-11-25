@@ -1,0 +1,91 @@
+---
+repo: "firecrawl/firecrawl"
+title: "把网页变成 Agent 能读的干净文本"
+summary: "网页抓取工具：把任意网站转成 LLM 友好的 markdown 或结构化 JSON，本地单二进制、云服务和自托管三种用法共用一套 API，并给 Agent 提供 MCP、CLI 和 SDK 入口。"
+banner: "https://raw.githubusercontent.com/firecrawl/firecrawl/main/img/open-source-cloud.png"
+domains: ["数据与情报", "编码与开发"]
+forms: ["SDK 与库", "CLI"]
+identities: ["AI", "后端"]
+peers: []
+verdict: watch
+license: "AGPL-3.0"
+featuredAt: 2026-11-25
+readmeSha: "eaecfed6c8a76b16b4e8bcd5d499a473ece1cb11"
+readmeFetchedAt: "2026-11-25"
+sources: [github]
+---
+
+## 它是什么
+
+Firecrawl 做的是「网页 → 模型可读文本」这一步：输入一个 URL，输出干净的 markdown、结构化 JSON 或截图，省掉 Agent 自己解析 HTML 的功夫。README 把它定义为「让 Agent 更聪明的知识基础设施」，一个仓库里有三种用法——本机运行的 Firecrawl Local、托管在 firecrawl.dev 的 Firecrawl Cloud、以及用 Docker 自建的完整服务端，三者的 API 是同一套。
+
+Firecrawl Local 是 Rust 写的单个二进制，不带数据库、队列或容器，从 crates.io 安装；能抓单页、爬整站、列出一个站的所有 URL，需要 JavaScript 渲染的页面会调用本机已有的 Chrome 或 Chromium，PDF 和 Office 文档也在本地解析。Cloud 版在规模上补齐 Local 做不到的：结构化 JSON、页面交互（Interact）、自主取数的 Agent、全站搜索，还有聚合 550 多个数据源的 Alexandria——README 称其覆盖 2.5 亿人、7500 万公司和 4100 万篇论文，P95 延迟 3.4 秒，覆盖 96% 的网页。自托管则把 `apps/api` 里的完整服务端连着 Redis、PostgreSQL 和浏览器服务一起跑，Alexandria 不在自托管之列。
+
+README 未说明团队背景和定价细节，只给了一个入口：Keyless 模式每月 1000 个免费额度，不用注册；要更多就去 firecrawl.dev 开 API key。编辑判断：它主要给两类人用——给 Agent 接网络能力的开发者，和需要批量把网站变成语料的数据团队。
+
+## 它替掉了什么麻烦
+
+它替掉的是「为了给模型喂一个网页，自己写一整套抓取链」这件事。在这之前，拿网页内容给 LLM 通常要自己处理：JS 渲染得挂无头浏览器，HTML 得写规则清洗成纯文本，翻页和去重得自己写，遇到反爬还得配代理。README 没有交代这段历史，编辑判断：这些环节每一步都不难，但拼起来足以让「让 Agent 看一眼这个网页」变成半天的工作量。
+
+Firecrawl 的切入点是把这条链收成一个 API 调用。`scrape` 返回现成的 markdown；`crawl` 给一个 job ID 让 SDK 替你轮询；`map` 按「pricing」这样的关键词给全站 URL 排序；需要结构化数据时给 Agent 传一个 schema，它直接返回填好的 JSON。抓不到的页面也有一条退路：默认情况下本地抓不了的会被 Cloud 兜底抓取，结果里标 `"source": "firecrawl-cloud"`，不想走云端就设 `FIRECRAWL_CLOUD=off`。
+
+和同类方案的差别，README 没有点名竞品对比。从 README 能确认的定位是：它不只是抓取器，还想当「知识基础设施」——Cloud 版的 Interact 可以在抓下来的页面上用自然语言继续点击操作，Agent 可以不给 URL、只给一句「找 Notion 的定价」让它自己搜自己取。编辑判断：越往后者，越依赖它的云服务，本地的价值集中在「把网页变成干净文本」这一层。
+
+## 跑起来要几步
+
+最省事的验证不用装任何东西，一行 CLI：
+
+```bash
+npx -y firecrawl-cli@latest scrape https://firecrawl.dev
+```
+
+要长期本地使用，装 Firecrawl Local，前置条件是 Rust 和 C 编译器（macOS 装 `build-essential` 对应的 Xcode 工具链，Debian/Ubuntu 装 `build-essential`）：
+
+```bash
+cargo install firecrawl-local
+firecrawl-local scrape https://firecrawl.dev --markdown
+firecrawl-local crawl https://docs.firecrawl.dev --limit 50 --out ./pages
+firecrawl-local map https://firecrawl.dev
+```
+
+接进编码 Agent 是一条命令，`init` 会找到本机的 Claude Code、Cursor、Gemini CLI、Codex 等工具并写入 MCP 配置（改之前会备份原配置，MCP 服务本体需要 Node.js 22+），重启 Agent 后 scrape、crawl、map、batch scrape 四个工具就在本地生效：
+
+```bash
+firecrawl-local init
+```
+
+也可以手动接任意 MCP 客户端，或用 Python / Node SDK：
+
+```bash
+pip install firecrawl
+npm install firecrawl
+```
+
+```python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_url="http://localhost:3002")  # 指向本地 serve
+print(app.scrape("https://firecrawl.dev").markdown)
+```
+
+常见卡点有三个：Local 的搜索和 Alexandria 都要走 Cloud（搜索不用账号，Alexandria 要 `firecrawl-local login`）；`serve` 默认在 3002 端口起 Firecrawl v2 API，本地路由不需要 key；需要结构化 JSON、Interact、Agent 的功能只在 Cloud 版有。
+
+## 它把复杂度放在哪
+
+复杂度放在「同一套 API、三种部署」这条线上。README 的功能对照表把每个能力标注在 Local 和 Cloud 两列里：单页抓取、整站爬取、URL 地图、批量抓取两边都有；结构化 JSON、摘要、截图、浏览器操作、Interact、Agent、监控只在 Cloud。这套设计让本地入口成为体验完整的试用装——`serve` 起的 localhost API 与 Cloud 协议兼容，为 Cloud 写的代码原封不动就能换到本地，反之亦然。
+
+关键抽象是「文档」（Document）：无论来源是网页、PDF 还是 Office 文件，返回的都是带 markdown、元数据和可选结构化字段的同一形态，Agent 侧不需要为不同来源写不同解析。SDK 层把异步性吃掉——`crawl` 返回 job ID，SDK 替你轮询直到完成，调用方看到的是同步结果。
+
+代价集中在许可和边界上。README 写明主许可 AGPL-3.0，SDK 和部分 UI 组件是 MIT，各目录的 LICENSE 为准——编辑判断：想把服务端改改就托管成自家产品对外提供，AGPL 的开源义务绕不开；SDK 调用则不受影响。另外 README 明确「遵守目标网站政策是使用者自己的责任」，默认尊重 robots.txt。自托管也不是零成本：Redis、PostgreSQL、浏览器服务三个依赖要自己养，README 给了 Docker Compose、Kubernetes manifest 和 Helm chart 三条路，但运维量都在你这边。
+
+## 什么时候别用它
+
+许可是最先要看的：AGPL-3.0 对「把服务端包一层就当 SaaS 卖」不友好，想商用集成的人应先读 LICENSE 目录；SDK 走 MIT 不受影响。编辑判断：个人脚本和公司内部数据管道通常不触发 AGPL 的分发场景，但拿不准就该问法务。
+
+Cloud 依赖是第二件事：搜索、Alexandria、Interact、Agent 都只能在 Cloud 用，Alexandria 的每个数据源按次扣额度，README 称发现工具免费、执行收费——具体价格 README 未说明，重度使用前先算成本。数据外发也是同理：任何 Cloud 兜底抓取都会把目标 URL 和抓取行为送到它的服务器，合规要求「数据不出本机」的场景要么设 `FIRECRAWL_CLOUD=off`，要么自托管，而自托管又缺搜索和 Alexandria。
+
+它也不解决所有抓取难题。README 未说明对验证码、强登录态站点的成功率，只给了基准链接自称覆盖 96% 的网页——这是项目自己的数字，README 未说明独立复现结果。抓取被付费墙挡住的内容、需要账号才能看的页面，README 没有承诺。编辑判断：不触网抓取、只想读 PDF 的场景用 `pdftotext` 一类小工具更轻；要的是「给定关键词返回干净答案」而不是「可控地取网页」的人，更适合直接用搜索 API 或 Agent 类产品，Firecrawl 的价值在于过程可控、来源可查。
+
+## 来源
+
+GitHub：[firecrawl/firecrawl](https://github.com/firecrawl/firecrawl)（README sha eaecfed6c8a7）
