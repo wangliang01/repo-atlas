@@ -6,7 +6,9 @@ const FIXTURE = `---
 repo: "owner/project"
 title: "一个示例项目"
 summary: "用一句话说清楚它是什么。"
-categories: ["前端"]
+domains: ["编码与开发"]
+forms: ["框架 / SDK / 库"]
+peers: ["Orca"]
 verdict: watch
 featuredAt: 2026-11-24
 readmeSha: "0123456789abcdef0123456789abcdef01234567"
@@ -43,6 +45,9 @@ test("slugForRepo：小写并把 / 换成 --", () => {
 test("合法详情页：解析成功，日期是本地 Date", () => {
   const detail = parseRepoDetail("owner--project", FIXTURE);
   assert.equal(detail.data.repo, "owner/project");
+  assert.deepEqual(detail.data.domains, ["编码与开发"]);
+  assert.deepEqual(detail.data.forms, ["框架 / SDK / 库"]);
+  assert.deepEqual(detail.data.peers, ["Orca"]);
   assert.equal(detail.data.verdict, "watch");
   assert.equal(detail.data.featuredAt.getFullYear(), 2026);
   assert.match(detail.body, /## 它是什么/);

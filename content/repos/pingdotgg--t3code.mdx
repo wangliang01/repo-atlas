@@ -3,7 +3,9 @@ repo: "pingdotgg/t3code"
 title: "把本机编码 Agent 收进一个可远程操控的界面"
 summary: "在本机运行 Claude Code、Codex 等编码 Agent，并通过桌面、网页和手机共用同一套线程界面；可以在工位开工，在手机上批准下一步。"
 banner: "https://github.com/pingdotgg/t3code/raw/main/.github/readme/hero.webp"
-categories: ["Agent 框架", "前端"]
+domains: ["编码与开发"]
+forms: ["Agent 控制面 / 编排", "桌面 / Web 应用"]
+peers: ["Orca"]
 verdict: recommend
 featuredAt: 2026-11-24
 readmeSha: "b3ad8bae49b70ae2043b2e274ac8b8b7923e02b8"
@@ -56,6 +58,8 @@ MIT 只覆盖源代码，不覆盖 T3 Tools 的商标、品牌和外观，包括
 它是一个客户端和编排层，实际能力受底层 Agent 限制。用户仍需自行安装并登录 Claude Code、Codex 等工具，也要承担各自的订阅费用；如果这些 CLI 改了认证或接口，集成可能需要跟着更新。远程访问意味着把能执行命令的 Agent 暴露给其他设备，README 链接了权限模式与远程访问文档，但主 README 未说明默认监听地址、认证方式和传输加密等细节。
 
 README 未说明版本号、发布节奏、系统要求和遥测策略，也未展开 [app.t3.codes](https://app.t3.codes) 这类网页客户端的托管方式与数据路径。贡献政策写明审阅能力有限，小而聚焦的修复更容易合并，新功能需要先通过讨论。整体更像一个快速迭代的产品仓库，而不是接口稳定的基础库。
+
+右栏把 Orca 列为同层对标，是编辑补充的参照，README 没有提到 Orca。两者是否真的可直接替代，需要单独对照，不在本文结论里。
 
 ## 来源
 

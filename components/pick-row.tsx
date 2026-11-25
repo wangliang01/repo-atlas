@@ -15,15 +15,17 @@ type PickRowProps = {
   href?: string;
   /** 详情页里的中文一句话；没有就退回 GitHub 原文 */
   summaryZh?: string;
-  /** 人工分类，替代原来的 topics 标签 */
-  categories?: string[];
+  /** 主领域：决定左栏和筛选 */
+  domains?: string[];
+  /** 形态标签：Skill / MCP / 控制面等，不参与主分类 */
+  forms?: string[];
 };
 
 /**
  * 掘金式条目：标题 / 两行描述 / meta 一行（头像 + 仓库 + 语言 + 标签），
  * 右侧一列放星数与涨速当扫描锚点。原来右下角那个大衬线数字跟着衬线一起没了。
  */
-export function PickRow({ entry, hot, fresh = false, href, summaryZh, categories = [] }: PickRowProps) {
+export function PickRow({ entry, hot, fresh = false, href, summaryZh, domains = [], forms = [] }: PickRowProps) {
   const titleClass = "break-words text-body font-semibold leading-6 text-ink";
   const summary = summaryZh ?? entry.description;
   return (
@@ -96,12 +98,20 @@ export function PickRow({ entry, hot, fresh = false, href, summaryZh, categories
             </span>
 
             <span className="ml-auto flex shrink-0 gap-1.5">
-              {categories.slice(0, 3).map((category) => (
+              {domains.slice(0, 2).map((domain) => (
                 <span
-                  key={category}
+                  key={domain}
                   className="hidden rounded-[2px] bg-surface-2 px-1.5 py-0.5 sm:inline"
                 >
-                  {category}
+                  {domain}
+                </span>
+              ))}
+              {forms.slice(0, 2).map((form) => (
+                <span
+                  key={form}
+                  className="hidden rounded-[2px] bg-accent-soft px-1.5 py-0.5 text-accent-ink sm:inline"
+                >
+                  {form}
                 </span>
               ))}
             </span>

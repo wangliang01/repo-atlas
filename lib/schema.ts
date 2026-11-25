@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CATEGORIES, MAX_CATEGORIES } from "./categories.ts";
+import { DOMAINS, FORMS, MAX_DOMAINS, MAX_FORMS } from "./categories.ts";
 
 export const NOTE_KINDS = ["source", "architecture", "rebuild", "tool"] as const;
 
@@ -36,7 +36,11 @@ export const repoDetailFrontmatter = z.object({
   title: z.string().min(1),
   summary: z.string().min(1),
   /** 卡片上的中文一句话，来自详情页；不要再从英文 description 机翻 */
-  categories: z.array(z.enum(CATEGORIES)).min(1).max(MAX_CATEGORIES),
+  domains: z.array(z.enum(DOMAINS)).min(1).max(MAX_DOMAINS),
+  /** 形态是标签，不占主分类；例如 Skill、MCP、Agent 控制面 */
+  forms: z.array(z.enum(FORMS)).min(1).max(MAX_FORMS),
+  /** 同层对标/竞品；README 明说的才写，推断的要在正文里标出来 */
+  peers: z.array(z.string().min(1)).max(4).default([]),
   verdict: z.enum(["recommend", "watch", "avoid"]),
   license: z.string().min(1).optional(),
   /** README 首图/封面，做详情页 banner；没有就不显示 */

@@ -7,9 +7,10 @@ import { SiteShell } from "@/components/site-shell";
 import { formatDate } from "@/lib/date";
 import {
   DEFAULT_FILTER,
-  categoriesOf,
+  domainsOf,
   filterPicks,
-  pickCategories,
+  formsOf,
+  pickDomains,
   risingRepos,
   sameDay,
   type PickDetailInfo,
@@ -33,7 +34,7 @@ export function PicksView({ entries, syncedAt, details }: PicksViewProps) {
   const [limit, setLimit] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const categories = pickCategories(entries, details);
+  const domains = pickDomains(entries, details);
   const visible = filterPicks(entries, filter, details);
   const rising = risingRepos(entries);
   const risingCount = rising.size;
@@ -45,7 +46,7 @@ export function PicksView({ entries, syncedAt, details }: PicksViewProps) {
   // 换筛选条件就回到第一屏，否则会带着上一次翻的页数
   useEffect(() => {
     setLimit(PAGE_SIZE);
-  }, [filter.category, filter.risingOnly]);
+  }, [filter.domain, filter.risingOnly]);
 
   useEffect(() => {
     const node = sentinelRef.current;
@@ -70,12 +71,12 @@ export function PicksView({ entries, syncedAt, details }: PicksViewProps) {
     <SiteShell
       left={
         <RailList
-          title="分类"
-          items={categories.map((category) => ({
-            label: category.label,
-            count: category.count,
-            pressed: filter.category === category.label,
-            onSelect: () => setFilter((current) => ({ ...current, category: category.label })),
+          title="领域"
+          items={domains.map((domain) => ({
+            label: domain.label,
+            count: domain.count,
+            pressed: filter.domain === domain.label,
+            onSelect: () => setFilter((current) => ({ ...current, domain: domain.label })),
           }))}
         />
       }
@@ -115,7 +116,8 @@ export function PicksView({ entries, syncedAt, details }: PicksViewProps) {
               fresh={fresh.has(entry.repo)}
               href={detail ? `/picks/${detail.slug}` : undefined}
               summaryZh={detail?.summary}
-              categories={detail?.categories ?? categoriesOf(entry, details)}
+              domains={detail?.domains ?? domainsOf(entry, details)}
+              forms={detail?.forms ?? formsOf(entry, details)}
             />
           );
         })}
