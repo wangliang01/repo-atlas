@@ -14,9 +14,9 @@ sources: [github]
 
 ## 它是什么
 
-REA 全称 Reverse Engineer Anything，是一个 MCP 服务加命令行的逆向工程工具集。它把检查原生二进制、JavaScript 与 Electron 应用、.NET 程序集、网站、Android 应用、固件以及运行时与网络记录的能力交给编码 Agent，让 Agent 在没有源码的情况下追踪某个功能如何实现，并给出证据与局限。README 的定位很具体：看到别的应用里有一个想要的功能，就让 Agent 用 REA 调查，解释实现方式，再在自己的项目里做一个类似版本。
+REA 全称 Reverse Engineer Anything，是一个 MCP 服务加命令行的逆向工程工具集。README 的定位是「一个 MCP，覆盖二进制、应用和运行时行为」。它把检查原生二进制、JavaScript 与 Electron 应用、.NET 程序集、网站、Android 应用、固件以及运行时与网络记录的能力交给编码 Agent，让 Agent 在没有源码的情况下追踪某个功能如何实现，并给出证据与局限。
 
-它适合需要做互操作性研究、软件保存、安全分析或功能借鉴的开发者。分析在本机运行，REA 本身不会上传目标应用，但 Agent 拿到的工具结果会进入所用模型提供商的数据流程。终端也能直接使用同一套工具，因此不接 Agent 也能工作。
+README 举的典型场景很具体：看到别的应用里有一个想要的功能，就让 Agent 用 REA 调查，解释实现方式，再在自己的项目里做一个类似版本。它适合需要做互操作性研究、软件保存、安全分析或功能借鉴的开发者，也面向想从二进制层面理解行为的逆向工程师。分析在本机运行，REA 本身不会上传目标应用，但 Agent 拿到的工具结果会进入所用模型提供商的数据流程。终端也能直接使用同一套工具，因此不接 Agent 也能工作。README 还提醒只从 morluto/rea、rea.tools 或 rea-agents npm 包获取，相似仓库名或复制 README 不能证明下载是官方的，这条提醒本身说明供应链风险存在。
 
 ## 怎么上手
 
@@ -26,7 +26,7 @@ REA 全称 Reverse Engineer Anything，是一个 MCP 服务加命令行的逆向
 npx rea-agents setup
 ```
 
-按提示选择 Agent，审阅并批准安装计划，然后重启 Agent。安装过程会备份现有配置，并写入 REA 的 MCP 连接与调查 skill。之后可以直接问 Agent，例如理解 Notes 应用里的搜索如何工作，要求给出证据并在自己的项目里实现一个类似功能。
+按提示选择 Agent，审阅并批准安装计划，然后重启 Agent。README 说安装过程会备份现有配置，并写入 REA 的 MCP 连接与调查 skill。之后可以直接问 Agent，例如理解 Notes 应用里的搜索如何工作，要求给出证据并在自己的项目里实现一个类似功能。
 
 只用命令行时，可以对已解包的 JavaScript/Electron 目录或 ASAR 运行静态分析：
 
@@ -34,30 +34,30 @@ npx rea-agents setup
 npx -y rea-agents@latest analyze-javascript-application /absolute/path/to/app --json
 ```
 
-需要长期使用 `rea` 命令时可以全局安装：
+结果包含模块、导入、Electron 边界及对应证据。需要长期使用 `rea` 命令时可以全局安装：
 
 ```bash
 npm install --global rea-agents
 rea --help
 ```
 
-原生二进制的深度分析需要先配置分析引擎。REA 可以复用已有的 Hopper、Ghidra、IDA 或 Kuna 安装，安装器在获得批准后可以代为安装 Hopper；纯静态的 JavaScript 与 .NET 检查不需要原生引擎。Linux 还有额外的进程权限前置条件，README 指向安装文档说明。
+原生二进制的深度分析需要先配置分析引擎。REA 可以复用已有的 Hopper、Ghidra、IDA 或 Kuna 安装，安装器在获得批准后可以代为安装 Hopper。README 说明 Hopper 会在需要时自动启动，macOS 首次运行可能弹出 demo 或激活许可证的对话框，要在第一次 CLI/MCP 操作前于同一用户会话里处理完。纯静态的 JavaScript 与 .NET 检查不需要原生引擎。Linux 还有额外的进程权限前置条件，README 指向安装文档。更新时全局安装跑 `rea update`，用 npx 的则重跑 `npx rea-agents@latest setup`。README 的 FAQ 补充：任何支持本地 MCP 服务器的 Agent 都能用 REA，其他客户端可以手动注册 MCP；原生分析返回 pseudocode 与 assembly，JavaScript/Electron 分析返回模块及其关系。常见卡点是分析引擎与目标格式或宿主系统不匹配。
 
 ## 值得注意的设计
 
 第一层设计是 MCP 契约。REA 把工具结果、会话和引导式调查定义成明确的接口，Agent 不是拿到一段无出处的反编译文本，而是拿到代码、引用和未知项的组合，再据此继续追问或实现。README 专门把 MCP contracts 和 agent prompts 列成文档入口，说明它把「Agent 如何使用证据」当成协议的一部分。
 
-第二层是分析引擎的可插拔。深度原生分析按目标格式和宿主系统选择 Hopper、Ghidra、IDA 或 Kuna，REA 自己不绑定某一家反编译器。这样做的好处是能覆盖更多格式，代价是用户必须自行准备并合法授权这些商业工具。
+第二层是分析引擎的可插拔。深度原生分析按目标格式和宿主系统选择 Hopper、Ghidra、IDA 或 Kuna，REA 自己不绑定某一家反编译器。这样做的好处是能覆盖更多格式，代价是用户必须自行准备并合法授权这些商业工具。README 的 showcase 也强调可验证性：例如 DX-Ball 的音效声像计算被还原成 C 后，用 3,205 个原始 x86 用例和全部 63 个编译后函数字节做比对；Notion 的 Electron 剪贴板桥被从 renderer 经 preload、IPC 追到主进程。
 
-第三层是安装器会同时注册 MCP 服务和调查 skill。skill 提供的是调查流程说明，不只是工具清单，因此 Agent 知道先取证、再解释、最后实现与测试。README 还提到可以用录制的 Web 会话或 Linux 桌面应用构建本地强化学习环境，让 Agent 练习任务并检查结果。
+第三层是安装器会同时注册 MCP 服务和调查 skill。skill 提供的是调查流程说明，不只是工具清单，因此 Agent 知道先取证、再解释、最后实现与测试。README 还提到可以用录制的 Web 会话或 Linux 桌面应用构建本地强化学习环境，让 Agent 练习任务并检查结果。文档还提供 readiness 检查、MCP contracts、agent prompts 和自动生成的 tool catalog，便于在排错时确认某一层是否就绪。编辑判断：它把「证据链」当成核心抽象，这比直接丢反编译结果更适合 Agent 反复追问，但也要求使用者能判断证据强弱。
 
 ## 边界与风险
 
-README 明确说明，商业工具必须合法获得并获授权使用，包括 IDA Pro、Hex-Rays 反编译器、Hopper 和 JEB。REA 不提供任何工具许可证、密钥或激活权益，破解副本和绕过授权都不被允许。只使用静态 JavaScript 分析可以避开这部分成本，但原生逆向的能力会受限。
+README 明确说明，商业工具必须合法获得并获授权使用，包括 IDA Pro、Hex-Rays 反编译器、Hopper 和 JEB。REA 不提供任何工具许可证、密钥或激活权益，破解副本和绕过授权都不被允许；试用和 demo 也受厂商条款约束，包括用户、功能、自动化和输出共享限制。只使用静态 JavaScript 分析可以避开这部分成本，但原生逆向的能力会受限。
 
-运行环境方面，安装器覆盖 macOS、Linux 和 Windows，原生分析还要看具体引擎支持的目标格式与宿主系统，README 没有给出完整兼容矩阵，只链接到 supported targets 文档。分析在本机进行，但 Agent 的模型提供商有自己的数据政策，敏感目标需要先评估这条链路。
+运行环境方面，安装器覆盖 macOS、Linux 和 Windows，原生分析还要看具体引擎支持的目标格式与宿主系统。README 没有给出完整兼容矩阵，只链接到 supported targets 文档；逆向结论的准确率、性能数据和回归测试说明，README 也未说明，实际效果取决于所选分析引擎和目标本身。README 未说明单次分析的耗时、内存占用，也未给出多目标批量分析的支持范围；大规模使用前需要用自己的目标做容量测试。社区入口包括 Discord、X 和 GitHub Issues，README 称社区有 50,000 多名逆向工程师。
 
-项目代码采用 MIT 许可证，第三方材料和外部工具保留各自条款，仓库另有 THIRD_PARTY_NOTICES.md 与免责声明。README 强调只可用于合法研究、教育、互操作、软件保存以及自己拥有或获授权检查的软件。文档和社区入口较全，但 README 没有给出逆向结论的准确率、性能数据或回归测试说明，实际效果仍取决于所选分析引擎和目标本身。
+分析虽在本机进行，但 Agent 的模型提供商有自己的数据政策，敏感目标需要先评估这条链路。项目代码采用 MIT 许可证，第三方材料和外部工具保留各自条款，仓库另有 THIRD_PARTY_NOTICES.md 与免责声明。README 要求只可用于合法研究、教育、互操作、软件保存以及自己拥有或获授权检查的软件，并把这条立场覆盖到所有版本和分发渠道。编辑判断：它适合有逆向基础、能自行配置分析引擎并愿意为证据做验证的人；不适合想零配置跑通、或无法承担商业工具授权成本的团队。
 
 ## 来源
 

@@ -14,17 +14,25 @@ sources: [github]
 
 ## 它是什么
 
-magpie 不是另一个 Agent，而是装在 Agent 与模型供应商之间的一层本地应用：菜单栏面板、窗口、TUI、Web UI 和 CLI 共用同一个网关，地址是 `127.0.0.1:3425`。它读取并改写各个 Agent 自己的配置，让 Claude Code 跑在 Kimi 上、Codex 跑在 DeepSeek 上、Gemini CLI 跑在 GLM 上，也能把你在 Claude、ChatGPT、Copilot、Gemini 或 Grok 上已登录的订阅提供给其他 Agent。README 明确说它面向同时使用多个 Agent、多个供应商或多个账号的人；如果只用一个 Agent 配官方套餐，并不需要它。它还能在某个账号额度耗尽时切到下一个账号或路由组，让 Agent 不直接看到错误。
+magpie 不是另一个 Agent，而是装在 Agent 与模型供应商之间的一层本地应用。README 的标题是「Every agent's model. One place.」：Claude Code 可以跑在 Kimi 上、Codex 跑在 DeepSeek 上、Gemini CLI 跑在 GLM 上、OpenCode 用你的 ChatGPT 套餐；从菜单栏就能切换。一个本地网关同时服务所有 Agent，地址是 `127.0.0.1:3425`，形态包括菜单栏面板、窗口、TUI、Web UI 和 CLI。
+
+它解决的是配置碎片化。README 说每个 Agent 把模型存在自己的文件里，格式、密钥和 base URL 各不同；你付费的订阅只在一个 Agent 里生效。magpie 把这些收到一个应用和一个网关后面：从一份列表里给任何 Agent 选任何模型，改写 Agent 自己配置里真正起作用的那一个键，同时保留注释、顺序和格式；一个供应商的密钥、本地模型，或你已登录的 Claude、ChatGPT、Copilot、Gemini、Grok 套餐，可以给所有 Agent 用。
+
+它还处理额度耗尽：某个账号用完时，下一个账号接手；路由组可以换到另一个模型或供应商，让 Agent 看不到错误。README 明确补了一句：只有一个账号、没有路由组时，没有可切换的对象，错误仍会传给 Agent。
+
+受众写得很直接：如果你使用多个 Agent、多个供应商或多个账号，它适合你；如果你只用一个 Agent 配官方套餐，就不需要它。许可证 MIT，运行在 macOS、Windows、Linux、Docker 和 Termux。
 
 ## 怎么上手
 
-macOS、Windows 和 Linux 都可以从 [usemagpie.ai](https://usemagpie.ai) 下载应用；README 给出的一行安装脚本是：
+macOS、Windows 和 Linux 都可以从 usemagpie.ai 下载应用；README 给出的一行安装脚本是：
 
 ```sh
 curl -fsSL https://usemagpie.ai/install.sh | sh
 ```
 
-脚本在 Linux 上安装桌面应用，缺少 WebKitGTK 4.1 时会先通过包管理器补装；没有桌面或无法交互时则安装终端版本，也可以用 `--gui` 或 `--tui` 指定。README 还列出 Nix、`go install github.com/yetone/magpie@latest` 和 Docker 镜像三种方式。安装后进入 Providers 添加供应商，再到 Agents 页面为每个 Agent 选模型。等价的命令行操作如下：
+脚本在 Linux 上安装桌面应用，缺少 WebKitGTK 4.1 时会先通过包管理器补装；没有桌面或无法交互时则安装终端版本，并提示需要补哪个包；也可以用 `--gui` 或 `--tui` 指定。防火墙后可用 `--proxy` 或 `--mirror`。README 还列出 Nix、`go install github.com/yetone/magpie@latest` 和 Docker 镜像三种方式。macOS 构建有签名和公证，每个发布文件带 GitHub Actions 构建证明，可用 `gh attestation verify` 校验，且会自更新。
+
+安装后有三步：打开 Providers → Add provider，选预设并粘贴密钥，或登录订阅；到 Agents 页面为每个 Agent 选模型；开新会话即生效。等价的命令行操作：
 
 ```sh
 magpie provider add deepseek sk-…
@@ -35,15 +43,33 @@ magpie claude group/opus-anywhere
 magpie quota
 ```
 
-README 未列出统一的最低系统版本、内存或磁盘要求；Linux 桌面依赖 WebKitGTK 4.1，Windows 原生安装与 WSL 里的 Agent 也都在支持范围内。
+`magpie save work && magpie use work` 保存和切换 profile；`magpie settings set theme dark` 从终端改设置；`magpie tui` 打开终端版完整界面。卸载脚本会把 Agent 配置恢复原状，再移除安装的东西；设置留在 `~/.config/magpie`，除非加 `--purge`。
+
+常见卡点有两个。第一，magpie 通过读取 Claude Code、Codex 的登录文件和 Keychain 来发现订阅账号；不想让它读，可以在 Settings → Privacy 关闭 Subscription accounts，或运行 `magpie accounts discovery off`，也可以用 `MAGPIE_NO_ACCOUNTS=1` 只对单次运行生效；API-key 供应商不受影响。第二，README 未列出统一的最低系统版本、内存或磁盘要求；Linux 桌面依赖 WebKitGTK 4.1，Windows 原生安装和 WSL 里的 Agent 都在支持范围。
 
 ## 值得注意的设计
 
-第一层是协议转换：网关同时说 OpenAI Chat、OpenAI Responses、Anthropic Messages 和 Gemini 四种接口，并在它们之间转换，流式输出、工具调用和推理内容都包含在内。第二层是路由组：一个组可以包含多个模型甚至嵌套其他组，支持 `smart`、`order`、`rotate`、`usage`、`pace` 五种分配策略；会话会尽量留在已经作答的账号上，以保留厂商的 prompt cache，另有 intent routing 让一个小模型按每轮请求的内容选择强模型或便宜模型。第三层是隐私脱敏：开启后，密钥、私钥、令牌、邮箱和校验位成立的卡号等在本机被换成确定性占位符，回复中的占位符再换回真值，流式文本和工具调用参数都会还原；真值只保存在内存里，脱敏无法运行时请求会被拦下并返回 503。插件运行在 Bun 上，还能作为网关中间件通过 `onRequest`、`onEvent`、`onResponse` 改写或拒绝请求。
+第一层是协议转换。网关同时说 OpenAI Chat、OpenAI Responses、Anthropic Messages 和 Gemini 四种接口，并在它们之间转换，流式输出、工具调用和推理内容都包含在内。这意味着 Agent 不需要知道自己实际在用哪家的模型；也让「把一个 Agent 接到另一个供应商」变成改配置而不是改代码。代价是转换层要处理四种协议的语义差异，出问题时定位会更复杂。
+
+第二层是路由组。一个组可以包含多个模型，甚至嵌套其他组，支持五种分配策略：`smart` 在还有额度的订阅里选最快重置的；`order` 按顺序用到不能答为止；`rotate` 每轮换下一个；`usage` 先用最少使用的；`pace` 选按小时算本周剩余最多的。会话会尽量留在已经作答的账号上，以保留厂商的 prompt cache；另有 intent routing，让一个小模型按每轮请求的内容选择强模型或便宜模型。
+
+第三层是隐私脱敏。开启后，密钥、私钥、令牌、邮箱和校验位成立的卡号、证件号等在本机被换成确定性占位符，例如 `{{API_KEY_k3v9x2mq}}`；回复中的占位符再换回真值，流式文本和工具调用参数都会还原，所以 Agent 执行的命令拿到的是真密钥。同一个值每次得到同一个占位符，保证对话、prompt cache 和 thinking 签名仍然有效。真值只保存在内存里，记录只保留类型、长度和开头字符；脱敏开启但无法运行时，请求会被拦下并返回 503，绝不按原文发出。
+
+脱敏还有可选的本地模型，用来发现规则找不到的姓名、地址和密码；README 说这是一个 1.6 GB 的下载、在 CPU 上运行。每条规则可以设为 Mask、Warn 或 Block，也能加自己的词和模式；Insights › Masking 会列出每个被改写的请求和供应商实际收到的内容。代价是模型看到的是占位符，因此无法处理「这个 token 为什么被拒」这类针对值本身的任务，需要把值加入 Never mask。
+
+插件运行在 Bun 上，第一次需要时下载。插件可以登录、列出模型、发出请求；也可以作为网关中间件，用 `onRequest`、`onEvent`、`onResponse` 改写或拒绝请求。README 说钩子抛错或超时会保持请求原样。预置中间件对应 New API 的常见能力：`param-override`、`model-map`、`system-prompt`、`word-guard`、`think-tags`。
 
 ## 边界与风险
 
-许可证是 MIT，但 README 写明仓库不接受外部 pull request，只有维护者能开 PR，反馈走 Discord，这会影响团队自行修补问题的路径。隐私功能默认关闭，需要在 Settings 中手动开启；关闭后密钥会照常发往供应商。magpie 还会读取 Claude Code、Codex 的登录文件和 Keychain 来发现订阅账号，可以用设置或 `magpie accounts discovery off` 关掉。README 说明已发布版本每天会上报一次匿名使用统计，可用 `DO_NOT_TRACK=1` 或设置关闭，但合作伙伴链接的点击计数不受该开关影响。脱敏也有代价：模型看到的是占位符，因此无法处理「这个 token 为什么被拒」这类针对密钥本身的任务，需要把值加入 Never mask。README 未说明最低硬件、性能开销或长期支持周期；在把生产环境的 Agent 配置交给它改写前，应先确认卸载脚本能恢复原状。
+许可证是 MIT，但 README 写明仓库不接受外部 pull request，只有维护者能开 PR，反馈走 Discord。这会影响团队自行修补问题的路径；编辑判断：如果你需要厂商 SLA 或可协商的修复节奏，这是一个明确的限制。
+
+隐私功能默认关闭，需要在 Settings 中手动开启；关闭后密钥会照常发往供应商。magpie 还会读取 Claude Code、Codex 的登录文件和 Keychain 来发现订阅账号，可以用设置或 `magpie accounts discovery off` 关掉。README 说明已发布版本每天会上报一次匿名使用统计，包括随机 ID、版本、系统、使用的 Agent/供应商/模型（自定义供应商只记 `custom`）、安装的插件和市场 MCP、合作方展示/打开/添加次数；不含名称、URL、账号、密钥、prompt 或用量。可用 `DO_NOT_TRACK=1` 或设置关闭，但合作伙伴链接的点击计数不受该开关影响。
+
+脱敏也有代价：模型看到的是占位符，因此无法处理针对密钥本身的任务；规则可能出错，Masking 页面是发现错误的地方；示例域名下的邮箱会原样保留。路由方面，额度耗尽时自动切到下一个账号或路由组，可能把请求发到你没有预期的账号或供应商；只有一个账号时错误仍会传给 Agent。日常 warm-up 会按你设定的时间启动 Claude 和 ChatGPT 的 5 小时窗口，这本身会消耗额度。
+
+运维风险在于它会改写 Agent 的配置。README 说改写是原子的，并保留注释、顺序和格式，卸载会恢复；但在把生产环境的 Agent 配置交给它之前，仍应确认卸载脚本能恢复原状，并留意 profile 切换对多项目的影响。README 未说明最低硬件、性能开销或长期支持周期，也未说明所有受支持 Agent 的版本兼容矩阵。
+
+它不适合只用一个 Agent 配官方套餐的人，也不适合完全不能接受本地代理、账号发现或匿名统计的团队。编辑判断：magpie 的价值在「多 Agent、多账号、多供应商」的交叉场景；单 Agent 用户收益有限，而配置改写和账号路由带来的风险却是实打实的。
 
 ## 来源
 

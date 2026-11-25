@@ -14,11 +14,13 @@ sources: [github]
 
 ## 它是什么
 
-NeonClipping 是一个在个人电脑上运行的自动切片工具：输入 YouTube、Twitch、Kick 的长视频链接，或者本地 MP4，输出 1080x1920 的竖屏短片，每条带烧录字幕、标题和开场 hook。它面向需要批量产出短视频的直播剪辑者和内容创作者，处理过程在本地完成，不需要账号或订阅，素材不会上传到第三方。README 给出的实测数据是：85 分钟 YouTube 直播在 Fast 模式下剪出 3 条用 97 秒，3 小时 Twitch VOD 用 136 秒，测试机为 RTX 2060、16 线程，作者也提醒实际时间取决于网络和 CPU。项目以 MIT 许可发布。
+NeonClipping 是一个在个人电脑上运行的自动切片工具：输入 YouTube、Twitch、Kick 的长视频链接，或者本地 MP4，输出 1080x1920 的竖屏短片，每条带烧录字幕、标题和开场 hook。它面向需要批量产出短视频的直播剪辑者和内容创作者，处理过程在本地完成，不需要账号或订阅，素材不会上传到第三方。README 的实测数据是：85 分钟 YouTube 直播在 Fast 模式下剪出 3 条用 97 秒，3 小时 Twitch VOD 用 136 秒，测试机为 RTX 2060、16 线程，作者也提醒实际时间取决于网络和 CPU。项目以 MIT 许可发布。
+
+和同类方案的差别，README 列了一张对比表：相对云端 OpusClip，它在本机运行、免费、不需要账号和积分；相对 SupoClip、OpenShorts、Reelsaw 这类 Docker 自托管切片器，它用一键 `.bat` 或 `install.sh` 安装、不依赖 Docker，并明确支持 YouTube、Twitch、Kick 三类链接。由哪些部分组成：一个本地 FastAPI 服务、浏览器前端、音视频与转录流水线、本地 LLM 打分，以及可选的 MCP 连接器和手机遥控页面。
 
 ## 怎么上手
 
-README 给出的硬性要求是 Python 3.10 到 3.13 与 PATH 中的 FFmpeg；Ollama 加 `llama3.2:3b` 属于可选项，没有它时改用音频和运动分数选段，NVIDIA GPU 则用于 NVENC 和更快的 Whisper。Windows 用户可以直接下载 `NeonClipping-Setup.bat` 双击安装，安装器会检查环境、安装缺失的 Python 和 FFmpeg，并放到 `%LOCALAPPDATA%\NeonClipping`。手动方式如下：
+README 给出的硬性要求是 Python 3.10 到 3.13 与 PATH 中的 FFmpeg；Ollama 加 `llama3.2:3b` 属于可选项，没有它时改用音频和运动分数选段，NVIDIA GPU 则用于 NVENC 和更快的 Whisper。Windows 用户可以直接下载 `NeonClipping-Setup.bat` 双击安装，安装器会检查环境、安装缺失的 Python 和 FFmpeg，并放到 `%LOCALAPPDATA%\NeonClipping`，还会创建桌面快捷方式。手动方式如下：
 
 ```bash
 git clone https://github.com/iamajmeena/neonclipping
@@ -29,27 +31,35 @@ cd neonclipping
 ./run.sh
 ```
 
-启动后打开 [http://127.0.0.1:8770](http://127.0.0.1:8770)，粘贴链接并按 Make clips。缺少 YouTube 字幕、需要本地语音模型时，README 给出的 GPU 依赖安装命令是：
+启动后打开 http://127.0.0.1:8770，粘贴链接并按 Make clips。首跑时可以在结果页看到逐条出现的预览和 MP4 下载按钮。缺少 YouTube 字幕、需要本地语音模型时，README 给出的 GPU 依赖安装命令是：
 
 ```bash
 .venv/bin/pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12==9.*"
 ```
 
-可以用 `NEONCLIPPING_CPU=1` 强制 CPU，用 `NEONCLIPPING_PORT=9000` 换端口，用 `NEONCLIPPING_ENCODER=nvenc|videotoolbox|x264` 指定编码器。回归测试入口为 `python -m unittest discover -s tests -v`。README 明确说明 Mac/Linux 安装脚本还没有在真实 Mac 上完整验证，遇到问题需要自行反馈。
+可以用 `NEONCLIPPING_CPU=1` 强制 CPU，用 `NEONCLIPPING_PORT=9000` 换端口，用 `NEONCLIPPING_ENCODER=nvenc|videotoolbox|x264` 指定编码器；无人值守的创作者录制由 `NEONCLIPPING_LIVE_AUTO_HOURS`（默认 3）和 `NEONCLIPPING_MIN_FREE_GB`（默认 8）控制。回归测试入口为 `python -m unittest discover -s tests -v`。常见卡点有三个：Mac/Linux 安装脚本还没有在真实 Mac 上完整验证；Python 3.10 已被 yt-dlp 弃用，建议 3.11 以上；YouTube 的机器人校验可能要求浏览器 cookies 或 `cookies.txt`，README 建议用一次性 Google 账号。
+
+想从手机控制，可以用 `NEONCLIPPING_LAN=1` 或手机访问快捷方式启动，页面会给出局域网地址和 6 位 PIN；服务端仍只监听 `127.0.0.1`，手机只能访问 live、library、make、clips、feedback、creators 等有限路由。想让 Agent 调用，README 提供 `neon_mcp.py` 的 stdio 连接器，暴露 create_clips、batch_status、resume_batch、list_clips、export_clip、download_clip。
 
 ## 值得注意的设计
 
-Fast 模式的核心是“从不看整段视频”：先只下载音频（85 分钟约 79 MB），优先取 YouTube 自带的词级时间轴字幕，没有字幕时才回退到本地 Whisper；随后在整条音轨上找突发响度、2 到 4 kHz 的人声能量和安静转大声的过渡，把候选交给本地 LLM 打分并写标题和 hook，再把起止点吸附到句子边界，最后只下载选中的视频区间，按声音对齐裁切并用 NVENC 或 x264 渲染。Deep 模式额外加入 OpenCV Farneback 光流和剪辑密度，候选数量约为四倍，并给 LLM 前后各 15 秒的上下文。
+Fast 模式的核心是「从不看整段视频」：先只下载音频（85 分钟约 79 MB），优先取 YouTube 自带的词级时间轴字幕，没有字幕时才回退到本地 Whisper；随后在整条音轨上找突发响度、2 到 4 kHz 的人声能量和安静转大声的过渡，把候选交给本地 LLM 打分并写标题和 hook，再把起止点吸附到句子边界，最后只下载选中的视频区间，按声音对齐裁切并用 NVENC 或 x264 渲染。Deep 模式额外加入 OpenCV Farneback 光流和剪辑密度，候选数量约为四倍，并给 LLM 前后各 15 秒的上下文。
 
 选段不是单点判断，而是多信号综合：响度跳变、喊叫频段、关键词（含 Hinglish 和 Hindi）、画面动作，以及本地 LLM 对转录文本的情绪判断。README 还实现了从反馈学习的偏好排序：结果页和片库里可以打五星，评分只写到本机的 `data/feedback.jsonl`，在至少八个不同片段、评分有强有弱且测量数据有区分度之后，本地排序权重才会调整，模型权重本身不动。
 
 工程上它是一个本地 FastAPI 服务，默认只绑定 `127.0.0.1`，前端就是浏览器页面。职责拆得比较清楚：`app.py` 管服务、`/make` 流水线和导出，`smart.py` 做转录加 LLM 打分与句子吸附，`highlights.py` 做音频、光流和切点排序，`captions_yt.py` 解析 YouTube json3 字幕，`captions.py` 管 Whisper 与字幕样式，`translit.py` 把天城文逐词转成 Hinglish 并保留时间轴。手机遥控必须显式开启，局域网服务配 6 位 PIN，上传、文件工具、队列等路由仍只允许本机访问。
 
+除了离线切片，README 还描述了实时切片：把 Twitch 频道或 YouTube Live 链接粘进 Live clipping 面板，工具用 Streamlink 录制、匿名读取聊天，按 10 秒桶统计消息量，在聊天速度超过 2.5 sigma 且达到五分钟基线 2.5 倍的尖峰处切段，并且因为聊天会滞后，片段提前约 24 秒开始。创作者面板会每分钟检查一次，开播即录；同一时间只处理一个流，未值守录制默认 3 小时或剩余磁盘低于 8 GB 就停，录完最后一条后删除大文件。
+
+下载质量是另一处容易踩的坑：README 说明 Source quality 与导出 Resolution 是两个设置，默认 1080p，要得到清晰的 4K 需要同时把 Source quality 选 4K、Resolution 选 2160；只有 720p 的源无论怎么选都只能得到 720p，导入会按链接缓存，改高质量会重新下载。
+
 ## 边界与风险
 
-README 自己列出的限制比较坦诚：选段是启发式加小型本地 LLM，找的是响、激烈、可引用的时刻，不保证“爆款”；动作信号来自低分辨率副本，只能排序，不能识别“警车追逐”；LLM 只读文本，看不到画面；没有 YouTube 字幕的 Twitch VOD 和本地文件必须本地转写，CPU 上会很慢；Deep 模式只在短视频上验证过。52 种字幕语言里，小语种、从右到左文字和“系统里没有对应字体”的脚本都可能出问题，缺少 YouTube 字幕时准确率也会下降。
+README 自己列出的限制比较坦诚：选段是启发式加小型本地 LLM，找的是响、激烈、可引用的时刻，不保证「爆款」；动作信号来自低分辨率副本，只能排序，不能识别「警车追逐」；LLM 只读文本，看不到画面；没有 YouTube 字幕的 Twitch VOD 和本地文件必须本地转写，CPU 上会很慢；Deep 模式只在短视频上验证过。52 种字幕语言里，小语种、从右到左文字和「系统里没有对应字体」的脚本都可能出问题，缺少 YouTube 字幕时准确率也会下降。
 
-使用层面还有几处需要预先接受：YouTube 的机器人校验可能要求提供浏览器 cookies 或 `cookies.txt`，README 建议用一次性 Google 账号；`yt-dlp` 每日自动升级，旧版 Python 3.10 已不再被其支持。实时切片一次只能录一个流，电脑必须保持唤醒和联网；自动跟播的创作者模式默认 3 小时上限和 8 GB 磁盘下限。直接发布到 YouTube、Instagram、TikTok 需要自备开发者应用凭据，并遵守各平台的审核范围；Instagram 还要求可公开访问的 HTTPS 文件地址，而本地服务不托管该文件。许可证为 MIT，README 没有给出的部分包括精确实测硬件之外的可复现基准、各平台上传配额以及长期维护承诺。
+使用层面还有几处需要预先接受：YouTube 的机器人校验可能要求提供浏览器 cookies 或 `cookies.txt`；`yt-dlp` 每日自动升级，旧版 Python 3.10 已不再被其支持。实时切片一次只能录一个流，电脑必须保持唤醒和联网；自动跟播的创作者模式默认 3 小时上限和 8 GB 磁盘下限。直接发布到 YouTube、Instagram、TikTok 需要自备开发者应用凭据，并遵守各平台的审核范围；Instagram 还要求可公开访问的 HTTPS 文件地址，而本地服务不托管该文件。
+
+许可证为 MIT。README 未说明精确实测硬件之外的可复现基准、各平台上传配额以及长期维护承诺；编辑判断：如果要用在商业化产线上，应先用真实素材验证选段质量、字幕准确率和本机耗时，再决定是否接入发布流程。
 
 ## 来源
 

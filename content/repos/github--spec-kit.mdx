@@ -13,7 +13,11 @@ sources: [github]
 
 ## 它是什么
 
-Spec Kit 是 GitHub 开源的流程工具箱，目标不是替代理写代码，而是给 AI 编码代理一套结构化流程、可复用模板和有记录的产出。README 把它拆成三个独立入口：核心内置的规格驱动开发（SDD），以及按需安装的缺陷修复和想法评估扩展。三者不是必须依次经过的阶段，团队可以只取其中一个。它面向已经在使用 Copilot、Claude Code、Codex 等编码代理，希望把需求、计划、任务和验证固定下来的人。
+Spec Kit 是 GitHub 开源的流程工具箱，目标不是替代理写代码，而是给 AI 编码代理一套结构化流程、可复用模板和有记录的产出。README 把它拆成三个独立入口：核心内置的规格驱动开发（SDD），以及按需安装的缺陷修复与想法评估扩展。三者不是必须依次经过的阶段，团队可以只取其中一个，也可以用底层的组合机制搭自己的流程。
+
+SDD 负责把需求变成规格，再经过计划、任务、实现和收敛；缺陷修复负责诊断原因、限定修复范围并验证原症状消失；想法评估负责收集证据，给出继续、澄清还是停止的决定。它面向已经在使用 Copilot、Claude Code、Codex 等编码代理，希望把需求、计划、任务和验证固定下来的人。和只提供几条提示词模板的仓库相比，Spec Kit 的差别在于每个流程都有明确终态，并且产出落在项目目录里，可以被评审和追溯。
+
+README 也明确这不是必须全部采用的框架：可以先从 SDD 一个流程开始，或只装缺陷修复扩展；底层原语允许团队把已有流程接进来。官方文档提供 SDD walkthrough、命令参考、how-to、方法论和项目历史，README 本身还维护简中、日、韩文版本。编辑判断：它的重心是流程的可组合性，而不是某一种固定的软件工程方法。
 
 ## 怎么上手
 
@@ -25,7 +29,7 @@ specify init my-project --integration copilot
 cd my-project
 ```
 
-随后在项目目录里启动编码代理，技能要在代理聊天中逐条运行，而不是在终端运行。README 以 Copilot 的默认技能语法演示 SDD 最小流程：
+随后在项目目录里启动编码代理。技能要在代理聊天中逐条运行，而不是在终端运行；每一步先审查结果再继续。README 以 Copilot 的默认技能语法演示 SDD 最小流程：
 
 ```text
 /speckit-constitution Create principles focused on code quality, testing, and maintainability.
@@ -36,38 +40,30 @@ cd my-project
 /speckit-converge
 ```
 
-`implement` 和 `converge` 需要反复执行，直到收敛报告为 `Converged`。缺陷修复和想法评估是 bundled extensions，先安装再在同一聊天里调用：
+constitution 每个项目创建一次，其余步骤每个功能重复。`implement` 和 `converge` 需要反复执行，直到收敛报告为 `Converged`。缺陷修复和想法评估是 bundled extensions，先从项目目录安装：
 
 ```bash
 specify extension add bug
 specify extension add assess
 ```
 
-```text
-/speckit-bug-assess "Submitting an empty password crashes the login form." slug=login-crash
-/speckit-bug-fix slug=login-crash
-/speckit-bug-test slug=login-crash
-
-/speckit-assess-intake "Let users work offline and sync when they reconnect." slug=offline-mode
-/speckit-assess-research slug=offline-mode
-/speckit-assess-decide slug=offline-mode
-```
-
-其他代理的集成键和调用语法不同，README 指向单独的 integrations 文档。项目文件落在 `.specify/` 下，例如缺陷报告在 `.specify/bugs/<slug>/`，评估产物在 `.specify/assessments/<slug>/`。
+然后在同一聊天里调用 `/speckit-bug-assess`、`/speckit-bug-fix`、`/speckit-bug-test`，或 `/speckit-assess-intake`、`/speckit-assess-research`、`/speckit-assess-define`、`/speckit-assess-shape`、`/speckit-assess-decide`。产物分别落在 `.specify/bugs/<slug>/` 和 `.specify/assessments/<slug>/`。评估不需要源码或 SDD 前置；如果决定要建，就把 `decision.md` 里的 handoff summary 交给 `/speckit-specify`。其他代理的集成键和调用语法不同，README 指向单独的 integrations 文档；选错集成键会让技能根本不出现。README 还为已有项目、固定版本安装、CI 和排错给出单独入口，升级走 upgrade 文档。常见卡点是集成键选错、技能在终端而不是聊天里执行，以及实现与收敛没有跑到 `Converged` 就停下。
 
 ## 值得注意的设计
 
-三个入口各有明确终态，让「完成」可判定。SDD 以收敛检查收尾；缺陷修复输出 `verified`、`partial` 或 `failed`，只有 `verified` 才算修好；想法评估输出 `go`、`needs-clarification` 或 `kill`。README 还强调，带理由地停下也是有效结果，避免为了交付而交付。
+三个入口各有明确终态，让「完成」可判定。SDD 以收敛检查收尾；缺陷修复输出 `verified`、`partial` 或 `failed`，只有 `verified` 才算修好；想法评估输出 `go`、`needs-clarification` 或 `kill`。README 还强调，带理由地停下也是有效结果，避免为了交付而交付。评估流程建议通过编辑已有 Markdown 来补齐未知项，而不是重跑整个阶段，这能减少重复的模型调用。
 
-定制被拆成多层机制：integration 负责连接代理，extension 增加命令、质量门或完整流程，preset 调整模板与术语，workflow 负责自动化和门禁，bundle 打包整套团队配置，catalog 负责发现组件。项目级 override 可以只覆盖一个模板，artifact inventory 则用于查看某条命令、模板或脚本到底由哪一层提供。这种分层使团队不必 fork 整套流程就能做局部改造。
+定制被拆成多层机制：integration 负责连接代理，extension 增加命令、质量门或完整流程，preset 调整模板与术语，workflow 负责自动化和门禁，workflow overlay 用于不改动已安装流程的局部调整，bundle 打包整套团队配置，catalog 负责发现组件，artifact inventory 用于查看某条命令、模板或脚本由哪一层提供。能力表里还有 extension runtime event 与 extension hook，允许扩展响应 Agent 生命周期事件，或在 Spec Kit 命令前后插入动作；authentication、私有 catalog 和本地或自托管源则面向离线与防火墙内环境。这种分层使团队不必 fork 整套流程就能做局部改造，起点可以是最小的 preset 或 project-local override。
 
-目录搜索结果被明确标注为「不是审计或背书」。`specify extension search`、`specify preset search`、`specify workflow search` 和 `specify bundle search` 可以发现社区组件，但 README 要求安装或运行前先审查源码。这一提醒把目录发现和供应链信任分开处理。
+目录发现和供应链信任被分开处理。`specify extension search`、`specify preset search`、`specify workflow search` 和 `specify bundle search` 可以发现社区组件，但 README 明确说目录列表「不是审计或背书」，安装或运行前要先审查源码。好处是流程可追溯、可按团队标准收紧；代价是中间产物多、每步都要人确认。编辑判断：这套设计的代价还有概念多、层次多，第一次接触需要花时间理解 integration、extension、preset、workflow、bundle 各自解决什么问题。
 
 ## 边界与风险
 
-社区 catalog 中的扩展、preset 和 workflow 由外部作者提供，README 明确不为其安全性背书，运行前需要自行审查。CLI 需要 Python 3.11+ 与 uv，流程又依赖代理能够执行对应技能，因此代理集成的支持范围直接决定可用性，README 正文没有逐一列出所有代理的差异，只给出文档入口。
+社区 catalog 中的扩展、preset 和 workflow 由外部作者提供，README 明确不为其安全性背书，运行前需要自行审查。CLI 需要 Python 3.11+ 与 uv，流程又依赖代理能够执行对应技能，因此代理集成的支持范围直接决定可用性。README 正文没有逐一列出所有代理的差异与最低版本，只给出文档入口；长期支持政策和升级兼容承诺，README 未说明。
 
-流程本身有学习成本：技能要逐条执行并在每步审查结果，评估和修复还会生成多份 Markdown 产物。如果团队没有评审习惯，这些步骤容易退化成形式。README 未说明各代理集成的最低版本、长期支持政策或升级兼容承诺，升级前应阅读对应版本的文档。许可证为 MIT。
+流程本身有学习成本：技能要逐条执行并在每步审查结果，评估和修复还会生成多份 Markdown 产物。如果团队没有评审习惯，这些步骤容易退化成形式。README 也没有给出每个流程的耗时、模型费用或失败率，这些需要按自己的代理和仓库规模实测。评估流程虽然不需要源码，但结论仍是证据加判断，README 没有给出评估质量的量化标准。
+
+许可证为 MIT。隐私方面，规格、代码和评估材料会进入所选代理的上下文，README 未展开数据留存策略，敏感项目要按代理供应商的政策评估。README 未说明私有 catalog 的托管成本、认证配置细节，以及各集成的最低版本与长期支持；目录搜索只是发现入口，不是审批入口，团队若要合规，需要自建私有 catalog 并审查来源。编辑判断：它适合想把代理产出纳入固定流程、留下评审记录的团队；不适合只想让 Agent 直接写代码、或没有精力阅读多份中间产物的人。对已有项目，README 指向 existing-projects 指南，但仍需要先补齐 constitution 和规格，不能直接跳过。
 
 ## 来源
 

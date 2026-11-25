@@ -14,11 +14,19 @@ sources: [github]
 
 ## 它是什么
 
-Agent Autoloop 解决的是「人守终端」的问题：平时用 Claude Code、Codex 这类 Agent，关掉窗口事情就断了。它把任务调度做成一个零外部依赖的内核，把事件来源、Agent、通知通道和交付流水线拆成可插拔插件。装在一台 Windows、macOS 或 Linux 电脑上，不买云服务器、不开放公网端口；接新 Agent 只需一行配置，不要求 SDK 或改 Agent 源码；没有后台界面，要你拍板时把卡片推到飞书、钉钉、企微、Slack、Discord 或桌面通知。
+Agent Autoloop 解决的是「人守终端」的问题。README 说，平时用 Claude Code、Codex 这类命令行 Agent，大多是输入一句、盯着跑、等它问下一步；一旦关掉窗口或人走开，事情就断了。它把这套流程改成一个本地自动化中台：事件来源、Agent、通知通道和代码上线流水线都拆成可插拔插件，内核本身零外部依赖。
+
+它适合已经有登录好的命令行 Agent、希望让任务在后台自己接活并跟进到底的人。安装在一台 Windows、macOS 或 Linux 电脑上，README 强调不需要买云服务器，也不用开放公网端口。接新 Agent 只需一行配置，不要求 SDK 或修改 Agent 源码；能接收提示词并打印最后一条回复的命令行工具都能接。它没有后台界面，需要你拍板时把卡片推到飞书、钉钉、企微、Slack、Discord 或桌面通知；想看全局进展，敲一行命令。
+
+和「定时脚本 + 自己写胶水」的差别在于状态管理和人机协作。README 说同一件事排队时又来的消息会合并成一轮；Agent 干完一轮就退出；需要你决定时进程退出、状态存库，等你回复期间不占进程也不花 Token；你选完它接上原会话继续。也就是说它把「等待人类」做成了系统的一等状态，而不是让脚本 sleep 或让 Agent 干等。
+
+它和云端 Agent 平台的差别是本地优先：直接调用你本机已安装并登录的工具，账号凭据留在各自插件里；模型额度算在你的账号下，README 建议高频自动化改用 API Key，并声明与厂商无隶属关系。
 
 ## 怎么上手
 
-需要 Node 24 或更新、Git，以及一个已登录的命令行 Agent；macOS 和 Linux 还需要 curl，不需要 GitHub 账号。Windows PowerShell：
+前置条件是 Node 24 或更新、Git，以及一个已登录的命令行 Agent；macOS 和 Linux 还需要 curl，不需要 GitHub 账号。README 也提醒可以把 `INSTALL.md` 交给 Agent 代装。
+
+Windows PowerShell：
 
 ```powershell
 irm https://raw.githubusercontent.com/KKKKhazix/agent-autoloop/main/install.ps1 | iex
@@ -30,15 +38,49 @@ macOS / Linux：
 curl -fsSL https://raw.githubusercontent.com/KKKKhazix/agent-autoloop/main/install.sh | sh
 ```
 
-安装和 `update` 都取通过全部检查的最新 Release。装好后运行 `agent-autoloop try` 走一遍「提问、退出等回复、拍板、接着干完」；交互终端直接输数字，非交互终端用 `agent-autoloop answer 1 2`，再用 `agent-autoloop status` 看后续。日常在 `~/.agent-autoloop/rules.json` 的 `rules` 里写清「什么事、交给谁、在哪个目录干」，支持 cron 和 source/types 事件；改完几秒生效，可用 `check`、`rules explain`、`emit --dry-run` 验证。
+安装和 `agent-autoloop update` 都取通过全部检查的最新 Release。装好后用 `agent-autoloop try` 真实走一遍「提问 → 退出等回复 → 拍板 → 接着干完」。README 展示的终端输出里，Agent 结束后会打印「它现在不占进程、不花 Token」，并给出编号选项；交互终端直接输数字，非交互终端运行 `agent-autoloop answer 1 2`，再用 `agent-autoloop status` 看它接上会话并显示轮数、Token 和费用。
+
+日常配置集中在 `~/.agent-autoloop/rules.json`。在 `rules` 里写清「什么事、交给谁、在哪个目录干」，`to` 填 `agents` 里已有的名字。定时任务用 `when.cron`：
+
+```json
+{
+  "name": "早报",
+  "when": { "cron": "0 9 * * *" },
+  "to": "codex",
+  "cwd": "~/notes",
+  "prompt": "整理昨天的笔记和提交，写今天的早报。"
+}
+```
+
+外部事件写法一样，但要先登记来源，例如 `when.source: "github"` 加 `types: ["issues.opened"]`，还可以写 `skill` 和 `parallel: 3`。保存后几秒内生效。验证命令有 `agent-autoloop check`（检查正在跑的配置）、`check <文件>`（检查草稿，不碰运行中的中台）、`rules explain [文件]`（看生效规则和下次定时）、`emit <类型> --dry-run`（预演一条事件会派给谁，不连中台、不写日志）。暂停和恢复用 `pause` / `resume`，恢复后不自动补跑，可以用 `replay <规则> --since <时间>` 一次补跑且每条只补一次；`run` 立即跑一轮；`runs` 看已完成轮次，`why <轮次>` 看来龙去脉。
+
+常见卡点：README 说改错了、文件被删或读不到时，系统会继续按旧规则跑并弹卡片提醒；Webhook 类事件源需要能被外部访问；文字通道靠回答链接拍板时，要把 `hub.publicUrl` 配成手机能打开的地址。Claude Code 订阅到上限时，中台会按它报的恢复时间停止派活，排队和新来的事件都保留，到点自动接着派并通知你。
 
 ## 值得注意的设计
 
-内核保持确定性：不读系统时钟、不用随机数、不向外发请求，同样的输入得到同样的结果。四个机制分别是：挂起零消耗，等你回复时进程退出、状态存库，不占进程也不花 Token；事件溯源，所有状态由只追加日志算出，日志和索引同事务落盘，进程被强杀也不丢已确认记录，还能从日志重建；指令数据分离，Issue 标题等外部文字只作为资料落文件，不拼进提示词，事件里携带 `cwd`、`agent`、`access` 会被拒收；跳数熔断，Agent 交回的事件最多再派 8 层，经过人工提问也不清零。Agent 侧只有一个约定：在最后一条回复里用 `agent-autoloop` 代码块提交 `ask`、`notice`、`resolve`、`later` 或 `events`，中台据此发卡片或续接会话。
+内核保持确定性：不读系统时钟、不用随机数、不向外发请求，插件主动连进来，同样的输入得到同样的结果。README 把这个设计落到四个机制上。
+
+挂起零消耗：等你拍板时进程直接退出，等待状态存进数据库，Agent 不挂着；你三天没回，这三天没有 Agent 进程、不花 Token，只有很轻的中台在后台等。
+
+事件溯源：所有状态从一条只追加日志算出，日志和索引在同一事务里写盘，写完才应答。进程被强杀，已确认的事不丢（README 明确说整机断电没有单独测过）；每一轮为什么跑、结果是什么，可以用 `why` 查清；数据格式变了从日志重建，不写迁移脚本。
+
+指令数据分离：思路类似 SQL 参数化。Issue 标题和正文等外部文字只作为资料落文件，不拼进提示词；提示词里只有校验过的类型、编号和链接；用哪个 Agent、在哪个目录、什么权限，只由本机规则决定；事件里带 `cwd`、`agent`、`access` 字段会被直接拒收。
+
+跳数熔断：类似网络包的 TTL。Agent 交回的事件会再派给 Agent，层数累加，经过人工提问和定时复查也不清零，Agent 自己改不了；超过 8 层只记录、不再派活，并发卡片通知。
+
+Agent 侧只有一个约定：在最后一条回复里附一段 `agent-autoloop` 代码块，提交 `ask`、`notice`、`resolve`、`later` 或 `events`。`ask` 发问题卡片，`notice` 只通告不带按钮，`resolve` 关闭已解决卡片，`later` 预约复查，`events` 触发新事件。JSON 写错时只让它在原会话里重写最后一段，不重做业务；会话接不上才开新的。README 说这套约定让中台不需要 SDK，也不需要理解 Agent 的内部协议。
+
+代价是它把复杂度放进了运维概念：你要理解规则、事件、会话、轮次和卡片状态；排障要会看日志和 `why`。README 也给了性能数字：Apple M5 Pro、24 GB、Node 24.21.0 上冷启动 88.78 ms、空闲 59.94 MB RSS、持久化写入 2394 条/秒、派活 p99 1.82 ms、110 万条事实启动 99.8 ms、运行时依赖 0。历史变大后汇总会变慢，格式变化后首次全量重建 110 万条要 43.1 秒。
 
 ## 边界与风险
 
-平台要求写得很明确：Node 24 以上、Git、已登录的 CLI Agent，macOS 和 Linux 需要 curl。Webhook 类事件源需要能被外部访问，文字通道靠回答链接拍板时还要把 `hub.publicUrl` 配成手机能打开的地址。README 自己承认：飞书以外的四种 Webhook 模板只在本地模拟服务验证过，GitLab Webhook 没连过真实实例；其他 Agent 的接入命令整理自官方文档、未逐个跑过；整机断电下的持久性没有单独测过。历史变大后状态汇总会变慢，110 万条事实首次全量重建需要 43.1 秒。它直接调用本机已登录工具，模型额度算在你自己的账号下；高频自动化场景 README 建议改用 API Key，并声明与厂商无隶属关系。README 另附 SECURITY.md 说明安全边界。
+README 对平台和依赖写得很明确：Node 24 以上、Git、已登录 CLI Agent，macOS 和 Linux 需要 curl。README 未说明 Windows 的最低版本、最低内存或磁盘占用，也没有给出长期支持周期。
+
+它自己承认的验证缺口值得逐条看：飞书以外的四种 Webhook 模板只在本地模拟服务验证过；GitLab Webhook 按官方文档格式测试，没连过真实实例；其他 Agent 的接入命令整理自官方文档、未逐个跑过；整机断电下的持久性没有单独测过；场景模板里的脚本和回执只用本地 HTTP 与假飞书 CLI 验证，没在真实账号上跑完整业务。编辑判断：这些不是致命缺陷，但意味着「开箱即用」的范围比功能列表窄。
+
+使用边界有三点。第一，它直接调用本机已登录工具，模型额度算在你自己的账号下；高频自动化场景 README 建议改用 API Key，因为个人订阅额度主要面向人工交互。第二，Webhook 来源需要外部可达，等于在你本机开了一个入口；通道配置和 `publicUrl` 暴露面要自行评估，README 另附 `SECURITY.md` 说明安全边界。第三，卡片和会话里有业务内容，投递到飞书、钉钉、Slack 等第三方平台意味着这些内容离开本机。
+
+许可证是 MIT。它不适合完全不想碰配置的人，也不适合要求多租户隔离或云端高可用的团队；README 的定位就是一台电脑上的个人自动化中台。编辑判断：适合已有 CLI Agent、想让它在后台接活的个人开发者或小团队；不适合把「无人值守」理解为「无需运维」的场景。
 
 ## 来源
 
