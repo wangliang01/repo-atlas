@@ -1,0 +1,33 @@
+---
+repo: "Nutlope/hallmark"
+title: "拒绝 AI 味的网页设计 Skill"
+summary: "Hallmark 是一个面向 Claude Code、Codex、Cursor、OpenCode 的设计 Skill：从 50 套主题里发三套，按访客任务搭页面，再用真实浏览器按“机器味”清单逐项 lint。"
+domains: ["设计与创意", "编码与开发"]
+forms: ["Skill / 提示词包"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "2568bb6f51284bc3feeea6a3098d31f6743ec623"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Hallmark 拒绝看起来像 AI 生成的页面。它从 50 套主题里发三套，按访客来页面要做的事搭结构，然后在真实浏览器里 lint 那些“机器味”特征——每个标题上的 eyebrow、字距夸张的大写标签、标题里一个彩色词、满屏空框或只有照片、hero 撑不满屏、每页末尾都塞邮件订阅。
+
+## 怎么上手
+
+按 README 安装 Skill 后在 Claude Code 里用 `/hallmark`，也可以用 `redesign` 和 `audit` 子命令。它会读项目里的字体、配色、框架和锁定的 `design.md`，先问一次素材（照片、截图、真实数字），不自己编。
+
+## 值得注意的设计
+
+门槛分三层：Floor 永不放行（对比度、焦点、减少动效、编造事实、手机布局坏掉），Reflex 是模型常犯的默认套路、有理由可以在记录里推翻，Finish 是工艺细节、不阻塞发布。最后还有一个 fresh-context reviewer 做终审。
+
+## 边界与风险
+
+MIT。审美规则是作者的选择，不是普适标准；浏览器 lint 要 Playwright，生成页面仍要人看事实和品牌。编辑判断：和 [unslop](https://github.com/heydamir/unslop) 同类，但更偏“从主题出发搭页面”，适合没有设计师的团队。
+
+## 来源
+
+GitHub：[Nutlope/hallmark](https://github.com/Nutlope/hallmark)（README sha 2568bb6f5128）

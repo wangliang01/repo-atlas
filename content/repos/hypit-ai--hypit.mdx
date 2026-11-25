@@ -1,0 +1,33 @@
+---
+repo: "hypit-ai/hypit"
+title: "让 Agent 克隆爆款视频的完整工作流"
+summary: "Hypit 给编码 Agent 一套视频语言和系统：丢进一条参考视频，Agent 按台词而不是秒数克隆出素材、字幕、B-roll 和特效，并批量生成变体。"
+domains: ["视频与音频", "营销与增长"]
+forms: ["Skill / 提示词包", "CLI / 本地工具"]
+peers: []
+verdict: watch
+featuredAt: 2026-11-25
+readmeSha: "e1c6a36a448b48687b4a77a39080bc2b3b536bed"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Hypit 给 Claude Code、Codex 等 Agent 一套做视频的语言和系统。丢进一条视频，Agent 把它克隆成完整 workflow——素材、字幕、B-roll、特效，全部锚定到词而不是秒；也可以从模板起步，或直接描述想要的视频。
+
+## 怎么上手
+
+`npx skills add hypit-ai/hypit -g` 安装 Skill；首次使用时 Agent 会检查 Hypit 可执行文件并帮你准备。视频项目可以放在任何地方，模型服务可用 HypiHub，也可以接自己的 API 或本地模型。
+
+## 值得注意的设计
+
+核心是 SVML：左侧写 workflow，右侧实时渲染对应视频；克隆时保留原视频的结构和节奏，换脸、换词、换 B-roll 后批量出 100 个变体。生成模型是可选的，字幕、动效和代码渲染也能出片。
+
+## 边界与风险
+
+许可证元数据是 NOASSERTION，README 只说 Hypit 本身免费，商用前必须看 LICENSE；克隆爆款视频、真人脸和声音涉及版权、肖像权和平台政策。渲染用 64 个无头 Chromium，机器要求不低。编辑判断：营销团队会很喜欢，但合规风险要单独评估。
+
+## 来源
+
+GitHub：[hypit-ai/hypit](https://github.com/hypit-ai/hypit)（README sha e1c6a36a448b）

@@ -1,0 +1,33 @@
+---
+repo: "Huanshere/VideoLingo"
+title: "从视频到双语字幕和配音的一条流水线"
+summary: "把语音识别、字幕切分、翻译、对齐和配音串成一个 Streamlit 工作流，支持 YouTube 下载、术语表和多种 TTS。"
+domains: ["视频与音频", "学习与研究"]
+forms: ["CLI / 本地工具", "桌面 / Web 应用"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "d6863449dd66827777ba394e23efdd6cf4f8a726"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+VideoLingo 把语音识别、字幕翻译、切分、对齐和配音合在一个 Streamlit 工作流里。它产出字幕文件，也可以输出带字幕或配音的视频；翻译质量取决于源音频、语言和所选模型。
+
+## 怎么上手
+
+Windows 可下 Release 的源码 zip，双击 `OneKeyStart.bat` 自动装 uv、Python 3.12、依赖和 FFmpeg；跨平台可 `git clone` 后 `uv run start.py`；Linux NVIDIA 还提供 Docker。启动后在侧栏填 API URL、Key 和模型。
+
+## 值得注意的设计
+
+识别用 Qwen3-ASR + Qwen3-ForcedAligner 做词级对齐，再用 NLP/AI 切分字幕；支持自定义术语表和 AI 生成术语，翻译可直接翻或先反思再自然改写；配音可选 GPT-SoVITS、OpenAI、Edge TTS。
+
+## 边界与风险
+
+Apache-2.0。翻译和配音质量很依赖模型与源音频；声音克隆要取得授权，YouTube 下载要遵守平台条款。GPU 能明显加速，Intel Mac 默认配音不带原背景声。编辑判断：适合做字幕组流水线，不适合完全不懂模型配置的人。
+
+## 来源
+
+GitHub：[Huanshere/VideoLingo](https://github.com/Huanshere/VideoLingo)（README sha d6863449dd66）

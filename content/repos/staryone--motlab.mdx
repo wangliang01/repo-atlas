@@ -1,0 +1,33 @@
+---
+repo: "staryone/motlab"
+title: "用代码和 Agent 做视频，而不是用时间线拖拽"
+summary: "motlab 把每个镜头写成 canvas 页面的 `renderAt(t)`，在浏览器里逐帧审片，再用无头 Chrome 的 WebCodecs 导出 MP4；配套 Agent Skill 根据参考素材写场景。"
+domains: ["视频与音频", "设计与创意"]
+forms: ["CLI / 本地工具", "Skill / 提示词包"]
+peers: ["Remotion", "HyperFrames"]
+verdict: watch
+featuredAt: 2026-11-25
+readmeSha: "62b41025f77fb4574f2508c60f468a2d4c683417"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+motlab 是“视频即代码”：每个场景是一个 canvas 页面，只有一个 `renderAt(t)` 函数负责画第 t 秒的帧。viewer 逐帧播放，导出时用无头 Chrome 的 WebCodecs 渲染 MP4；你把参考素材和方向交给 Agent，它写场景、开 viewer、按你的批注改。
+
+## 怎么上手
+
+`npm install -g @motlab/cli && npx @motlab/cli setup`。装好后给 Agent 一个参考素材文件夹和一句方向，场景由 Agent 写；viewer 可以本地跑，也可以部署到自己的服务器加密码，从手机审片和导出。
+
+## 值得注意的设计
+
+帧不离开 Chrome，直接在页面里用 WebCodecs 编码；默认并行渲染 3 个场景，4K 导出也能调 1–4 个。viewer 支持点选、框选、时间范围和手绘批注，批注写进 `selection.json`，Agent 按编号处理；版本并排，不会覆盖上一版。
+
+## 边界与风险
+
+Apache-2.0。README 称在自己的 benchmark 上比 Remotion/HyperFrames 快 2–4 倍，这是项目自测，不代表你的场景；代码写视频的门槛高于剪映式工具，复杂动效仍要人调。右栏把 Remotion、HyperFrames 列为对标，是 README 明确提到的比较对象。
+
+## 来源
+
+GitHub：[staryone/motlab](https://github.com/staryone/motlab)（README sha 62b41025f77f）

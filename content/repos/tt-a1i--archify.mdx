@@ -1,0 +1,33 @@
+---
+repo: "tt-a1i/archify"
+title: "把想法、代码库或问题变成可交互的一页图"
+summary: "一个面向 Claude Code、Codex 等 Agent 的 Skill：把描述、计划或仓库转成可探索的 HTML 架构图或解释页，带来源引用、主题切换和导出。"
+domains: ["设计与创意", "数据与情报"]
+forms: ["Skill / 提示词包", "文档 / 资料"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "9b1863c2f8d53d7666973f92fca1a98a42649ba0"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Archify 把任何想理解、规划或分享的东西变成可交互视觉：可以是一个想法、一张旅行路线、一份学习地图，也可以是一个真实仓库的架构图。它输出单个 HTML，可探索、可改、可分享。
+
+## 怎么上手
+
+让 Agent 读 `llms.txt` 安装，或按文档选择 Cursor/Claude Code/Codex/OpenCode 的安装方式。装好后直接说“Use Archify to diagram …”；不需要现成仓库，也可以让 Agent 读仓库生成带源码引用的架构图。
+
+## 值得注意的设计
+
+除了图，它还能生成 “explainer”：结论先行，每个面板回答一个问题，表格、步骤、图表和代码并排；仓库摘录钉到具体 commit，来源编号可点。输出一个 HTML，四种风格、明暗主题，可导 PNG/WebP/JPG 长图或打印 PDF。
+
+## 边界与风险
+
+Apache-2.0。生成内容里的架构判断和来源仍需人核对；大仓库可能被截断，复杂系统一张图也装不下。README 提到的第三方在线服务和付费计划不属于官方，编辑判断：适合做评审材料和解释页，不适合当唯一文档。
+
+## 来源
+
+GitHub：[tt-a1i/archify](https://github.com/tt-a1i/archify)（README sha 9b1863c2f8d5）

@@ -1,0 +1,33 @@
+---
+repo: "NanmiCoder/MediaCrawler"
+title: "用登录态浏览器采集多平台公开内容"
+summary: "多平台自媒体数据采集工具，支持小红书、抖音、快手、B站、微博、贴吧、知乎的关键词搜索、帖子/评论和创作者主页抓取，用 Playwright 保留登录态，避开 JS 逆向。"
+domains: ["数据与情报"]
+forms: ["浏览器 / RPA", "CLI / 本地工具"]
+peers: []
+verdict: watch
+featuredAt: 2026-11-25
+readmeSha: "dfb4934a50d8baf349b21c9053b846a28105c428"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+MediaCrawler 是多平台自媒体数据采集工具，支持小红书、抖音、快手、B站、微博、贴吧、知乎的公开信息抓取。功能包括关键词搜索、指定帖子 ID、二级评论、创作者主页、登录态缓存、IP 代理池和评论词云。
+
+## 怎么上手
+
+需要 uv、Node.js 和 Python 依赖，按 README 配置后运行；技术路线是 Playwright 浏览器自动化，保留登录态，再用 JS 表达式取签名参数，不做复杂的 JS 逆向。
+
+## 值得注意的设计
+
+它的优势是把“登录态 + 浏览器上下文”当成采集基础设施，避开每个平台各自的加密参数逆向；同一套配置覆盖多个平台，还有断点续爬、多账号和代理池的 Pro 版。
+
+## 边界与风险
+
+许可证元数据是 NOASSERTION，README 明确写“仅供学习，禁止商业用途”，并链接了爬虫违法案例。平台条款、隐私、频率限制和账号风险都要自己承担；Pro 版是付费项目。编辑判断：研究采集技术可以看，生产使用先做法律评估。
+
+## 来源
+
+GitHub：[NanmiCoder/MediaCrawler](https://github.com/NanmiCoder/MediaCrawler)（README sha dfb4934a50d8）

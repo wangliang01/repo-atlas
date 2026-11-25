@@ -1,0 +1,33 @@
+---
+repo: "RobMitt/grill-me-skill"
+title: "让 Agent 把方案问到没有含糊处"
+summary: "一个很小的 Claude Code / Cowork Skill：对你的计划或设计连续追问，直到每个决策分支都被说清楚。"
+domains: ["通用与跨领域", "编码与开发"]
+forms: ["Skill / 提示词包"]
+peers: []
+verdict: watch
+featuredAt: 2026-11-25
+readmeSha: "5a4ccf44f8e86e096bb0c241010ae0d7db81fd8d"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+grill-me 是一个只做一件事的 Skill：对你的计划或设计连续追问，直到每个决策分支都说清楚。它不产出代码，产出的是被追问后的共同理解。
+
+## 怎么上手
+
+把 `SKILL.md` 或整个文件夹放进 `~/.claude/skills/grill-me/SKILL.md`，然后说 “grill me”，或让 Claude 压力测试一个方案。没有安装器，也没有额外依赖。
+
+## 值得注意的设计
+
+它把设计讨论当成一棵决策树，逐个分支追问，直到没有未说清的假设。适合在写代码前用，和 [ub-mode](https://github.com/unclebob/ub-mode) 这类执行纪律型 Skill 是前后脚关系。
+
+## 边界与风险
+
+仓库没有 LICENSE 文件，商用或二次分发前要自行确认授权；项目很小，效果完全取决于模型和提问质量，不能替代真正的设计评审。编辑判断：适合当讨论工具，不适合当验收工具。
+
+## 来源
+
+GitHub：[RobMitt/grill-me-skill](https://github.com/RobMitt/grill-me-skill)（README sha 5a4ccf44f8e8）

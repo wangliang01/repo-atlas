@@ -1,0 +1,33 @@
+---
+repo: "Leonxlnx/taste-skill"
+title: "给编码 Agent 一套做公司官网的审美约束"
+summary: "Taste Skill 2.5 让编码 Agent 按真实品牌站的标准做页面：先定美术方向与参考图，再用统一设计系统搭建，最后在真实浏览器里逐条检查。"
+domains: ["设计与创意", "编码与开发"]
+forms: ["Skill / 提示词包"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "5329a81cc6d7483738a2dc3cfedf5e49434a97e2"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Taste Skill 2.5 让编码 Agent 按真实品牌站的标准做公司官网，而不是再拼一个通用落地页。它先定美术方向和参考图，再用一套设计系统搭页面，最后在真实浏览器里逐条检查。
+
+## 怎么上手
+
+推荐用 `npx skills add https://github.com/Leonxlnx/taste-skill --skill "design-taste-frontend"`；Claude Code 和 Codex 也提供插件市场安装。需要 Node 22+ 和 Chrome/Edge/Chromium，可选 ffmpeg，不需要 API Key。装好后让 Agent 建站或改版即可。
+
+## 值得注意的设计
+
+它的工作流是先给客户业务分类，再复制 `assets/`、从 `assets/starter.html` 起步，最后跑 checker；照片来自开放档案并在页面里署名。设计系统、版式和验收规则都写进 Skill，减少每次自由发挥。
+
+## 边界与风险
+
+它假设你要做的是公司官网，不是后台或工具型产品；生成结果仍要人看，照片、图标和品牌元素要自己确认授权。Node/Chrome 是硬依赖，Windows 上还要注意路径和链接方式。编辑判断：比“让模型随便生成一个漂亮页面”可控得多，但不是设计师替代品。
+
+## 来源
+
+GitHub：[Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill)（README sha 5329a81cc6d7）

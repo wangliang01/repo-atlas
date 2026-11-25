@@ -1,0 +1,33 @@
+---
+repo: "anthropics/skills"
+title: "Skill Creator：把重复工作写成可复用 Skill"
+summary: "Anthropic 官方 Agent Skills 仓库，包含 skill-creator、文档处理等示例与规范；skill-creator 不是一个独立仓库，而是其中的一个技能文件夹。"
+domains: ["通用与跨领域", "编码与开发"]
+forms: ["Skill / 提示词包", "模板 / 脚手架"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "4171c2c9eba15bf2bdefb496d941ba559368438b"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+`anthropics/skills` 是 Anthropic 官方的 Agent Skills 仓库，收集了创意、开发、企业和文档处理等示例。你清单里的 “Skill Creator” 对应仓库里的 `skills/skill-creator`，它教 Claude 把一类重复工作写成带 `SKILL.md`、脚本和资源的 Skill；本文按父仓库建档，避免把子目录伪装成独立项目。
+
+## 怎么上手
+
+Claude Code 里可 `/plugin marketplace add anthropics/skills`，再安装 `anthropic-agent-skills`；也可以直接读 `skills/skill-creator` 和 `template/`。仓库还提供 Agent Skills 规范和文档处理 Skill 的源码。
+
+## 值得注意的设计
+
+每个 Skill 是自包含文件夹，核心是 `SKILL.md` 里的指令和元数据；`spec/` 给规范，`template/` 给起点，`skills/docx`、`pdf`、`pptx`、`xlsx` 展示生产级复杂 Skill 的写法。这种“规范 + 模板 + 实例”三层结构比单独一篇教程更好用。
+
+## 边界与风险
+
+README 明确说这些 Skill 仅供演示和教育，Claude 实际行为可能不同，关键任务要自己测试。仓库顶层没有单一 LICENSE，README 称许多 Skill 是 Apache 2.0，但逐个使用前仍要确认。编辑判断：学 Skill 写法看这里，不要把示例当生产保证。
+
+## 来源
+
+GitHub：[anthropics/skills](https://github.com/anthropics/skills)（README sha 4171c2c9eba1）

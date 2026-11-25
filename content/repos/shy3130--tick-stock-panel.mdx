@@ -1,0 +1,33 @@
+---
+repo: "shy3130/tick-stock-panel"
+title: "自托管的 A 股策略研究、回测与监控工作台"
+summary: "TSP 是一个可自托管的 A 股量化工作台：自建策略、因子、回测、模拟盘和监控，数据源与页面都可扩展，并提供 Open API/MCP 给 AI 使用。"
+domains: ["数据与情报"]
+forms: ["桌面 / Web 应用", "框架 / SDK / 库"]
+peers: []
+verdict: watch
+featuredAt: 2026-11-25
+readmeSha: "ffc41afcad24e9e5a3030d884f7d4eddc82ea213"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Tick Stock Panel（TSP）是自托管、零运维、核心能力全部开放成接口的可扩展 A 股量化工作台。它把看板、个股分析、因子/策略、回测、监控、模拟盘和 AI 助手放在一个面板里，数据源和页面都可以插件化。
+
+## 怎么上手
+
+Docker 一条命令：`docker run -d --name tsp -p 3018:3018 -e DATA_DIR=/app/data -v "${PWD}/data:/app/data" ghcr.io/shy3130/tick-stock-panel:latest`，打开 3018；也有桌面版。行情、策略和用户配置保存在 `data/`。
+
+## 值得注意的设计
+
+自研 Tivelo Data 负责采集、校验和发布数据版本，Tivelo Backtest 按 A 股 T+1、涨跌停和交易费用模拟成交；Page Pack SDK 可以开发自有页面，Open API/MCP 让脚本和外部 AI 读行情、查策略、提交回测。
+
+## 边界与风险
+
+MIT。README 明确说面向本地量化学习与研究，不对标同花顺/通达信，也不含 AI 荐股和涨停预测；数据源授权、回测过拟合、模拟盘与实盘的差异都要自己承担。编辑判断：适合有 Python/量化基础的人自建研究台，不适合当投资建议。
+
+## 来源
+
+GitHub：[shy3130/tick-stock-panel](https://github.com/shy3130/tick-stock-panel)（README sha ffc41afcad24）

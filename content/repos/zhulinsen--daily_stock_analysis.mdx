@@ -1,0 +1,33 @@
+---
+repo: "ZhuLinsen/daily_stock_analysis"
+title: "用 GitHub Actions 每天生成股票决策看板"
+summary: "LLM 驱动的多市场自选股分析系统，聚合行情、新闻和基本面，生成评分、买卖点位与风险提示，并推送到企业微信、飞书、Telegram 等渠道。"
+domains: ["数据与情报"]
+forms: ["工作流 / 方法论", "桌面 / Web 应用"]
+peers: []
+verdict: watch
+featuredAt: 2026-11-25
+readmeSha: "700f76ea3e0938d17c3d2a0ba296ca5dbb9de47a"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+daily_stock_analysis 把“取数 → 分析 → 推送”做成定时流水线，面向 A股、港股、美股、日股、韩股和台股的自选股。它每天生成一份决策仪表盘，包含核心结论、评分、趋势、买卖点位、风险警报、催化因素和操作检查清单，并推送到企业微信、飞书、Telegram 等渠道。
+
+## 怎么上手
+
+最省事的是 Fork 仓库，在 Actions Secrets 里至少配一个 LLM Key，启用 Actions 并手动跑一次；也支持本地运行、Docker 和 FastAPI 服务。行情默认用 AkShare、Baostock、YFinance 等免费源，长期使用建议配 Tushare、Longbridge 等 token 型数据源。
+
+## 值得注意的设计
+
+它把“取数 → 分析 → 推送”做成定时流水线，免费源零配置可跑，付费源按市场替换；Web 工作台把报告、回测、持仓和配置放在一起。对多市场投资者来说，统一自选股和推送渠道比单看一个模型输出更实用。
+
+## 边界与风险
+
+MIT。README 明确说免费行情源会受限流、接口变动和网络波动影响，稳定性不保证；LLM 结论可能出错，项目不是投资建议。API Key、行情数据授权和推送渠道都要自己管理。编辑判断：适合当信息聚合和复盘工具，不适合照单下单。
+
+## 来源
+
+GitHub：[ZhuLinsen/daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis)（README sha 700f76ea3e09）

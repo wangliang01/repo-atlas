@@ -1,0 +1,33 @@
+---
+repo: "heydamir/unslop"
+title: "把“AI 味”界面改成有设计感的界面"
+summary: "一个 Claude Code / Codex / Antigravity Skill：先找出紫色渐变、发光、emoji 标签、喊叫式文案和混乱间距，再按产品方向逐屏做 redline 式修改。"
+domains: ["设计与创意", "编码与开发"]
+forms: ["Skill / 提示词包"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "2b0847d3fc21df01fab61cfb69f6139ecc909fcd"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+unslop 把 vibecoded、一眼 AI 的 UI 改成有自己性格的设计界面。它先找 slop（紫色渐变、glow、emoji 标签、喊叫式文案、间距不齐），再从产品出发定方向，像设计师做 redline 一样一屏一屏修。
+
+## 怎么上手
+
+Claude Code 推荐 `claude plugin install unslop --marketplace heydamir/unslop`；Codex 用 `$skill-installer` 或手动复制到 `~/.agents/skills/`；Antigravity 复制到 skills 目录。要抓 live site 或做 story video 时再装 Playwright/ffmpeg。
+
+## 值得注意的设计
+
+它的流程不是“换个配色”，而是先诊断、再定方向、再逐屏修改；支持 Next.js、React、Vue、Svelte、Tailwind 和纯 HTML/CSS，也能对只有链接的线上站点工作。对没有设计师的团队，这是一套可执行的审美检查。
+
+## 边界与风险
+
+CC-BY-4.0，商用要按许可署名；审美规则本身是主观的，不能保证老板/客户喜欢。线上站点修改要先备份，Playwright 抓取也可能被登录墙挡住。编辑判断：比“让模型再生成一版”更有方向感，但仍要人做最终取舍。
+
+## 来源
+
+GitHub：[heydamir/unslop](https://github.com/heydamir/unslop)（README sha 2b0847d3fc21）

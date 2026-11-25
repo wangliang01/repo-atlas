@@ -1,0 +1,33 @@
+---
+repo: "mvanhorn/last30days-skill"
+title: "用真人互动信号做最近 30 天的调研"
+summary: "一个跨 Reddit、X、YouTube、HN、Polymarket、GitHub 和网页的调研 Skill：并行抓取、按点赞/互动/真金白银排序，再由 Agent 合成一份带来源的简报。"
+domains: ["数据与情报", "学习与研究"]
+forms: ["Skill / 提示词包", "CLI / 本地工具"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "60c4bc407e64a99f18f8a52d5994855e6a7b0538"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+`/last30days` 是一个跨平台调研 Skill：并行搜索 Reddit、X、YouTube、HN、Polymarket、GitHub 和网页，按点赞、互动和真金白银下注排序，再由 Agent judge 合成一份带来源的简报。它的卖点很直接：Google 聚合编辑，它搜索真人。
+
+## 怎么上手
+
+Claude Code 推荐 `/plugin marketplace add mvanhorn/last30days-skill` 后安装；其他 Agent 用 `npx skills add mvanhorn/last30days-skill -g`。Reddit、HN、Polymarket、GitHub 零配置可用，跑一次向导可解锁 X、YouTube、TikTok、arXiv 等。
+
+## 值得注意的设计
+
+它不是单一搜索 API，而是把十几个封闭平台用 Agent 串起来；排序依据是 engagement 而不是编辑权重，并且保留来源方便回查。适合会前调研、竞品跟踪和追 AI 圈子动态。
+
+## 边界与风险
+
+MIT。部分平台要自己的 Key 或浏览器登录态，受平台条款和限流约束；互动高不等于事实正确，水军和标题党会污染信号。编辑判断：把“大家最近在聊什么”做得很好，但关键事实仍要回到原始来源。
+
+## 来源
+
+GitHub：[mvanhorn/last30days-skill](https://github.com/mvanhorn/last30days-skill)（README sha 60c4bc407e64）

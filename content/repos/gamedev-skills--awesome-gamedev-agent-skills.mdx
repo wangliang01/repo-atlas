@@ -1,0 +1,33 @@
+---
+repo: "gamedev-skills/awesome-gamedev-agent-skills"
+title: "给游戏开发 Agent 的 79 个引擎专用 Skill"
+summary: "覆盖 Godot、Unity、Unreal、Roblox、three.js、Phaser 等 12 个引擎的 79 个游戏开发 Skill，并用路由器按你的引擎和任务自动加载 2–3 个。"
+domains: ["设计与创意", "编码与开发"]
+forms: ["Skill / 提示词包", "数据集 / 知识库"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "1aa34fbb81b7e95dfbd3bb9773ac611680fff27a"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+awesome-gamedev-agent-skills 给 AI 编码 Agent 一套游戏开发能力包：79 个 Skill 覆盖 12 个引擎。你描述要做什么，路由器先识别引擎和任务，只加载匹配的 2–3 个 Skill，然后 Agent 才写代码。
+
+## 怎么上手
+
+`npx skills add gamedev-skills/awesome-gamedev-agent-skills`，需要 Node 22.20+；也可以作为 Claude Code 插件市场安装，或把 `SKILL.md` 复制到对应 Agent 的 skills 目录。先加 `--list` 可以预览。
+
+## 值得注意的设计
+
+路由器是核心设计：不让用户手挑 Skill，而是根据引擎和任务自动选。每个 Skill 按官方引擎文档编写并钉到具体版本（Godot 4.7.2、Unity 6.3 LTS、Unreal 5.8 等）；README 称 366 个盲测提示中 98.7% 加载了正确 Skill，代码示例在 10/12 个引擎的真实工具链上跑过或编译过。
+
+## 边界与风险
+
+Apache-2.0。上面的命中率和“真实引擎验证”来自项目自己的 eval，不等于你的项目一定顺利；引擎版本升级后 Skill 可能过期，素材工作流也需要美术判断。编辑判断：目前看到的最系统的游戏开发 Skill 集合，但先挑一个引擎小项目试。
+
+## 来源
+
+GitHub：[gamedev-skills/awesome-gamedev-agent-skills](https://github.com/gamedev-skills/awesome-gamedev-agent-skills)（README sha 1aa34fbb81b7）

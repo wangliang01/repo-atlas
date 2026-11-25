@@ -1,0 +1,33 @@
+---
+repo: "hadolint/hadolint"
+title: "会检查 RUN 里 Bash 的 Dockerfile linter"
+summary: "Haskell 写的 Dockerfile 静态检查工具：把 Dockerfile 解析成 AST 后跑规则，并调用 ShellCheck 检查 RUN 指令里的 Bash。"
+domains: ["编码与开发", "运维与基础设施"]
+forms: ["CLI / 本地工具"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "852e61abd4ebd2209b2bcd5a9105798215940988"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Hadolint 是 Dockerfile 静态检查工具，把 Dockerfile 解析成 AST 后跑规则，并调用 ShellCheck 检查 `RUN` 里的 Bash。目标是帮你构建符合最佳实践的镜像。
+
+## 怎么上手
+
+本地装 hadolint 后直接 `hadolint Dockerfile`；也可以 `docker run --rm -i hadolint/hadolint < Dockerfile`。支持 `--ignore`、`--trusted-registry`、配置文件、行内/全局忽略和 CI 集成。
+
+## 值得注意的设计
+
+它的规则有明确编号和严重级别，比如用 `COPY` 而不是 `ADD`、`COPY --from` 必须引用已定义 stage、FROM alias 必须唯一。把 Dockerfile 结构检查和 shell 检查合在一起，比只跑 ShellCheck 更完整。
+
+## 边界与风险
+
+GPL-3.0。规则集有倾向性，某些“最佳实践”不一定适合你的基础镜像；它只做静态检查，不构建也不运行镜像。编辑判断：CI 里加一条很值，但别把它当安全扫描器。
+
+## 来源
+
+GitHub：[hadolint/hadolint](https://github.com/hadolint/hadolint)（README sha 852e61abd4eb）

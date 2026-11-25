@@ -1,0 +1,33 @@
+---
+repo: "datascale-ai/opentalking"
+title: "可私有部署的实时数字人编排框架"
+summary: "把 LLM、STT、TTS、WebRTC、字幕事件和口型驱动串成一条实时数字人管线，支持 Mock 试跑、本地模型和远程 OmniRT 推理。"
+domains: ["视频与音频"]
+forms: ["框架 / SDK / 库", "桌面 / Web 应用"]
+peers: []
+verdict: watch
+featuredAt: 2026-11-25
+readmeSha: "12f7196a231303d6b4df46e8c686389e1ec19d51"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+OpenTalking 把实时数字人对话拆成一条可编排的管线：前端交互、会话状态、LLM 回复、STT、TTS、打断控制、字幕事件、WebRTC 播放和口型驱动都在一条链路上。WebUI、形象与音色资产库、知识库、记忆和多会话状态也放在同一个项目里。
+
+## 怎么上手
+
+新手先用 Mock/driverless 模式验证 API、TTS 和 WebRTC 通路，不需要下载视频模型权重；再接本地 QuickTalk、Wav2Lip 或远程 OmniRT。README 提供 Compshare 镜像、自部署、Docker 和分布式部署几条路径，真实模型需要相应 GPU。
+
+## 值得注意的设计
+
+编排层（API/Worker/前端）和数字人合成后端（mock、local、direct_ws、OmniRT）可以独立部署，这个分层是它相对“一个脚本跑到底”的主要优势。模型可插拔，适合先跑通产品链路再按 GPU 和画质要求换后端。
+
+## 边界与风险
+
+Apache-2.0。实时效果高度依赖 GPU、模型和网络，README 的演示不等于你的环境；数字人、换脸和声音克隆涉及肖像权、声音权和平台合规，商用前要单独评估。编辑判断：适合做私有化原型的团队，不适合只想开箱即用的人。
+
+## 来源
+
+GitHub：[datascale-ai/opentalking](https://github.com/datascale-ai/opentalking)（README sha 12f7196a2313）

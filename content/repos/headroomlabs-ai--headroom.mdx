@@ -1,0 +1,38 @@
+---
+repo: "headroomlabs-ai/headroom"
+title: "在内容进模型前压掉冗余 token"
+summary: "Headroom 在工具输出、日志、RAG 片段、文件和对话历史进入 LLM 前做压缩，提供库、代理、Agent wrap 和 MCP 四种接入方式，并缓存原文以便按需还原。"
+domains: ["编码与开发", "通用与跨领域"]
+forms: ["框架 / SDK / 库", "MCP / 协议 / 连接器"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "9752d595596e19aab55a9e920f6207ac28ac5fa1"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Headroom 压缩 AI Agent 读到的一切：工具输出、日志、RAG 片段、文件和对话历史，目标是在答案不变的前提下减少输入 token。压缩在本机运行，不把 prompt 或文件内容发出去。
+
+## 怎么上手
+
+Headroom 有四种接法：
+
+- Python 应用：`pip install headroom-ai`，然后调用 `compress(messages)`。
+- 不想改代码：起代理 `headroom proxy --port 8787`。
+- 编码 Agent：`headroom wrap claude`，也支持 codex、cursor、aider、opencode 等。
+- MCP 客户端：用 `headroom_compress`、`headroom_retrieve`、`headroom_stats`。
+
+## 值得注意的设计
+
+它用 ContentRouter 选择压缩策略，并用 CCR 在本地缓存原文、按需还原；对重复 JSON 数组和日志行效果最好，对散文效果很小。还有跨 Agent 记忆和 `headroom learn`，会把失败会话的修正写进 `CLAUDE.local.md` 等文件。
+
+## 边界与风险
+
+Apache-2.0。README 的节省比例是特定场景实测（21–57% 输入 token，JSON/日志可 90%+，散文很少），不是普遍承诺；有损压缩可能丢掉关键细节，代理模式还会看到 Agent 流量。编辑判断：适合日志/工具输出很多的 Agent，先开统计再决定是否常驻。
+
+## 来源
+
+GitHub：[headroomlabs-ai/headroom](https://github.com/headroomlabs-ai/headroom)（README sha 9752d595596e）

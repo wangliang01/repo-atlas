@@ -1,0 +1,33 @@
+---
+repo: "sybil-solutions/skill-distill"
+title: "把一次成功的会话蒸馏成小模型能执行的 Skill"
+summary: "给 Claude Code / Codex 的 Skill：把一次高质量会话写成可复用 Skill，再让开源模型在干净环境里反复试跑，直到结果对齐参考。"
+domains: ["编码与开发", "学习与研究"]
+forms: ["Skill / 提示词包", "工作流 / 方法论"]
+peers: []
+verdict: watch
+featuredAt: 2026-11-25
+readmeSha: "ddbb26f97ce1fd1ea1e3a5af40a4751530b0a60b"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+`skill-distill` 回答一个具体问题：前沿模型把任务做好了，开源模型拿到正确指令能不能做同样的事？它让 Claude Code/Codex 当老师，在会话结束时指定一个学生（harness + 模型），然后循环写 Skill、跑学生、对比结果、修第一个出错点。
+
+## 怎么上手
+
+clone 后把 `skills/skill-distill` 软链到 `~/.claude/skills/` 或 `~/.agents/skills/`；需要 tmux、git、Python 3.10+ 和学生 harness。之后说“distill this session into a skill for …”。
+
+## 值得注意的设计
+
+老师拿到参考的原始 prompt、干净起始状态和 Skill，学生 harness 的全局上下文会被关掉；每版 Skill 跑三次，避免一次侥幸；只教步骤、判断、坑和检查，不把最终产物或写产物的脚本塞进 Skill。最后由人接受。
+
+## 边界与风险
+
+MIT。依赖 tmux 和学生 harness，跑一轮不便宜；会话日志可能含敏感信息；最终是否“学会”仍是人判断。编辑判断：这是把“提示词经验”变成可复现资产的认真尝试，但更适合愿意做评测的团队。
+
+## 来源
+
+GitHub：[sybil-solutions/skill-distill](https://github.com/sybil-solutions/skill-distill)（README sha ddbb26f97ce1）

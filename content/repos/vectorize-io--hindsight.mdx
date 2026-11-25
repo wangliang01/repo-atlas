@@ -1,0 +1,33 @@
+---
+repo: "vectorize-io/hindsight"
+title: "让 Agent 记住并复盘，而不只是检索对话"
+summary: "面向长期记忆的 Agent 记忆系统，提供 retain/recall/reflect 三种操作、记忆库和可插拔模型，支持 Docker、pip、Kubernetes 与托管服务。"
+domains: ["通用与跨领域", "数据与情报"]
+forms: ["记忆 / 上下文", "框架 / SDK / 库"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "69144c3929dff45d5b85036a87cbd3e77179c53e"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Hindsight 是面向长期记忆的 Agent 记忆系统。多数记忆系统只做对话历史召回，Hindsight 还想让 Agent 从经历里形成观察、心智模型和决策模型；它提供 `retain`、`recall`、`reflect` 三个操作和 memory bank。
+
+## 怎么上手
+
+最快是 Docker 起服务，或用 `pip install hindsight-api` 裸机跑；客户端有 Python 和 TypeScript，也支持嵌入式、Kubernetes、Hindsight Cloud 和 MCP。接进现有 Agent 可以只用两行 LLM wrapper。
+
+## 值得注意的设计
+
+它把记忆分成多种类型，并有 observations、mental models/pages、decision models 等层；README 称在 LongMemEval 上达到 SOTA，并称结果被 Virginia Tech 和 Washington Post 的研究人员独立复现。还提供专门为记忆训练的 decision/rerank/embedding 模型。
+
+## 边界与风险
+
+MIT。基准成绩部分来自厂商、部分称独立复现，仍要按自己的任务复测；自托管要维护 PostgreSQL 和迁移，记忆抽取也会带入错误或隐私。编辑判断：架构比“向量库 + 对话摘要”完整，但先小规模验证召回质量。
+
+## 来源
+
+GitHub：[vectorize-io/hindsight](https://github.com/vectorize-io/hindsight)（README sha 69144c3929df）
