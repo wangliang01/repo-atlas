@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { PickRow } from "@/components/pick-row";
 import { RailList } from "@/components/rail-list";
 import { SiteShell } from "@/components/site-shell";
+import { ALL_DOMAINS } from "@/lib/categories";
 import { formatDate } from "@/lib/date";
 import {
   DEFAULT_FILTER,
@@ -51,6 +52,20 @@ export function PicksView({ entries, syncedAt, details }: PicksViewProps) {
     setLimit(PAGE_SIZE);
   }, [filter.domain, filter.identity, filter.risingOnly]);
 
+  // 单一高亮：两组分类互斥，选身份就清掉用途——同时按两层筛会把「全部」里的
+  // 数字组合成读者脑补不出来的交集，数据也常常少到像出了错
+  const setDomain = (domain: string) =>
+    setFilter((current) => ({ ...current, domain, identity: ALL_DOMAINS }));
+  const setIdentity = (identity: string) =>
+    setFilter((current) => ({ ...current, identity, domain: ALL_DOMAINS }));
+
+  // 换任何筛选都把页面滚回列表顶。不能用 scrollIntoView(筛选行)：筛选行是 sticky，
+  // 吸顶时它「已经在视口里」，scrollIntoView 会判定无需滚动而什么都不做。
+  // 列表就是首页最顶部的内容，滚到 0 即列表顶。
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [filter.domain, filter.identity, filter.risingOnly]);
+
   useEffect(() => {
     const node = sentinelRef.current;
     if (!node) return;
@@ -80,7 +95,7 @@ export function PicksView({ entries, syncedAt, details }: PicksViewProps) {
               label: domain.label,
               count: domain.count,
               pressed: filter.domain === domain.label,
-              onSelect: () => setFilter((current) => ({ ...current, domain: domain.label })),
+              onSelect: () => setDomain(domain.label),
             }))}
           />
           <RailList
@@ -90,7 +105,7 @@ export function PicksView({ entries, syncedAt, details }: PicksViewProps) {
               label: identity.label,
               count: identity.count,
               pressed: filter.identity === identity.label,
-              onSelect: () => setFilter((current) => ({ ...current, identity: identity.label })),
+              onSelect: () => setIdentity(identity.label),
             }))}
           />
         </div>

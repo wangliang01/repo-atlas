@@ -56,6 +56,7 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 | T-030 | 详情页目录改「五问式」，73 篇全量迁移 | `e90c7ae` | 目录固定五问、来源不进目录；73 篇正文 1,500–1,997 汉字、六节逐字一致；schema 旧标题兼容已删；测试改为全站六节 + ≥1500 汉字；frontmatter 与 README sha 逐字节比对未变；构建产物 73 页目录均为 5 项、正文 6 个 H2；`node --test` 111/111；`pnpm typecheck` 0；`pnpm lint` 0 error（2 条既有 warning）；`pnpm build` 通过 |
 | T-031 | 分类改三层：用途 / 形态 / 身份，73 篇全量重打标签 | `5102c7a` | 形态 15 个复合标签提纯成 12 个原子标签（无斜杠）；新增 `逆向工程` 用途与 `identities` 身份层（13 值，可空）；删 `通用与跨领域`，11 篇重分类；右栏与行内分隔符 ` / ` → `、`，行内固定三枚（用途灰 / 形态蓝 / 身份描边）；首页左栏加「身份」第二组，三轴筛选；`lib/categories.test.ts` 全站守卫（无兜底回潮、无斜杠、「用了 AI ≠ 身份 AI」）；`node --test` 118/118；`pnpm typecheck` 0；`pnpm lint` 0 error（2 条既有 warning）；`pnpm build` 84 页通过；首页与详情页截图确认 |
 | T-032 | 补 firecrawl/firecrawl 详情页（首页快照里唯一缺页） | `dbd012b` | 五问式六节、1515 汉字；新三层分类：数据与情报 / SDK 与库·CLI / AI·后端；banner 取 README 的开源 vs 云版对照图；AGPL-3.0；`node --test` 118/118；`pnpm build` 85 页；线上 `/picks/firecrawl--firecrawl` 200 |
+| T-033 | 首页筛选体验：单一高亮 + 切换后滚回列表顶 | 未提交 | 两组分类互斥，选身份清用途、反之亦然，同一时刻只高亮一个；切换任何筛选滚回顶部（sticky 筛选行让 scrollIntoView 失效，改 scrollTo 0）；eslint 忽略 `.scratch/**`；CDP 实测：滚到 1634px 点分类后 scrollY=0、高亮互斥、计数正确；`node --test` 118/118；typecheck 0；lint 0 error；build 85 页 |
 
 ### P0 验收（SPEC「验收标准」9 条，2026-11-22 跑）
 

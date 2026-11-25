@@ -9,7 +9,8 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
-    ignores: [".next/**", "node_modules/**", "out/**", "next-env.d.ts"],
+    // .scratch 放截图、临时脚本和 CDP 用的 Chrome profile，都不是项目代码
+    ignores: [".next/**", "node_modules/**", "out/**", ".scratch/**", "next-env.d.ts"],
   },
 ];
 
