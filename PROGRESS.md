@@ -50,8 +50,8 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 | T-024 | 首页减负 + 详情页对齐掘金：banner、右栏三卡、深色代码块 | 未提交 | 首屏直接从分类 + 列表开始（身份卡、可见口号、最近在写、笔记区块、右栏个人卡全撤）；代码块 `#0d1117`、注释 `#8b949e`（约 6:1）；详情页左文章卡（标题 → meta → banner → 正文）+ 右三张卡：项目信息（头像/结论/Stars·语言·收录/许可证/GitHub 按钮/sha）、目录（滚动高亮）、相关推荐（同分类星数 top4）；banner 取自 README 首图，24/30 篇有、24 条 URL 全部 HEAD 200，其余不渲染；GitHub 链接在 meta 行；`node --test` 108/108；`tsc` 0；build 41 页；`/picks` 308；浅/暗色截图确认 |
 | T-025 | 分类拆成领域 / 形态 / 对标三层 | 未提交 | 30 篇详情页迁移到 `domains` + `forms`，t3code 标为「编码与开发 / Agent 控制面 / 对标 Orca」；首页左栏改叫「领域」，精选行同时显示领域与形态；`node --test` 109/109；`pnpm typecheck` 0；`pnpm lint` 0 error（2 条既有 warning）；`pnpm build` 41 页静态导出 |
 | T-026 | 收录 43 个新项目：去重、中文详情页、首页上榜 | 未提交 | 46 个名字去重后跳过 `caveman`、`hyperframes`；`GASP` → GSAP、`modren` → modern、`Skill Creator` → `anthropics/skills`；43 篇详情页固定五节、`readmeSha` 对齐 `.cache/readme`；首页 73 条按 `trendScore` 倒序、43 条新条目写入 `history.json`；`node --test` 109/109；`pnpm typecheck` 0；`pnpm lint` 0 error（2 条既有 warning）；`pnpm build` 84 页静态导出 |
-| T-027 | 修正 Grill Me 来源为 `mattpocock/skills` | `53ee8e8` | 删除 `RobMitt/grill-me-skill` 详情页与头像；新增 `mattpocock/skills` 页，写清 `/grill-me`、`grilling`、`/grill-with-docs` 的关系；首页与台账同步替换；`node --test` 110/110；`pnpm typecheck` 0；`pnpm lint` 0 error；`pnpm build` 通过 |
-| T-028 | 加深 42 篇新收录详情页 | 未提交 | 42 篇正文 1,203–1,531 字，固定五节，README 说法与编辑判断分开写；新增守卫测试：`sources: [github, toutiao]` 的页面正文 ≥1000 字且出现「README」与「编辑判断 / README 未说明」；73 篇详情页的 frontmatter 与 README sha 逐字节比对未变；`node --test` 110/110；`pnpm typecheck` 0；`pnpm lint` 0 error（2 条既有 warning）；`pnpm build` 通过 |
+| T-027 | 修正 Grill Me 来源为 `mattpocock/skills` | `666bbae` | 删除 `RobMitt/grill-me-skill` 详情页与头像；新增 `mattpocock/skills` 页，写清 `/grill-me`、`grilling`、`/grill-with-docs` 的关系；首页与台账同步替换；`node --test` 110/110；`pnpm typecheck` 0；`pnpm lint` 0 error；`pnpm build` 通过 |
+| T-028 | 加深 42 篇新收录详情页 | `666bbae` | 42 篇正文 1,203–1,531 字，固定五节，README 说法与编辑判断分开写；新增守卫测试：`sources: [github, toutiao]` 的页面正文 ≥1000 字且出现「README」与「编辑判断 / README 未说明」；73 篇详情页的 frontmatter 与 README sha 逐字节比对未变；`node --test` 110/110；`pnpm typecheck` 0；`pnpm lint` 0 error（2 条既有 warning）；`pnpm build` 通过 |
 
 ### P0 验收（SPEC「验收标准」9 条，2026-11-22 跑）
 
