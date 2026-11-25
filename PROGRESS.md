@@ -54,7 +54,7 @@ P0 骨架 —— 三个页面（首页 / 1 个项目页 / 1 篇笔记页）能�
 | T-028 | 加深 42 篇新收录详情页 | `666bbae` | 42 篇正文 1,203–1,531 字，固定五节，README 说法与编辑判断分开写；新增守卫测试：`sources: [github, toutiao]` 的页面正文 ≥1000 字且出现「README」与「编辑判断 / README 未说明」；73 篇详情页的 frontmatter 与 README sha 逐字节比对未变；`node --test` 110/110；`pnpm typecheck` 0；`pnpm lint` 0 error（2 条既有 warning）；`pnpm build` 通过 |
 | T-029 | 旧 30 篇加深到 1500–2000 字，新页补 README 配图 | `462e581` | 旧 30 篇正文 1,513–1,871 汉字，全部五节，README 与编辑判断分离；新 42 篇里 20 篇补了 `banner`，24 条旧 banner + 20 条新 banner 全部 GET 返回图片；徽章、赞助商 logo、应用图标、wordmark、非图片嵌入一律跳过，无图页面不渲染占位；测试扩展：旧页 ≥1500 汉字、全站必须出现「README」与「编辑判断 / README 未说明」；`node --test` 110/110；`pnpm typecheck` 0；`pnpm lint` 0 error（2 条既有 warning）；`pnpm build` 通过，73 页里 44 页有 banner |
 | T-030 | 详情页目录改「五问式」，73 篇全量迁移 | `e90c7ae` | 目录固定五问、来源不进目录；73 篇正文 1,500–1,997 汉字、六节逐字一致；schema 旧标题兼容已删；测试改为全站六节 + ≥1500 汉字；frontmatter 与 README sha 逐字节比对未变；构建产物 73 页目录均为 5 项、正文 6 个 H2；`node --test` 111/111；`pnpm typecheck` 0；`pnpm lint` 0 error（2 条既有 warning）；`pnpm build` 通过 |
-| T-031 | 分类改三层：用途 / 形态 / 身份，73 篇全量重打标签 | 未提交 | 形态 15 个复合标签提纯成 12 个原子标签（无斜杠）；新增 `逆向工程` 用途与 `identities` 身份层（13 值，可空）；删 `通用与跨领域`，11 篇重分类；右栏与行内分隔符 ` / ` → `、`，行内固定三枚（用途灰 / 形态蓝 / 身份描边）；首页左栏加「身份」第二组，三轴筛选；`lib/categories.test.ts` 全站守卫（无兜底回潮、无斜杠、「用了 AI ≠ 身份 AI」）；`node --test` 118/118；`pnpm typecheck` 0；`pnpm lint` 0 error（2 条既有 warning）；`pnpm build` 84 页通过；首页与详情页截图确认 |
+| T-031 | 分类改三层：用途 / 形态 / 身份，73 篇全量重打标签 | `5102c7a` | 形态 15 个复合标签提纯成 12 个原子标签（无斜杠）；新增 `逆向工程` 用途与 `identities` 身份层（13 值，可空）；删 `通用与跨领域`，11 篇重分类；右栏与行内分隔符 ` / ` → `、`，行内固定三枚（用途灰 / 形态蓝 / 身份描边）；首页左栏加「身份」第二组，三轴筛选；`lib/categories.test.ts` 全站守卫（无兜底回潮、无斜杠、「用了 AI ≠ 身份 AI」）；`node --test` 118/118；`pnpm typecheck` 0；`pnpm lint` 0 error（2 条既有 warning）；`pnpm build` 84 页通过；首页与详情页截图确认 |
 
 ### P0 验收（SPEC「验收标准」9 条，2026-11-22 跑）
 
