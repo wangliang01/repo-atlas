@@ -10,7 +10,9 @@ import {
   domainsOf,
   filterPicks,
   formsOf,
+  identitiesOf,
   pickDomains,
+  pickIdentities,
   risingRepos,
   sameDay,
   type PickDetailInfo,
@@ -35,6 +37,7 @@ export function PicksView({ entries, syncedAt, details }: PicksViewProps) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const domains = pickDomains(entries, details);
+  const identities = pickIdentities(entries, details);
   const visible = filterPicks(entries, filter, details);
   const rising = risingRepos(entries);
   const risingCount = rising.size;
@@ -46,7 +49,7 @@ export function PicksView({ entries, syncedAt, details }: PicksViewProps) {
   // 换筛选条件就回到第一屏，否则会带着上一次翻的页数
   useEffect(() => {
     setLimit(PAGE_SIZE);
-  }, [filter.domain, filter.risingOnly]);
+  }, [filter.domain, filter.identity, filter.risingOnly]);
 
   useEffect(() => {
     const node = sentinelRef.current;
@@ -70,15 +73,27 @@ export function PicksView({ entries, syncedAt, details }: PicksViewProps) {
   return (
     <SiteShell
       left={
-        <RailList
-          title="领域"
-          items={domains.map((domain) => ({
-            label: domain.label,
-            count: domain.count,
-            pressed: filter.domain === domain.label,
-            onSelect: () => setFilter((current) => ({ ...current, domain: domain.label })),
-          }))}
-        />
+        <div>
+          <RailList
+            title="用途"
+            items={domains.map((domain) => ({
+              label: domain.label,
+              count: domain.count,
+              pressed: filter.domain === domain.label,
+              onSelect: () => setFilter((current) => ({ ...current, domain: domain.label })),
+            }))}
+          />
+          <RailList
+            title="身份"
+            className="mt-2 border-t border-line pt-2"
+            items={identities.map((identity) => ({
+              label: identity.label,
+              count: identity.count,
+              pressed: filter.identity === identity.label,
+              onSelect: () => setFilter((current) => ({ ...current, identity: identity.label })),
+            }))}
+          />
+        </div>
       }
     >
       {/* 掘金把排序/筛选放在白卡顶部当标签行，滚动时吸附在 header 下面 */}
@@ -118,6 +133,7 @@ export function PicksView({ entries, syncedAt, details }: PicksViewProps) {
               summaryZh={detail?.summary}
               domains={detail?.domains ?? domainsOf(entry, details)}
               forms={detail?.forms ?? formsOf(entry, details)}
+              identities={detail?.identities ?? identitiesOf(entry, details)}
             />
           );
         })}

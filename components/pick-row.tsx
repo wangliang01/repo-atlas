@@ -15,17 +15,28 @@ type PickRowProps = {
   href?: string;
   /** 详情页里的中文一句话；没有就退回 GitHub 原文 */
   summaryZh?: string;
-  /** 主领域：决定左栏和筛选 */
+  /** 主用途：决定左栏和筛选 */
   domains?: string[];
-  /** 形态标签：Skill / MCP / 控制面等，不参与主分类 */
+  /** 形态标签：Skill / MCP 服务 / CLI 等，不参与主分类 */
   forms?: string[];
+  /** 身份标签：前端 / 自媒体 / 安全等；没有就不显示 */
+  identities?: string[];
 };
 
 /**
  * 掘金式条目：标题 / 两行描述 / meta 一行（头像 + 仓库 + 语言 + 标签），
  * 右侧一列放星数与涨速当扫描锚点。原来右下角那个大衬线数字跟着衬线一起没了。
  */
-export function PickRow({ entry, hot, fresh = false, href, summaryZh, domains = [], forms = [] }: PickRowProps) {
+export function PickRow({
+  entry,
+  hot,
+  fresh = false,
+  href,
+  summaryZh,
+  domains = [],
+  forms = [],
+  identities = [],
+}: PickRowProps) {
   const titleClass = "break-words text-body font-semibold leading-6 text-ink";
   const summary = summaryZh ?? entry.description;
   return (
@@ -97,23 +108,23 @@ export function PickRow({ entry, hot, fresh = false, href, summaryZh, domains = 
               更新 {formatDate(entry.pushedAt)}
             </span>
 
+            {/* 一行三枚，每层只取首项：用途（灰）/ 形态（蓝）/ 身份（描边） */}
             <span className="ml-auto flex shrink-0 gap-1.5">
-              {domains.slice(0, 2).map((domain) => (
-                <span
-                  key={domain}
-                  className="hidden rounded-[2px] bg-surface-2 px-1.5 py-0.5 sm:inline"
-                >
-                  {domain}
+              {domains[0] ? (
+                <span className="hidden rounded-[2px] bg-surface-2 px-1.5 py-0.5 sm:inline">
+                  {domains[0]}
                 </span>
-              ))}
-              {forms.slice(0, 2).map((form) => (
-                <span
-                  key={form}
-                  className="hidden rounded-[2px] bg-accent-soft px-1.5 py-0.5 text-accent-ink sm:inline"
-                >
-                  {form}
+              ) : null}
+              {forms[0] ? (
+                <span className="hidden rounded-[2px] bg-accent-soft px-1.5 py-0.5 text-accent-ink sm:inline">
+                  {forms[0]}
                 </span>
-              ))}
+              ) : null}
+              {identities[0] ? (
+                <span className="hidden rounded-[2px] px-1.5 py-0.5 ring-1 ring-inset ring-line sm:inline">
+                  {identities[0]}
+                </span>
+              ) : null}
             </span>
           </div>
         </div>

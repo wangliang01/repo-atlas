@@ -8,7 +8,9 @@ import {
   filterPicks,
   formatPerDay,
   formsOf,
+  identitiesOf,
   pickDomains,
+  pickIdentities,
   RISING_TOP,
   risingRepos,
   type PickDetailInfo,
@@ -29,11 +31,16 @@ const like = (over: Partial<PickLike> = {}): PickLike => ({
   ...over,
 });
 
-const detail = (domains: string[], forms: string[] = ["CLI / 本地工具"]): PickDetailInfo => ({
+const detail = (
+  domains: string[],
+  forms: string[] = ["CLI"],
+  identities: string[] = [],
+): PickDetailInfo => ({
   slug: "owner--repo",
   summary: "中文摘要",
   domains,
   forms,
+  identities,
   peers: [],
   verdict: "watch",
 });
@@ -46,9 +53,15 @@ test("领域来自详情页，没有详情才归到「其他」", () => {
 });
 
 test("形态和领域分开：Skill 只做标签，不占主领域", () => {
-  const details = { "a/b": detail(["编码与开发"], ["Skill / 提示词包"]) };
+  const details = { "a/b": detail(["编码与开发"], ["Skill"]) };
   assert.deepEqual(domainsOf(like({ repo: "a/b" }), details), ["编码与开发"]);
-  assert.deepEqual(formsOf(like({ repo: "a/b" }), details), ["Skill / 提示词包"]);
+  assert.deepEqual(formsOf(like({ repo: "a/b" }), details), ["Skill"]);
+});
+
+test("身份单独成轴：没有身份的项目返回空数组", () => {
+  const details = { "a/b": detail(["编码与开发"], ["Skill"], ["前端"]) };
+  assert.deepEqual(identitiesOf(like({ repo: "a/b" }), details), ["前端"]);
+  assert.deepEqual(identitiesOf(like({ repo: "c/d" }), details), []);
 });
 
 test("领域计数：全部排第一，只出非空领域，按领域表顺序", () => {
@@ -86,7 +99,7 @@ test("双轴过滤：领域和涨得快正交", () => {
   for (const entry of entries) details[entry.repo] = detail([entry.repo.startsWith("agent/") ? "编码与开发" : "办公与效率"]);
 
   const count = (domain: string, risingOnly: boolean) =>
-    filterPicks(entries, { domain, risingOnly }, details).length;
+    filterPicks(entries, { domain, identity: ALL_DOMAINS, risingOnly }, details).length;
 
   assert.equal(count(ALL_DOMAINS, false), 12);
   assert.equal(count(ALL_DOMAINS, true), 10);
@@ -98,7 +111,30 @@ test("双轴过滤：领域和涨得快正交", () => {
 
 test("不认识的领域返回空，不会退化成全部", () => {
   const entries = [like({ repo: "a/b" })];
-  assert.equal(filterPicks(entries, { domain: "不存在的领域", risingOnly: false }, {}).length, 0);
+  assert.equal(
+    filterPicks(entries, { domain: "不存在的领域", identity: ALL_DOMAINS, risingOnly: false }, {}).length,
+    0,
+  );
+});
+
+test("用途与身份同时生效，身份计数按全集算", () => {
+  const entries = [like({ repo: "a/one" }), like({ repo: "b/two" }), like({ repo: "c/three" })];
+  const details = {
+    "a/one": detail(["编码与开发"], ["Skill"], ["前端"]),
+    "b/two": detail(["编码与开发"], ["CLI"], ["后端"]),
+    "c/three": detail(["逆向工程"], ["CLI"], ["安全"]),
+  };
+  const identities = pickIdentities(entries, details);
+  assert.deepEqual(
+    identities.map((identity) => identity.label),
+    [ALL_DOMAINS, "前端", "后端", "安全"],
+  );
+  assert.equal(identities[0].count, 3, "全部应按全集计数");
+  const filter = (domain: string, identity: string) =>
+    filterPicks(entries, { domain, identity, risingOnly: false }, details).map((entry) => entry.repo);
+  assert.deepEqual(filter("编码与开发", ALL_DOMAINS), ["a/one", "b/two"]);
+  assert.deepEqual(filter("编码与开发", "前端"), ["a/one"]);
+  assert.deepEqual(filter(ALL_DOMAINS, "安全"), ["c/three"]);
 });
 
 test("涨速格式：整数不拖小数，小数保留一位", () => {

@@ -1,5 +1,12 @@
 import { z } from "zod";
-import { DOMAINS, FORMS, MAX_DOMAINS, MAX_FORMS } from "./categories.ts";
+import {
+  DOMAINS,
+  FORMS,
+  IDENTITIES,
+  MAX_DOMAINS,
+  MAX_FORMS,
+  MAX_IDENTITIES,
+} from "./categories.ts";
 
 export const NOTE_KINDS = ["source", "architecture", "rebuild", "tool"] as const;
 
@@ -37,8 +44,10 @@ export const repoDetailFrontmatter = z.object({
   summary: z.string().min(1),
   /** 卡片上的中文一句话，来自详情页；不要再从英文 description 机翻 */
   domains: z.array(z.enum(DOMAINS)).min(1).max(MAX_DOMAINS),
-  /** 形态是标签，不占主分类；例如 Skill、MCP、Agent 控制面 */
+  /** 形态是标签，不占主分类；例如 Skill、MCP 服务、CLI */
   forms: z.array(z.enum(FORMS)).min(1).max(MAX_FORMS),
+  /** 身份：谁在搜它，例如 前端、自媒体、安全；不面向特定人群的留空 */
+  identities: z.array(z.enum(IDENTITIES)).max(MAX_IDENTITIES).default([]),
   /** 同层对标/竞品；README 明说的才写，推断的要在正文里标出来 */
   peers: z.array(z.string().min(1)).max(4).default([]),
   verdict: z.enum(["recommend", "watch", "avoid"]),

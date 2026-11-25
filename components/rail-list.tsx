@@ -24,7 +24,8 @@ export function RailList({
 }) {
   return (
     <nav aria-label={title} className={className}>
-      <p className="hidden px-3 pb-1 pt-2 text-micro text-muted md:block">{title}</p>
+      {/* 左栏现在有两组（用途 / 身份），窄屏也必须带标题，否则两排按钮分不清 */}
+      <p className="block px-3 pb-1 pt-2 text-micro text-muted">{title}</p>
       <ul className="flex gap-1.5 overflow-x-auto p-0 md:mt-0 md:flex-col md:gap-0 md:overflow-visible md:p-0">
         {items.map((item) => {
           const on = item.pressed ?? false;
