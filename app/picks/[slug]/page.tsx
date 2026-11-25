@@ -32,15 +32,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: `${detail.data.title} | Repo Atlas`, description: detail.data.summary };
 }
 
-/** 同分类里挑星数最高的 4 个当相关推荐；分类数据来自各自的详情页 */
-function relatedPicks(repo: string, categories: RepoDetailFrontmatter["categories"]): PickAsideInfo[] {
+/** 同领域里挑星数最高的 4 个当相关推荐；领域数据来自各自的详情页 */
+function relatedPicks(repo: string, domains: RepoDetailFrontmatter["domains"]): PickAsideInfo[] {
   const details = detailInfoMap();
-  const wanted = new Set<string>(categories);
+  const wanted = new Set<string>(domains);
   return (getPicksSnapshot()?.entries ?? [])
     .filter((entry) => {
       if (entry.repo === repo) return false;
       const detail = details[entry.repo.toLowerCase()];
-      return detail?.categories.some((category) => wanted.has(category)) ?? false;
+      return detail?.domains.some((domain) => wanted.has(domain)) ?? false;
     })
     .sort((a, b) => b.stars - a.stars)
     .slice(0, 4)
@@ -106,7 +106,7 @@ export default async function RepoDetailPage({ params }: PageProps) {
       </article>
 
       <aside aria-label="项目信息与目录" className="hidden min-w-0 xl:block">
-        <PickAside data={data} entry={entry} headings={headings} related={relatedPicks(data.repo, data.categories)} />
+        <PickAside data={data} entry={entry} headings={headings} related={relatedPicks(data.repo, data.domains)} />
       </aside>
     </div>
   );

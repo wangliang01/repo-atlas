@@ -91,6 +91,23 @@ export function PickAside({ data, entry, headings, related }: PickAsideProps) {
           </p>
         ) : null}
 
+        <dl className="mt-3 space-y-1 border-t border-line pt-3 text-micro text-muted">
+          <div className="flex gap-2">
+            <dt className="shrink-0">领域</dt>
+            <dd className="text-ink">{data.domains.join(" / ")}</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="shrink-0">形态</dt>
+            <dd className="text-ink">{data.forms.join(" / ")}</dd>
+          </div>
+          {data.peers.length > 0 ? (
+            <div className="flex gap-2">
+              <dt className="shrink-0">对标</dt>
+              <dd className="text-ink">{data.peers.join(" / ")}</dd>
+            </div>
+          ) : null}
+        </dl>
+
         <a
           href={repoUrl}
           rel="noopener"

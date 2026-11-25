@@ -82,7 +82,9 @@ export function detailInfoMap(): Record<string, DetailInfo> {
     map[detail.data.repo.toLowerCase()] = {
       slug: detail.slug,
       summary: detail.data.summary,
-      categories: detail.data.categories,
+      domains: detail.data.domains,
+      forms: detail.data.forms,
+      peers: detail.data.peers,
       verdict: detail.data.verdict,
     };
   }

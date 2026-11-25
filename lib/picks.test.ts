@@ -1,13 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { ALL_CATEGORIES } from "./categories.ts";
+import { ALL_DOMAINS } from "./categories.ts";
 import { getPicksSnapshot } from "./content.ts";
 import {
-  categoriesOf,
+  domainsOf,
   filterPicks,
   formatPerDay,
-  pickCategories,
+  formsOf,
+  pickDomains,
   RISING_TOP,
   risingRepos,
   type PickDetailInfo,
@@ -28,36 +29,44 @@ const like = (over: Partial<PickLike> = {}): PickLike => ({
   ...over,
 });
 
-const detail = (categories: string[]): PickDetailInfo => ({
+const detail = (domains: string[], forms: string[] = ["CLI / 本地工具"]): PickDetailInfo => ({
   slug: "owner--repo",
   summary: "中文摘要",
-  categories,
+  domains,
+  forms,
+  peers: [],
   verdict: "watch",
 });
 
-test("分类来自详情页，没有详情才归到「其他」", () => {
+test("领域来自详情页，没有详情才归到「其他」", () => {
   const entry = like({ repo: "a/b" });
-  const details = { "a/b": detail(["前端", "图像与设计"]) };
-  assert.deepEqual(categoriesOf(entry, details), ["前端", "图像与设计"]);
-  assert.deepEqual(categoriesOf(like({ repo: "c/d" }), details), ["其他"]);
+  const details = { "a/b": detail(["编码与开发", "设计与创意"]) };
+  assert.deepEqual(domainsOf(entry, details), ["编码与开发", "设计与创意"]);
+  assert.deepEqual(domainsOf(like({ repo: "c/d" }), details), ["其他"]);
 });
 
-test("分类计数：全部排第一，只出非空分类，按分类表顺序", () => {
+test("形态和领域分开：Skill 只做标签，不占主领域", () => {
+  const details = { "a/b": detail(["编码与开发"], ["Skill / 提示词包"]) };
+  assert.deepEqual(domainsOf(like({ repo: "a/b" }), details), ["编码与开发"]);
+  assert.deepEqual(formsOf(like({ repo: "a/b" }), details), ["Skill / 提示词包"]);
+});
+
+test("领域计数：全部排第一，只出非空领域，按领域表顺序", () => {
   const a = like({ repo: "a/one" });
   const b = like({ repo: "b/two" });
   const c = like({ repo: "c/three" });
   const details = {
-    "a/one": detail(["前端"]),
-    "b/two": detail(["前端", "架构"]),
-    "c/three": detail(["视频剪辑"]),
+    "a/one": detail(["编码与开发"]),
+    "b/two": detail(["编码与开发", "设计与创意"]),
+    "c/three": detail(["视频与音频"]),
   };
-  const categories = pickCategories([a, b, c], details);
+  const domains = pickDomains([a, b, c], details);
   assert.deepEqual(
-    categories.map((category) => category.label),
-    [ALL_CATEGORIES, "视频剪辑", "前端", "架构"],
+    domains.map((domain) => domain.label),
+    [ALL_DOMAINS, "编码与开发", "设计与创意", "视频与音频"],
   );
-  assert.equal(categories[0].count, 3);
-  assert.equal(categories.find((category) => category.label === "前端")!.count, 2);
+  assert.equal(domains[0].count, 3);
+  assert.equal(domains.find((domain) => domain.label === "编码与开发")!.count, 2);
 });
 
 test("涨得快：取 stars/天 最高的前 10 个，不是固定阈值", () => {
@@ -68,28 +77,28 @@ test("涨得快：取 stars/天 最高的前 10 个，不是固定阈值", () =>
   assert.equal(rising.has(entries[RISING_TOP].repo), false);
 });
 
-test("双轴过滤：分类和涨得快正交", () => {
+test("双轴过滤：领域和涨得快正交", () => {
   const entries = [
     ...Array.from({ length: 6 }, (_, i) => like({ repo: `agent/${i}`, starsPerDay: 100 - i })),
     ...Array.from({ length: 6 }, (_, i) => like({ repo: `mcp/${i}`, starsPerDay: 94 - i })),
   ];
   const details: Record<string, PickDetailInfo> = {};
-  for (const entry of entries) details[entry.repo] = detail([entry.repo.startsWith("agent/") ? "Agent 框架" : "办公"]);
+  for (const entry of entries) details[entry.repo] = detail([entry.repo.startsWith("agent/") ? "编码与开发" : "办公与效率"]);
 
-  const count = (category: string, risingOnly: boolean) =>
-    filterPicks(entries, { category, risingOnly }, details).length;
+  const count = (domain: string, risingOnly: boolean) =>
+    filterPicks(entries, { domain, risingOnly }, details).length;
 
-  assert.equal(count(ALL_CATEGORIES, false), 12);
-  assert.equal(count(ALL_CATEGORIES, true), 10);
-  assert.equal(count("Agent 框架", false), 6);
-  assert.equal(count("Agent 框架", true), 6);
-  assert.equal(count("办公", false), 6);
-  assert.equal(count("办公", true), 4);
+  assert.equal(count(ALL_DOMAINS, false), 12);
+  assert.equal(count(ALL_DOMAINS, true), 10);
+  assert.equal(count("编码与开发", false), 6);
+  assert.equal(count("编码与开发", true), 6);
+  assert.equal(count("办公与效率", false), 6);
+  assert.equal(count("办公与效率", true), 4);
 });
 
-test("不认识的分类返回空，不会退化成全部", () => {
+test("不认识的领域返回空，不会退化成全部", () => {
   const entries = [like({ repo: "a/b" })];
-  assert.equal(filterPicks(entries, { category: "不存在的分类", risingOnly: false }, {}).length, 0);
+  assert.equal(filterPicks(entries, { domain: "不存在的领域", risingOnly: false }, {}).length, 0);
 });
 
 test("涨速格式：整数不拖小数，小数保留一位", () => {
