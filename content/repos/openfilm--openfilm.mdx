@@ -1,0 +1,40 @@
+---
+repo: "openfilm/openfilm"
+title: "让编码 Agent 和你一起剪同一部片"
+summary: "OpenFilm 把任意编码 Agent 变成视频 Agent：Agent 找素材、写镜头、剪时间线，你在 Screening/Edit/Canvas/Color 四个编辑器里指哪改哪，双方改的是同一份工程。"
+domains: ["视频与音频", "设计与创意"]
+forms: ["桌面 / Web 应用", "Skill / 提示词包"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "37a71a0f740562da2eaa42e022eb8ab132e904d8"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+OpenFilm 把任何编码 Agent 变成视频 Agent，并提供能改任何东西的编辑器。你和 Agent 在同一部片子上实时协作：Agent 改什么你立刻看到，你改什么 Agent 也看到；Agent 做大部分工作，你指着一个地方说怎么改。
+
+## 怎么上手
+
+下载 macOS/Windows 桌面 App（自带内置 Agent），或给已有 Agent 装 Skill：`npx skills add openfilm/openfilm`，需要 Node 22.2+ 和 ffmpeg。装好后直接说“Make a 20-second launch video for my CLI, with music.”
+
+## 值得注意的设计
+
+四个编辑器共享同一份工程，但工作方式不同：
+
+- Screening：看片，框选、圈选或点一个时刻，告诉 Agent 你要改哪里。
+- Edit：完整时间线，剪辑、字幕、配音和调色都在这里。
+- Canvas：素材规划板，把笔记、图片、片段和声音排在一起。
+- Color：用 scopes、色轮、曲线和 LUT 调色。
+
+编辑器遵循开放标准，第三方也能做。
+
+## 边界与风险
+
+MIT。Agent 仍要模型/API，素材和音乐有授权问题；桌面端成熟度和专业 NLE 还有差距，导出到 Final Cut/Premiere/DaVinci 可能丢效果。编辑判断：协作模型比“Agent 生成后丢给你一个 MP4”更合理，适合短视频和产品片。
+
+## 来源
+
+GitHub：[openfilm/openfilm](https://github.com/openfilm/openfilm)（README sha 37a71a0f7405）

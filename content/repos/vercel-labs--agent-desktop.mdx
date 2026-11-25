@@ -1,0 +1,33 @@
+---
+repo: "vercel-labs/agent-desktop"
+title: "让 Agent 通过无障碍树操作桌面应用"
+summary: "Vercel Labs 的计算机使用 CLI：读取 macOS/Windows/Linux 应用的无障碍树，返回带 ref 的 JSON，Agent 用 ref 点击或输入，不依赖截图和像素匹配。"
+domains: ["通用与跨领域", "编码与开发"]
+forms: ["CLI / 本地工具", "MCP / 协议 / 连接器"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "7b592641a826b48dc793b3434fcb150dd05e7e45"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+agent-desktop 给 Agent 桌面 computer use，但不靠截图和像素匹配。它读取应用的无障碍树，返回带 ref 的 JSON；Agent 点 ref、再读一次 UI 验证结果，循环写在 Agent 里，agent-desktop 本身不含模型。
+
+## 怎么上手
+
+`npm install -g agent-desktop`，然后 `agent-desktop status` 看平台、权限和可用 surface；macOS 用 `agent-desktop permissions --guide` 走辅助功能授权。也可以从 Releases 下原生包，或 `brew install agent-desktop`。
+
+## 值得注意的设计
+
+ref 绑定快照，UI 变了会返回 `STALE_REF` 或 `AMBIGUOUS_TARGET`，逼 Agent 重新观察；默认 headless，通过无障碍 API 操作，不移动指针、不抢焦点；密集应用可以先 `--skeleton` 再局部下钻。还提供 C 库和 MCP。
+
+## 边界与风险
+
+Apache-2.0。快照、剪贴板、截图和调试产物可能包含隐私内容，README 明确要求别进公开日志；跨平台无障碍树质量不一，某些自绘界面可能读不到。编辑判断：比纯视觉方案更稳、更省 token，但仍要按应用适配。
+
+## 来源
+
+GitHub：[vercel-labs/agent-desktop](https://github.com/vercel-labs/agent-desktop)（README sha 7b592641a826）

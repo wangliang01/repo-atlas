@@ -1,0 +1,33 @@
+---
+repo: "stablyai/orca"
+title: "把多台机器上的编码 Agent 收进一个控制台"
+summary: "Orca 让你用自己的 Claude Code / Codex 订阅运行一队 Agent，在桌面、手机和远程机器之间共享工作区、审查 diff 并并行使用 worktree。"
+domains: ["编码与开发"]
+forms: ["Agent 控制面 / 编排", "桌面 / Web 应用"]
+peers: ["t3code"]
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "be3e583903c2e597354842f358a5a31643bfc8e3"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Orca 是一个编码 Agent 控制台。你用自己的 Claude Code 或 Codex、自己的本地或远程机器、自己的工具，可以从 Slack、Linear 或 GitHub 让 bot 修 bug，回到 Orca 审查它产出的 PR；桌面、手机和远程 runtime 看到同一批工作。
+
+## 怎么上手
+
+从官网下载桌面端，手机端在 App Store / Google Play 安装；也提供 Orca CLI。先把已有的 Agent 登录好，再在 Orca 里选择 Chat 或 Terminal 运行；远程场景可配 Remote Orca Server、SSH 主机或给 worktree 分配云 VM。
+
+## 值得注意的设计
+
+关键设计是“控制面 + 多执行环境”：Agent 在自己的 worktree 里并行工作，diff 可以逐行批注并回传给 Agent，GitHub/Linear 任务能直接开 workspace。CLI 把创建 worktree、启动 worker、驱动浏览器和桌面应用、定时任务都暴露出来。
+
+## 边界与风险
+
+MIT。它不转售模型，实际能力受你已有的 Agent 订阅和 CLI 限制；远程执行、Slack/手机触发意味着能执行命令的入口变多，要自己收紧权限和网络边界。右栏把 [t3code](https://github.com/pingdotgg/t3code) 列为同层对标，是编辑补充；README 没有提到 t3code，两者能否直接替代需要单独对照。
+
+## 来源
+
+GitHub：[stablyai/orca](https://github.com/stablyai/orca)（README sha be3e583903c2）

@@ -1,0 +1,42 @@
+---
+repo: "unclebob/ub-mode"
+title: "把 Uncle Bob 的工程纪律做成 Agent Skill"
+summary: "一个强制“先做对、再做干净”的编码 Skill：要求 TDD、先攻击前提、修根因、按可验证单元推进，并配合 CRAP、变异测试等质量门。"
+domains: ["编码与开发"]
+forms: ["Skill / 提示词包", "工作流 / 方法论"]
+peers: []
+verdict: watch
+featuredAt: 2026-11-25
+readmeSha: "c54164fb5a21a0f917e081fd54c959d4d235ea01"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+`ub-mode` 是写代码或改代码时强制工程纪律的 Agent Skill。它分两阶段：先让功能跑起来，再让实现变正确；规则松散基于 `poteto-mode` / `pstack` 的部分内容，并配上确定性的质量门工具。
+
+## 怎么上手
+
+把 `SKILL.md` 复制到 Agent 的 skills 目录，例如 `~/.claude/skills/ub-mode/SKILL.md`，然后调用 `/ub-mode`。没有安装器，也没有运行时依赖。
+
+## 值得注意的设计
+
+规则分两类。第一类约束工作方式：
+
+- Laziness Protocol
+- Foundational Thinking
+- TDD
+- Redesign From First Principles
+- Attack the Premise
+- Subtract Before You Add
+
+第二类把“代码变好”变成可检查的门：`crapper` 查 CRAP 相似度，`mutator` 跑变异测试，`uml-viewer` 展示组件、覆盖率、变异分数和依赖方向。
+
+## 边界与风险
+
+MIT。README 承认规则只是松散基于别人的体系；质量门需要额外装 Uncle Bob 的工具，规则本身也可能和团队现有流程冲突。编辑判断：适合想给 Agent 加“工程约束”的人，先在一个小仓库试，不要直接套到大型遗留项目。
+
+## 来源
+
+GitHub：[unclebob/ub-mode](https://github.com/unclebob/ub-mode)（README sha c54164fb5a21）

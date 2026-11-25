@@ -1,0 +1,33 @@
+---
+repo: "xiaoyang111222/cn-math-taxonomy"
+title: "中小学十科知识图谱与前置诊断"
+summary: "按国家课程标准整理的中小学知识图谱：4,068 个知识点、6,429 条先修关系、16,419 道题，能沿前置知识回溯并给出补学路径。"
+domains: ["学习与研究"]
+forms: ["数据集 / 知识库", "桌面 / Web 应用"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "e5806a62b79de25651ce607b4b031141a5222fb4"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+cn-math-taxonomy 是中小学 10 学科的知识图谱查漏补缺工具：按国家课程标准逐条核对，诊断时沿先修关系回溯到真正没学会的前置知识点，再给补学路径。仓库名还叫 `cn-math-taxonomy`，但内容已经扩到语文、英语、物理、化学、生物、历史、地理、科学、道德与法治、思想政治。
+
+## 怎么上手
+
+可以直接用在线诊断和知识图谱浏览，也可以用 GitHub Pages 备份；数据以 `topics.json`、`dependencies.json` 等文件提供，适合自己接前端或分析。
+
+## 值得注意的设计
+
+核心是知识点 + 先修边 + 题目三层：数学、英语、物理等各自成图，跨学科只在明确的地方连边；答错数学题会从高中、初中一直回溯到小学知识点。数据里还标了课标条目、教材版本和查证日期。
+
+## 边界与风险
+
+CC BY-NC 4.0：个人学习、教学、研究免费，付费课程/App/机构服务要单独授权。README 明确标出部分教材目录是“非官方、待核”，覆盖范围也限定在列出的学科和版本；它不是课程标准本身，诊断结果不能替代老师。
+
+## 来源
+
+GitHub：[xiaoyang111222/cn-math-taxonomy](https://github.com/xiaoyang111222/cn-math-taxonomy)（README sha e5806a62b79d）

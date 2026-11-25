@@ -1,0 +1,33 @@
+---
+repo: "storytold/craft-anything"
+title: "研究任意软件，再让 Agent 做一个自己的版本"
+summary: "Rust 写的 clean-room 引擎：用检查工具研究网站、桌面/手机应用、游戏和文件，再让编码 Agent 按你的技术栈重建，并把结果与原版逐项对比。"
+domains: ["编码与开发", "学习与研究"]
+forms: ["桌面 / Web 应用", "Agent 控制面 / 编排"]
+peers: []
+verdict: watch
+featuredAt: 2026-11-25
+readmeSha: "d67e236932412d0eb78c56a25e9a8bf1959e2500"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Craft Anything 是一个开源 clean-room 引擎：指向一个目标，说你想做什么，它用真实检查工具研究原版，让编码 Agent 建新项目，再拿结果与原版对比并迭代。它支持网站、桌面应用、手机应用、游戏和文件。
+
+## 怎么上手
+
+下载桌面 App，或直接用它的 320 个 CLI/MCP 工具驱动引擎。流程是 Study → Build → Check → Ready：研究原版、让 Agent 建、逐项对比、打开预览或继续改；Simple 模式面向普通用户，Advanced 模式给出反汇编、调用图、证据等完整工作台。
+
+## 值得注意的设计
+
+Clean room 模式默认不读原版代码/文件/页面源码，只看可观察行为；Deep 模式才做更深的检查。所有结论要求带证据，Agent 通过 MCP 驱动同一套引擎，所以检查和构建不是两套逻辑。
+
+## 边界与风险
+
+Apache-2.0。克隆商业软件、游戏或网站可能涉及版权、商标和平台条款，clean room 降低风险但不等于合法；“相似度”分数也不能证明行为完全一致。编辑判断：学习和互操作研究很有价值，商用前务必找法律意见。
+
+## 来源
+
+GitHub：[storytold/craft-anything](https://github.com/storytold/craft-anything)（README sha d67e23693241）

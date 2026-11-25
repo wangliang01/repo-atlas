@@ -1,0 +1,33 @@
+---
+repo: "GoogleChrome/modern-web-guidance"
+title: "把现代 Web 最佳实践塞进编码 Agent 的上下文"
+summary: "Chrome、Edge、Firefox、MDN 团队共同维护的 Skill 与 CLI，按需检索现代 CSS/HTML/性能/可访问性指南，并扫描代码里的过时写法。"
+domains: ["编码与开发"]
+forms: ["Skill / 提示词包", "CLI / 本地工具"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "07c719cb040f12bb1fbe2ac37919a60e885ae5aa"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Modern Web Guidance 把 Web 平台的专业知识、最佳实践和浏览器兼容数据做成 Agent Skill，按需把针对性指南送进上下文。它要解决的是：Agent 的训练数据里堆满旧代码，于是给本来有原生方案的任务生成一堆 JavaScript。
+
+## 怎么上手
+
+`npx modern-web-guidance@latest install` 启动安装向导，需要 Node 22+。不想安装也可以直接试 `search`、`retrieve` 和 `legacy-scan` 三个子命令。
+
+## 值得注意的设计
+
+指南按 UX、CSS 布局、性能、表单与 UI、可访问性等学科组织，覆盖 View Transitions、container queries、Popover、锚点定位等新能力；内容经过 eval 裁剪，强调 token 效率。`legacy-scan` 还能扫描仓库里的旧模式。
+
+## 边界与风险
+
+Apache-2.0，由 Chrome/Edge/Firefox/MDN 团队共同维护，但仍不是标准本身。指南会随平台演进，`legacy-scan` 只报告不自动修；它也不知道你的浏览器支持矩阵和业务约束，采纳前要自己判断。
+
+## 来源
+
+GitHub：[GoogleChrome/modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance)（README sha 07c719cb040f）

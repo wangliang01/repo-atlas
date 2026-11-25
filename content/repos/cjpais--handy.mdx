@@ -1,0 +1,33 @@
+---
+repo: "cjpais/Handy"
+title: "完全离线的按住说话转文字"
+summary: "跨平台桌面语音转文字应用：按快捷键说话，Whisper 或 Parakeet 在本机转写，再把文字粘贴到当前输入框。"
+domains: ["办公与效率"]
+forms: ["桌面 / Web 应用"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "cba40454e10284ac60bc511f23ea1f44189f0293"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Handy 是免费、开源、可扩展的离线语音转文字应用。按快捷键说话，松开后用 Whisper 转写，文字直接出现在当前输入框，音频不离开本机。
+
+## 怎么上手
+
+从 Releases 或官网下载，macOS 也可 `brew install --cask handy`，Windows 可 `winget install cjpais.Handy`，Debian/Ubuntu 用 `apt install ./Handy_*.deb`。装完要授予麦克风和辅助功能权限，再设快捷键和模型。
+
+## 值得注意的设计
+
+本地先用 Silero VAD 过滤静音，再选 Whisper Small/Medium/Turbo/Large（有 GPU 就加速）或 CPU 优化的 Parakeet V3；支持按住/切换两种录音方式，并可通过 Raycast 和转写 hook 扩展。
+
+## 边界与风险
+
+MIT。模型要下载，CPU 上大模型会慢；口音、专业词和嘈杂环境会影响准确率。辅助功能权限比较敏感，企业环境要先过安全评审。编辑判断：隐私优先场景的默认选择之一。
+
+## 来源
+
+GitHub：[cjpais/Handy](https://github.com/cjpais/Handy)（README sha cba40454e102）

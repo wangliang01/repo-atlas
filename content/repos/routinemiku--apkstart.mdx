@@ -1,0 +1,33 @@
+---
+repo: "RoutineMiku/apkstart"
+title: "在 Windows 上把 APK 当原生应用双击运行"
+summary: "ApkStart 用自带的 QEMU/Android Emulator 运行时，让 Windows 双击 APK 即可安装，生成桌面图标，并以独立窗口运行安卓应用。"
+domains: ["通用与跨领域"]
+forms: ["桌面 / Web 应用"]
+peers: []
+verdict: watch
+featuredAt: 2026-11-25
+readmeSha: "6b32b809a7edf96f7fd98ae6199f3eed591c9c1b"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+ApkStart 是 Windows 上的安卓应用运行器。注册 `.apk` 文件关联后，双击 APK 就安装；它自动解析、安装并生成桌面图标，每个应用一个图标，双击直接启动，运行时窗口会被改成应用窗口。
+
+## 怎么上手
+
+从 Releases 或 Gitee 下载：商店版 MSIX、完整便携版（约 830MB，解压 1.3GB）、安装版（约 1.3GB）或轻量便携版（96MiB，首次联网下运行时）。轻量版首次启动会下载 adb、Android Emulator 和系统镜像。
+
+## 值得注意的设计
+
+它会离线解析 APK 的 `AndroidManifest.xml`，按应用天然方向选横屏/竖屏面板，解决模拟器信箱式黑边；还做桌面/开始菜单快捷方式、窗口尺寸记忆、`ApkStartShared` 与安卓 `/sdcard` 双向同步，壳层零第三方依赖。
+
+## 边界与风险
+
+MIT。作者自己说这是早期版本、“自娱自乐产物”，暂时不是很好用；完整运行时很大，模拟器性能和兼容性有限。APK 来源、应用授权和安卓模拟器的安全边界要自己负责。编辑判断：适合折腾特定安卓 App，不适合当生产级兼容层。
+
+## 来源
+
+GitHub：[RoutineMiku/apkstart](https://github.com/RoutineMiku/apkstart)（README sha 6b32b809a7ed）

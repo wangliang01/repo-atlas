@@ -1,0 +1,33 @@
+---
+repo: "upscayl/upscayl"
+title: "本地运行的 AI 图片放大与增强"
+summary: "跨平台桌面应用，用 AI 模型放大低分辨率图片并增强细节；支持 Linux、macOS 和 Windows，模型可扩展。"
+domains: ["设计与创意"]
+forms: ["桌面 / Web 应用"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "f102b2d39a5b0aeb9199e1a2823db07dd694fa16"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Upscayl 用 AI 模型放大并增强低分辨率图片，目标是不掉画质地放大。它提供 Linux、macOS、Windows 桌面版，并支持自定义模型。
+
+## 怎么上手
+
+从 Releases 或官网下载对应安装包：Linux 可用 AppImage/DEB/RPM，macOS 12+ 用 dmg 或 `brew install --cask upscayl`，Windows 10+ 用 exe。需要兼容 Vulkan 的 GPU，很多核显不行但可以试。
+
+## 值得注意的设计
+
+推理在本地跑，图片不上传；支持批量、不同模型和自定义模型转换，文档里还有兼容性列表和故障排查。对隐私敏感或不想按张付费的人，这是主要价值。
+
+## 边界与风险
+
+AGPL-3.0，网络分发或修改后提供服务时要遵守其源码开放要求；Vulkan 兼容性和显存决定能否跑、跑多快。放大模型会“补”出不存在的细节，人像和文字场景要自己检查。编辑判断：成熟的本地放大工具，但不是修复模糊的万能药。
+
+## 来源
+
+GitHub：[upscayl/upscayl](https://github.com/upscayl/upscayl)（README sha f102b2d39a5b）

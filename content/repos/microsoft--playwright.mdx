@@ -1,0 +1,33 @@
+---
+repo: "microsoft/playwright"
+title: "一套 API 驱动三种浏览器的测试与自动化底座"
+summary: "微软的 Web 测试与自动化框架，用同一套 API 驱动 Chromium、Firefox 和 WebKit；同时提供测试运行器、CLI、MCP 和库四种入口。"
+domains: ["编码与开发"]
+forms: ["框架 / SDK / 库", "浏览器 / RPA"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "d22da6f2f507fd793d9d463401d7fbf66eec3275"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Playwright 用同一套 API 驱动 Chromium、Firefox 和 WebKit，覆盖测试、脚本和 AI Agent 三种场景。它提供测试运行器、CLI、MCP、库和 VS Code 扩展五条入口。
+
+## 怎么上手
+
+端到端测试用 `npm init playwright@latest`；只写自动化脚本用 `npm i playwright`；Agent 场景可装 `@playwright/cli` 或直接 `npx @playwright/mcp@latest`。首次还要 `npx playwright install` 下载浏览器。
+
+## 值得注意的设计
+
+核心设计是 auto-wait 和 web-first assertions：不写死等待时间，元素可操作才动作，断言自动重试。每个测试跑在独立 browser context 里，登录态可以保存成 `storageState` 复用；trace viewer 能回放 DOM、网络和控制台。
+
+## 边界与风险
+
+Apache-2.0，但浏览器二进制体积大，CI 要预留下载和缓存时间。它不负责测试策略，定位器写错仍会脆弱；MCP/CLI 是独立包，和测试运行器的版本要分别管理。编辑判断：Web 自动化的默认选项之一。
+
+## 来源
+
+GitHub：[microsoft/playwright](https://github.com/microsoft/playwright)（README sha d22da6f2f507）

@@ -1,0 +1,40 @@
+---
+repo: "replit/datacat"
+title: "自托管的指标、日志、链路和告警台"
+summary: "Replit 开源的观测平台：指标、日志、分布式追踪、仪表盘和告警放在一处，数据存 PostgreSQL 或 ClickHouse，接收 OpenTelemetry 与 Datadog 兼容流量。"
+domains: ["运维与基础设施", "数据与情报"]
+forms: ["桌面 / Web 应用", "框架 / SDK / 库"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "ff6990ecbad1e94a2fb1a811aaa9461b79c03a60"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+DataCat 是自托管可观测性平台：指标、日志、分布式追踪、仪表盘、基础设施和告警在一个地方。数据存在 PostgreSQL（遥测可选 ClickHouse），接收 OpenTelemetry 和 Datadog 兼容 agent 流量，不需要托管账号。
+
+## 怎么上手
+
+用 Docker Compose 起服务：
+
+1. clone 仓库，复制 `.env`。
+2. 生成 Postgres 密码和 session secret。
+3. 运行 `docker compose up -d --build`。
+4. 打开 3000，建管理员和 organization，再用日志里的 setup token 初始化。
+
+源码运行需要 Node 22.15+、pnpm 10.11.0、PostgreSQL 14+。
+
+## 值得注意的设计
+
+它把 API、Web UI、安装器和下载放在一个生产进程里，降低自托管复杂度；支持 OTLP/HTTP 和 Datadog intake，提供 host agent 和 Node/Python instrumentation；组织、邀请、API key 和告警都在产品内。
+
+## 边界与风险
+
+Apache-2.0。自托管意味着备份、升级、鉴权和容量都要自己负责；Datadog 兼容只对列出的版本做过测试，其他版本可能 422。编辑判断：想用一套轻量替代 Datadog 的团队可以试，但要先算存储和运维成本。
+
+## 来源
+
+GitHub：[replit/datacat](https://github.com/replit/datacat)（README sha ff6990ecbad1）

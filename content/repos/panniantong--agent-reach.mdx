@@ -1,0 +1,33 @@
+---
+repo: "Panniantong/Agent-Reach"
+title: "给 Agent 补上它够不着的互联网入口"
+summary: "一个本地 CLI，把 X、Reddit、YouTube、B站、小红书、V2EX 等 14 个平台的搜索与阅读能力接给任意 Agent；默认渠道免登录，登录类平台复用专用浏览器会话。"
+domains: ["数据与情报", "通用与跨领域"]
+forms: ["CLI / 本地工具", "Skill / 提示词包"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "915ce8313a9d8d823d4828921c8a8f60eb99e34b"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Agent Reach 是给 Agent 用的互联网入口。Claude Code、Codex 这类 CLI 自带网页搜索，但登录后才能看的内容、视频字幕、中文平台和结构化行情并不好拿；Agent Reach 把这些平台背后的工具装好、测好，让 Agent 用一条命令调用。默认支持 B站、V2EX、GitHub、YouTube 和网页，其余平台按需开启。
+
+## 怎么上手
+
+把安装文档地址发给 Agent，让它自己安装；需要 uv。登录类平台会复用 Chrome 里对应站点的登录态，复制到 Agent Reach 自己的专用浏览器，不读密码库。README 提醒 PyPI 上的 `agent-reach` 不是本项目，只能按 GitHub 安装文档装。装好后用 `agent-reach channels` 看渠道，用 `agent-reach read <url>` 自动选渠道。
+
+## 值得注意的设计
+
+每个平台是“首选 + 备选”的有序工具列表，不是单点脚本；所有东西放在 `~/.agent-reach/`，升级、管理和卸载都集中在一处。渠道分成默认、可选、实验三级，实验平台明确标注可能随时失效，维护边界写得比较清楚。
+
+## 边界与风险
+
+登录态复制涉及账号安全，README 建议登录类平台换成小号；抓取公开平台仍受平台条款、反爬和频率限制。YouTube 转写、小红书、X 等需要额外账号或 Key。编辑判断：它解决的是“够得着”，不保证内容真实、完整或合规。
+
+## 来源
+
+GitHub：[Panniantong/Agent-Reach](https://github.com/Panniantong/Agent-Reach)（README sha 915ce8313a9d）

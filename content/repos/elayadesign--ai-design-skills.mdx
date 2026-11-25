@@ -1,0 +1,33 @@
+---
+repo: "elayadesign/ai-design-skills"
+title: "给编码 Agent 的落地页与 Figma 设计 Skill"
+summary: "一个小而专注的设计 Skill 集合：landing-page-design 从需求提问到页面结构、转化文案和视觉系统；figma-designer 在 Figma 里用真实变量、文本样式、自动布局和组件搭建设计。"
+domains: ["设计与创意"]
+forms: ["Skill / 提示词包"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "223941f4daabab1898cecf05a56389ccb173d529"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+AI Design Skills 是一个小而专注的设计 Skill 集合，面向 Claude Code、Cursor、Codex、Windsurf 等能读 Markdown 规则的工具。每个 Skill 是自包含文件夹，按需安装；目前有 `landing-page-design` 和 `figma-designer`。
+
+## 怎么上手
+
+`npx skills add elayadesign/ai-design-skills` 会列出 Skill 并询问装哪个、给哪个 Agent；也可以加 `--skill`、`-a`、`-g`、`--list`。手动安装就是复制 `skills/` 到 `.claude/skills/` 或粘贴到对应规则文件。
+
+## 值得注意的设计
+
+`landing-page-design` 从 intake 问题开始，给页面结构、转化文案和完整视觉系统（字体、间距、圆角、动效）；`figma-designer` 强调真实结构：变量、命名文本样式、auto layout、带所有状态的组件和随 token 更新的 Foundations frame。
+
+## 边界与风险
+
+MIT，可商用、可 fork、可卖产物，不要求署名。但只有两个 Skill，覆盖范围有限；Figma Skill 需要 Figma 环境，生成设计仍要设计师看。编辑判断：适合补齐“落地页从 0 到 1”和“Figma 结构规范”两块短板。
+
+## 来源
+
+GitHub：[elayadesign/ai-design-skills](https://github.com/elayadesign/ai-design-skills)（README sha 223941f4daab）

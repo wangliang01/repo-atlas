@@ -1,0 +1,33 @@
+---
+repo: "CursorTouch/Windows-MCP"
+title: "让 Agent 用无障碍接口操作 Windows"
+summary: "Windows-MCP 是一个 MCP Server：让任意 LLM 读取 Windows UI 状态、打开应用、控制窗口并模拟键鼠，不依赖专用视觉模型。"
+domains: ["办公与效率", "通用与跨领域"]
+forms: ["MCP / 协议 / 连接器", "CLI / 本地工具"]
+peers: []
+verdict: recommend
+featuredAt: 2026-11-25
+readmeSha: "e73ec1aade910491c71b220608afc9502a76db2b"
+readmeFetchedAt: "2026-11-25"
+sources: [github, toutiao]
+---
+
+## 它是什么
+
+Windows-MCP 是 AI Agent 和 Windows 之间的轻量 MCP 桥。Agent 通过它读取 Windows UI 状态、打开应用、控制窗口并模拟键鼠，做文件导航、应用控制、UI 交互和 QA 测试；它不依赖传统计算机视觉或专用微调模型，任何 LLM 都能用。
+
+## 怎么上手
+
+需要 Windows 10/11 和 Python 3.14+，装 uv 后 `uvx windows-mcp serve` 走 stdio，也可以指定 SSE 或 streamable HTTP。还提供 Windows-Use 这个基于它的 Agent 和 MCP Registry 条目。
+
+## 值得注意的设计
+
+它用 Windows UI Automation 读状态、模拟输入、开应用，并给出窗口/UI 快照；浏览器场景有 `use_dom=True` 的 DOM 模式，过滤浏览器 UI，只留网页内容。README 称动作间延迟约 0.2–0.5 秒。
+
+## 边界与风险
+
+MIT。远程 SSE/HTTP 模式必须自己做鉴权和网络隔离，否则等于把桌面控制权暴露出去；UI 自动化可能点错、读屏也可能拿到敏感信息。编辑判断：Windows 桌面上最直接的 MCP 方案之一，但权限要给最小化。
+
+## 来源
+
+GitHub：[CursorTouch/Windows-MCP](https://github.com/CursorTouch/Windows-MCP)（README sha e73ec1aade91）
