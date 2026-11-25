@@ -10,7 +10,6 @@ import matter from "gray-matter";
 import { extractHeadings } from "./mdx.ts";
 import type { PickDetailInfo } from "./picks.ts";
 import {
-  LEGACY_REPO_DETAIL_SECTIONS,
   REPO_DETAIL_SECTIONS,
   repoDetailFrontmatter,
   type RepoDetailFrontmatter,
@@ -45,10 +44,7 @@ export function parseRepoDetail(slug: string, raw: string): RepoDetail {
   }
 
   const headings = new Set(extractHeadings(content).map((heading) => heading.text));
-  // 迁移期两套标题并存：哪套缺得少就报哪套，等 73 篇全迁完再删掉旧的一套
-  const missingNew = REPO_DETAIL_SECTIONS.filter((section) => !headings.has(section));
-  const missingLegacy = LEGACY_REPO_DETAIL_SECTIONS.filter((section) => !headings.has(section));
-  const missing = missingNew.length <= missingLegacy.length ? missingNew : missingLegacy;
+  const missing = REPO_DETAIL_SECTIONS.filter((section) => !headings.has(section));
   if (missing.length > 0) {
     throw new Error(`content/repos/${slug}.mdx：缺少小节 ${missing.join("、")}`);
   }

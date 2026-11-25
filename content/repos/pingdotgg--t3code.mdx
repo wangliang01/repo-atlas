@@ -21,9 +21,15 @@ T3 Code 自称是 coding agents 的开源 control plane，README 的定位是「
 
 组成上是一个本机 server 加多种客户端：桌面端覆盖 macOS、Windows 与 Linux，另有网页、iOS 和 Android。README 强调所有客户端看到同一批线程。它还内置 Git 流程：每个线程可在自己的 worktree 里工作，先看 diff，再一键 commit、push 和开 PR。和单纯把终端搬到浏览器里的工具相比，差别在于把「多 Agent、多设备、Git 审查」做进同一控制面。右栏把 Orca 列为同层对标是编辑补充，README 没有提到 Orca。
 
-README 还交代了项目动机：作者受到 Codex desktop app、Conductor、Claude Desktop 和 Cursor Glass 的启发，但认为它们都没达到自己的标准，于是想做「快、可远程、真正开放」的版本。它不绑定某个厂商的模型或订阅，代价是实际体验会随底层 Agent CLI 波动。README 说的 Open 指源码 MIT，不满意可以按自己的品牌 fork。
+## 它替掉了什么麻烦
 
-## 怎么上手
+它替掉的是「每个厂商一个应用、换台设备就接不上」的 Agent 使用方式：README 的动机一节写得直接，作者试过 Codex desktop app、Conductor、Claude Desktop 和 Cursor Glass，但认为它们都没达到自己的标准，于是想做「快、可远程、真正开放」的版本。README 没有描述更早的手工流程，以上动机是它自己给出的历史说明。
+
+按这段动机反推，旧体验的痛点在三点。第一是绑定：厂商桌面端通常只服务自家 Agent，同时用 Claude Code 和 Codex 就要开两个应用、记两套会话。第二是远程断裂：在工位开的线程，离开后很难从手机继续批准或追问。第三是不开放：界面不满意也没法自己改，只能等厂商排期。T3 Code 用单一 server、多客户端和 ACP 兼容来覆盖前两点，用 MIT 源码和品牌条款允许 fork 来回应第三点。
+
+和同类方案的差别在「卖什么」。README 专门用「Wait, what are you selling me?」一节回答：什么都不卖，不转售 token，只驱动你已有的订阅。编辑判断：这让它的成本和风险都落在底层 Agent 上，也把竞争点从模型能力移到界面速度、远程体验和开放性；代价是它必须持续跟上各家 CLI 的认证与接口变化。
+
+## 跑起来要几步
 
 前置条件是至少有一个已安装并登录的 Agent。README 举例：Claude Code 执行 `claude auth login`，Codex 执行 `codex login`。桌面端可以从 t3.codes/download 下载，也可用包管理器：
 
@@ -43,7 +49,7 @@ irm https://t3.codes/install.ps1 | iex
 
 运行 `t3` 会启动 server 并打开 web app。不想安装可先试 `npx t3@latest`。手机端从 App Store 或 Google Play 安装，再按 remote access 文档连回本机。装好后新建线程，选一个已登录的 Agent 即可开始。README 的文档入口还包括安装与首跑、远程访问、权限模式、源码管理、通过 MCP 连接外部 Agent 以及 FAQ；nightly 构建、AppImage、WSL 和 NixOS 的步骤在安装文档里。对第一次使用的人，建议先只配一个 Agent 跑通线程，再开远程访问和 Git 集成，避免一次引入太多变量。README 未说明 Node 版本、macOS 最低版本等系统要求，也没有说明首次启动是否会要求创建账号或登录 T3 服务；各 provider 的配置步骤不在主 README，而在单独的安装文档里。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
 架构是「一个本机 server，多种客户端」。Agent 实际运行在用户机器上，桌面、网页、iOS、Android 只是同一 server 的客户端，因此线程状态天然一致。远程访问支持局域网、Tailscale 或 T3 Connect。这和把 Agent 会话托管到云端的路线不同，README 把「不转售 token、驱动已有订阅」作为主要卖点，并用「Wait, what are you selling me?」一节回答：什么都不卖。
 
@@ -51,9 +57,9 @@ Agent 接入依赖 ACP，也兼容各家自己的 CLI 登录态。README 说同�
 
 权限模式决定 Agent 能自动执行哪些操作、哪些需要人批准，这正是手机远程批准的前提；但主 README 没有展开默认级别和规则。这种设计的代价是边界清楚但依赖外部：T3 Code 只提供控制面，Agent 的能力、额度和认证仍由底层 CLI 决定。如果 Claude Code 或 Codex 改了认证或接口，集成需要跟着更新，T3 Code 的升级节奏也会和多个 Agent CLI 的兼容性绑在一起。线程与 worktree 的自动清理、并行上限等运维细节，README 未说明。
 
-## 边界与风险
+## 什么时候别用它
 
-许可证是 MIT，但 README 特别声明 MIT 只覆盖源代码，不覆盖 T3 Tools 的商标、品牌和外观，包括 T3 Code 名称、字标、logo 和应用图标。公开 fork 必须替换品牌，必须明确声明非官方；暗示官方身份会被追责。想基于它做商业发行，需要先读 TRADEMARK.md。
+想找托管模型服务、零配置云端 Agent 或稳定 API 的团队不适合用它，它只是本机 Agent 的控制面；源代码是 MIT，但 README 特别声明 MIT 只覆盖源代码，不覆盖 T3 Tools 的商标、品牌和外观，包括 T3 Code 名称、字标、logo 和应用图标。公开 fork 必须替换品牌，必须明确声明非官方；暗示官方身份会被追责。想基于它做商业发行，需要先读 TRADEMARK.md。
 
 实际能力受底层 Agent 限制。用户仍需自行安装并登录 Claude Code、Codex 等工具，也承担各自的订阅费用。远程访问意味着把能执行命令的 Agent 暴露给其他设备，README 链接了权限模式与远程访问文档，但主 README 未说明默认监听地址、认证方式和传输加密等细节。README 也未说明版本号、发布节奏、系统要求和遥测策略，更没有展开 app.t3.codes 这类网页客户端的托管方式与数据路径。
 

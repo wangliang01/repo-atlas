@@ -18,11 +18,19 @@ Claude-Mem 是给编码 Agent 用的持久记忆层。README 的定位很直接�
 
 README 说它支持 Claude Code、Codex、Cursor、OpenCode 以及另外十余种 Agent；其中 Copilot CLI、Goose、Roo Code、Warp 和 Zed 只能搜索记忆，不会记录会话。记忆保存在本机 `~/.claude-mem`，云同步需要主动开启。项目用 TypeScript 编写，构建于 Claude Agent SDK 之上，README 徽章显示版本 16.1.2。
 
-组成上，它由 hooks、本地 worker、观察者、SQLite 存储、Chroma 语义搜索、MCP 搜索工具和 viewer 组成。它面向长期使用编码 Agent、受困于上下文反复丢失的人，也提供可选的 TeamBrain 团队共享工作区。和简单的会话导出、手工笔记相比，差别在于记录是自动发生的，且注入时按层压缩，而不是把整段历史塞回上下文。README 还说每个观察都有 ID，之后可以通过 worker API 引用或在网页 viewer 里打开，这让「上次那个决定」能被精确指回。编辑判断：它更像一套旁路记忆基础设施，而不是给 Agent 加一条提示词。
+组成上，它由 hooks、本地 worker、观察者、SQLite 存储、Chroma 语义搜索、MCP 搜索工具和 viewer 组成。它面向长期使用编码 Agent、受困于上下文反复丢失的人，也提供可选的 TeamBrain 团队共享工作区。
 
-## 怎么上手
+## 它替掉了什么麻烦
 
-README 的系统要求是 Node.js 20.19 以上的 20.x，或 22.12 以上；还需要一个受支持的 Agent。Bun 和 uv 会在缺失时自动安装，SQLite 随包提供。安装器会扫描本机 Agent 并询问要配置哪些：
+它替掉的是「每次新会话从零开始，靠人手把上下文再讲一遍」这件事。README 的原话是：每个新会话，Agent 都重新读同样的文件、问同样的问题、走回你们已经修过的错误。
+
+编辑判断：常见替代做法是导出会话、写手工笔记，或在项目里维护一份 `AGENTS.md`；前两者要人记得做，后者只保存稳定规则，记不住「上次为什么这么改」。Claude-Mem 让记录自动发生，并在注入时按层压缩，而不是把整段历史塞回上下文。和简单的会话导出相比，差别在于每条观察都有 ID，之后可以通过 worker API 引用或在网页 viewer 里打开，让「上次那个决定」能被精确指回。
+
+README 未说明这些旧做法的具体效果对比；编辑判断：它更像一套旁路记忆基础设施，而不是给 Agent 加一条提示词。
+
+## 跑起来要几步
+
+两步：安装器配置 Agent，然后重启 Agent。README 的系统要求是 Node.js 20.19 以上的 20.x，或 22.12 以上；还需要一个受支持的 Agent。Bun 和 uv 会在缺失时自动安装，SQLite 随包提供。安装器会扫描本机 Agent 并询问要配置哪些：
 
 ```bash
 npx claude-mem install
@@ -41,27 +49,29 @@ npx claude-mem install
 npx claude-mem install --ide opencode
 ```
 
-安装后重启 Agent。README 说明记忆注入从项目的第二次会话开始；想把整个仓库预先读一遍，可以运行 `/learn-codebase`，典型仓库约五分钟。安装器随后会要求在浏览器登录并选择记忆提供方：claude-mem observer、自备 OpenRouter 或 Gemini key，或使用自己的 Anthropic 计划；在 CI 或非交互环境里可用 `--provider` 等参数跳过账号交互。如果安装者是 AI Agent，README 给出 `--setup browser` 与 `--setup defer` 两种模式：前者准备运行时后打开浏览器，让用户自己选 Agent、集成、技能、模型和分析开关；后者把设置留到用户首次访问。README 明确要求不要替用户做选择。登录用邮箱 magic link，不需要信用卡；选 observer 后才进入试用结账。排查问题从 `npx claude-mem doctor` 开始。常见卡点包括 `npm install -g claude-mem` 只安装 SDK 与库，不会注册 hooks 或 worker；Windows 上安装器把启动器放到 `%LOCALAPPDATA%\claude-mem\bin\claude-mem.exe` 并写入用户 Path，装完要重启终端。
+安装后重启 Agent。README 说明记忆注入从项目的第二次会话开始；想把整个仓库预先读一遍，可以运行 `/learn-codebase`，典型仓库约五分钟。安装器随后会要求在浏览器登录并选择记忆提供方：claude-mem observer、自备 OpenRouter 或 Gemini key，或使用自己的 Anthropic 计划；在 CI 或非交互环境里可用 `--provider` 等参数跳过账号交互。如果安装者是 AI Agent，README 给出 `--setup browser` 与 `--setup defer` 两种模式：前者准备运行时后打开浏览器，让用户自己选 Agent、集成、技能、模型和分析开关；后者把设置留到用户首次访问。README 明确要求不要替用户做选择。排查问题从 `npx claude-mem doctor` 开始。
 
-## 值得注意的设计
+常见卡点包括 `npm install -g claude-mem` 只安装 SDK 与库，不会注册 hooks 或 worker；Windows 上安装器把启动器放到 `%LOCALAPPDATA%\claude-mem\bin\claude-mem.exe` 并写入用户 Path，装完要重启终端。
 
-核心是 hooks 加本地 worker 的两段式结构。README 说每个 Agent 事件执行一条无 shell 的命令，例如 `claude-mem hook claude-code <event>`。Claude Code 侧覆盖 Setup、SessionStart、UserPromptSubmit、PreToolUse、PostToolUse、PostToolUseFailure、Stop、SubagentStop 和 SessionEnd 等生命周期。worker 是由 Bun 管理的本地 HTTP 服务，接收工具活动、调用观察者，并同时提供 viewer 与搜索接口。
+## 它把复杂度放在哪
+
+复杂度放在 hooks 加本地 worker 的两段式结构。README 说每个 Agent 事件执行一条无 shell 的命令，例如 `claude-mem hook claude-code <event>`。Claude Code 侧覆盖 Setup、SessionStart、UserPromptSubmit、PreToolUse、PostToolUse、PostToolUseFailure、Stop、SubagentStop 和 SessionEnd 等生命周期。worker 是由 Bun 管理的本地 HTTP 服务，接收工具活动、调用观察者，并同时提供 viewer 与搜索接口。
 
 观察者是第二个模型调用方，prompt 放在 `src/sdk/`，模型来源通过 `ClaudeProvider.ts`、`OpenRouterProvider.ts` 这类 provider 适配。存储走 SQLite，数据库在 `~/.claude-mem/claude-mem.db`，用 FTS5 做关键词检索；Chroma 在其上补语义搜索。新会话拿到的是一份压缩索引，需要细节时再逐层展开，这就是 README 所说的 progressive disclosure。每层索引还会标注自己的 token 成本，让 Agent 知道打开细节的代价。
 
-搜索被拆成 `search`、`timeline`、`get_observations` 三个 MCP 工具：先取约 50 到 100 token 的索引，补时间线上下文，最后只对筛出的 ID 拉取 500 到 1,000 token 的全文。README 明确说明，索引与全文的体量比不等于端到端节省，时间线和详情也要计入成本。worker 还提供 `smart_search`、`smart_outline`、`smart_unfold` 这类代码导航工具，以及 `save_memory` 用于主动保存笔记。My Work 在启动时打印的 worker 地址上展示实时请求、进度、人工移交和待审队列，记忆、会话与设置则在 `/viewer`；可选的 TeamBrain 是共享工作区，成员自己决定分享什么。
+搜索被拆成 `search`、`timeline`、`get_observations` 三个 MCP 工具：先取约 50 到 100 token 的索引，补时间线上下文，最后只对筛出的 ID 拉取 500 到 1,000 token 的全文。README 明确说明，索引与全文的体量比不等于端到端节省，时间线和详情也要计入成本。worker 还提供 `smart_search`、`smart_outline`、`smart_unfold` 这类代码导航工具，以及 `save_memory` 用于主动保存笔记。
 
-README 另外说明 `CLAUDE_MEM_MODE` 同时控制工作流模式和观察语言，例如 `code--zh` 让观察与摘要用中文，`code--chill` 则只记录「重新发现会很痛苦」的内容。内置语言代码有近三十种，切换后要重启 Claude Code。这种设计的代价是每条工具调用都多一次观察与存储，本地数据库会持续增长。
+`CLAUDE_MEM_MODE` 同时控制工作流模式和观察语言，例如 `code--zh` 让观察与摘要用中文，`code--chill` 则只记录「重新发现会很痛苦」的内容。这种设计的代价是每条工具调用都多一次观察与存储，本地数据库会持续增长。
 
-## 边界与风险
+My Work 在启动时打印的 worker 地址上展示实时请求、进度、人工移交和待审队列；记忆、会话与设置则在 `/viewer`。可选的 TeamBrain 是共享工作区，成员自己决定分享什么。
 
-记忆需要模型提供方，这是主要的使用成本。README 说选择 claude-mem observer 会进入 30 天免费试用，结账页要求填写支付方式；试用结束后如果未订阅，会自动回退到 Anthropic 计划。另两个选项是自备 OpenRouter 或 Gemini 密钥，或直接用 Anthropic 计划。匿名使用分析默认开启，可用 `npx claude-mem telemetry disable` 关闭；云同步是可选功能，截图默认保留在本机 `~/.claude-mem/media-v1/`，开启云同步或图像推理后才会外发。
+## 什么时候别用它
+
+不愿意为记忆模型付费、或对本地数据库持续增长敏感的人，不适合用它。记忆需要模型提供方，这是主要的使用成本。README 说选择 claude-mem observer 会进入 30 天免费试用，结账页要求填写支付方式；试用结束后如果未订阅，会自动回退到 Anthropic 计划。另两个选项是自备 OpenRouter 或 Gemini 密钥，或直接用 Anthropic 计划。匿名使用分析默认开启，可用 `npx claude-mem telemetry disable` 关闭；云同步是可选功能，截图默认保留在本机 `~/.claude-mem/media-v1/`。
 
 README 给出 `<private>` 标签来阻止内容入库，但没有给出数据库体积增长、清理策略或并发写入方面的说明；数据库长期运行后的磁盘占用与检索退化风险，README 未说明。安装路径也有坑：Windows 上装完要重启终端；hooks 找不到 `claude-mem` 时应先跑 doctor。支持列表里的部分 Agent 只能搜索、不能记录，团队选型时要按这个差异核对。
 
-设置文件在 `~/.claude-mem/settings.json`，可控制模型、worker 端口、数据目录、日志级别和注入内容；`CLAUDE_MEM_SESSION_START_INCLUDE_ALL_SOURCES` 决定 Claude Code 与 Codex 启动时是否带入所有 harness 的观察。这些都存在本机，但意味着配置漂移和迁移要自己管。截图默认保留在本机，可在 Settings 的「Keep images」开关关闭；只有在云同步开启时才会传到 cmem.ai，只有图像推理单独开启时才会送给观察者模型。
-
-许可证是 Apache 2.0，README 给出该选择的理由是希望持久记忆能嵌入开发工具、MCP 服务器和企业系统，开源与商业边界另有文档。项目同时运营托管记忆服务和 TeamBrain。README 末尾还介绍了第三方发行、由作者官方认可的 CMEM 代币及合约地址，这部分与记忆功能无关，需要独立判断。编辑判断：它适合长期使用同一批项目、愿意为模型调用付费并接受本地常驻 worker 的人；不适合对数据外发敏感、需要严格清理策略，或只用单体轻量 Agent 的场景。
+设置文件在 `~/.claude-mem/settings.json`，可控制模型、worker 端口、数据目录、日志级别和注入内容；这些都存在本机，但意味着配置漂移和迁移要自己管。许可证是 Apache 2.0。README 末尾还介绍了第三方发行、由作者官方认可的 CMEM 代币及合约地址，这部分与记忆功能无关，需要独立判断。编辑判断：它适合长期使用同一批项目、愿意为模型调用付费并接受本地常驻 worker 的人；不适合对数据外发敏感、需要严格清理策略，或只用单体轻量 Agent 的场景。
 
 ## 来源
 

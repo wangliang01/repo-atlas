@@ -14,13 +14,21 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-VideoLingo 把语音识别、字幕翻译、字幕切分与对齐、配音串成一个 Streamlit 工作流。它产出字幕文件，也可以输出带字幕或配音的视频。README 明确说翻译质量取决于源音频、语言和所选模型，不是无条件的"Netflix 级"。
+VideoLingo 是一套把语音识别、字幕切分、翻译、对齐和配音串成一条流水线的视频本地化工具。它用 Streamlit 做界面，产出字幕文件，也可以输出带字幕或配音的视频；README 明确说翻译质量取决于源音频、语言和所选模型，不是无条件的「Netflix 级」。
 
-它给做视频本地化的人用：字幕组、内容搬运、课程或多语言分发的团队。核心组成包括 yt-dlp 下载、Qwen3-ASR 加 Qwen3-ForcedAligner 的词级识别与对齐、NLP/AI 字幕切分、术语表、翻译与改写，以及 GPT-SoVITS、OpenAI、Edge TTS 等配音后端。相比只做"音频转字幕"的工具，它把切分、翻译、时间轴和配音放在同一条流水线里。
+它给做视频本地化的人用：字幕组、内容搬运、课程或多语言分发的团队。README 称核心组成包括 yt-dlp 下载、Qwen3-ASR 加 Qwen3-ForcedAligner 的词级识别与对齐、NLP 与 AI 字幕切分、术语表、翻译与改写，以及 GPT-SoVITS、OpenAI、Edge TTS 等配音后端。README 列出的输入语言是英语、俄语、法语、德语、意大利语、西班牙语、日语和中文，配音语言则取决于所选 TTS。README 未说明整套工具能否拆开单独使用；编辑判断：它更像一条自带编排的流水线，而不是可以单卖的识别或配音库。
 
-## 怎么上手
+## 它替掉了什么麻烦
 
-支持 Windows、macOS（Apple Silicon / Intel）和 Linux。Windows 最简单：
+它替掉的是「识别、断句、翻译、配音分散在四五个工具里来回导出导入」的麻烦。README 未说明这个项目出现之前的具体工作流；编辑判断：常见做法是先用识别工具出一份字幕，再手工切轴断句，放进翻译工具逐句翻，最后到剪辑软件或 TTS 里单独配音，每一步都要对时间轴，长视频里一次错位就要重来。
+
+README 没有把它和别的工具做功能横评，只说明了两件可核对的事。第一，相比只做「音频转字幕」的工具，它把切分、翻译、时间轴和配音放在同一条流水线里。第二，HTTP API 替代了旧的 Excel 批量模式，README 说 API 与 Streamlit 共用流水线，支持输入、处理、进度、下载、重试和串行批量。编辑判断：这等于把过去「在表格里逐条登记任务、再人工盯着跑」的做法换成了可脚本调用的接口。
+
+和纯翻译工具或纯配音工具的差别，编辑判断在于它要求一条链上的模型都能配合：LLM 必须是 OpenAI 兼容的 Chat Completions 并能返回工作流要求的结构化 JSON，识别、切分、翻译、TTS 才能接得上。README 也提醒，换模型并不会自动重跑所有已完成阶段。
+
+## 跑起来要几步
+
+最少三步：装好环境、启动、填模型。支持 Windows、macOS（Apple Silicon / Intel）和 Linux。Windows 最简单：
 
 1. 从最新 Release 下载 Source code (zip)，解压到桌面或其他目录。
 2. 双击 `OneKeyStart.bat`，保持窗口打开。首次运行会自动安装 uv、Python 3.12、应用依赖和 FFmpeg，需要联网。
@@ -40,35 +48,29 @@ docker build -t videolingo .
 docker run -d -p 8501:8501 --gpus all videolingo
 ```
 
-给脚本或 Agent 用，可以走本地 HTTP API，它替代了旧的 Excel 批量模式：
+给脚本或 Agent 用，走本地 HTTP API：
 
 ```bash
 uv run start.py --api
 ```
 
-API 与 Streamlit 共用流水线，用 `output/` 一次处理一个操作；首次运行也会补装缺失依赖。配置写在 `config.yaml`，交互式文档在 `localhost:8000/docs`。README 说 API 支持输入、处理、进度、下载、重试和串行批量，这意味着它不是一个可并发的服务，排队和状态管理要由调用方负责。README 未说明 HTTP API 的鉴权方式，暴露到网络前要自己加保护。
+README 说配置写在 `config.yaml`，交互式文档在 `localhost:8000/docs`，首次运行也会补装缺失依赖。预期结果是先看到 Streamlit 界面或 API 文档，再能提交第一个视频任务。常见卡点是首次安装依赖要联网、模型要自己配、API 暴露到网络前没有鉴权说明。
 
-Streamlit 界面把流程做成可观察、可中断的：README 说支持暂停、恢复和停止，模型搜索框会从 provider 的完整模型列表里自动拉取并过滤，界面本身支持多语言。这些细节对长视频很重要，因为一次处理可能跨越识别、翻译、配音多个阶段，中途失败时不必从头再来，前提是复用已有缓存和输出。
+## 它把复杂度放在哪
 
-## 值得注意的设计
+复杂度放在「识别、切分、翻译、配音四段之间的耦合」和「失败后能不能续跑」上。README 说识别与对齐是词级的：Qwen3-ASR 负责转写，Qwen3-ForcedAligner 给出词级时间戳，之后才做字幕切分；切分同时受 NLP 和 AI 影响，并可配置长度上限，这决定了字幕会不会在不自然的位置断行。
 
-识别与对齐是词级的：Qwen3-ASR 负责转写，Qwen3-ForcedAligner 给出词级时间戳，之后才做字幕切分。切分同时受 NLP 和 AI 影响，并可以配置长度上限；这决定了字幕是否会在不自然的位置断行。
+翻译不是单次直译。README 说可以直接翻，也可以先反思再自然改写；术语表既支持自定义，也支持 AI 生成，用来保持专有名词一致。识别可选本地或云端：默认本地跑 Qwen3-ASR 加 ForcedAligner，也可以选 ElevenLabs 或 MAI-Transcribe-2，后者用 Azure Speech key 或 OpenRouter key，README 明确说云端会把音频发给所选 provider 并可能产生费用。配音后端包括 OpenAI、Fish Audio、SiliconFlow Fish/CosyVoice2、GPT-SoVITS、Edge TTS、F5-TTS 和 `core/tts_backend/custom_tts.py` 里的自定义适配器。
 
-翻译不是单次直译。README 说可以直接翻，也可以先反思再自然改写；术语表既支持自定义，也支持 AI 生成，用来保持专有名词一致。LLM 必须是 OpenAI 兼容的 Chat Completions，并且能返回工作流要求的结构化 JSON。README 推荐 OpenLux，并列出 `gpt-6-luna`、`gpt-6-sol`、`claude-opus-5-5` 等模型 ID。
+工程上的关键设计是可恢复性。README 说有详细日志和进度恢复，已成功的响应缓存和已完成阶段可以在重试时复用；LLM 输出必须符合 JSON 结构，失败时去 `output/gpt_log/error.json` 查。README 特别说不要一上来就删光输出，因为那样会丢掉可复用的缓存。Streamlit 界面支持暂停、恢复和停止，模型搜索框会从 provider 的完整模型列表里自动拉取并过滤。HTTP API 则一次只处理一个操作，用 `output/` 串行工作。编辑判断：这两条路径都把复杂度留给了调用方——想要并发、排队和状态管理，要自己在外层补。
 
-语音识别可选本地或云端。默认在本地跑 Qwen3-ASR 加 ForcedAligner；也可以选 ElevenLabs 或 MAI-Transcribe-2，后者用 Azure Speech key 或 OpenRouter key。README 明确说云端会把音频发给所选 provider，可能产生费用。WhisperX 不由安装器安装，要用得按文档手动装。
+## 什么时候别用它
 
-README 列出的输入语言是英语、俄语、法语、德语、意大利语、西班牙语、日语和中文；配音语言取决于所选 TTS，而不是自动覆盖所有输入语言。选模型前先确认目标语言在识别和 TTS 两侧都受支持。
+许可证是 Apache-2.0。README 的 Current Limitations 逐条写了边界：背景噪声和语言相关的对齐模型会影响识别与时间戳，人声分离可能有帮助；数字和符号可能没有可靠词级时间；LLM 输出不符合 JSON 结构时要去 `output/gpt_log/error.json` 查；配音质量和同步取决于翻译、TTS 和语速，调速度不保证自然；本地识别每段只用一个主识别/对齐语言，混合语言不保证每种语言都准确；配音不会自动给每个说话人分配不同声音。
 
-工程上比较实用的是可恢复性。README 说有详细日志和进度恢复，已成功的响应缓存和已完成阶段可以在重试时复用；改模型并不会自动重跑所有已完成阶段。这能省钱，但也意味着排障时不能靠"全删重来"。
+隐私和合规要自己把关。README 说云端 ASR 和 LLM 会把音频、文本发给 provider；声音克隆需要被克隆者的授权；用 yt-dlp 下载 YouTube 要遵守平台条款和版权。README 未说明最低硬件配置、模型下载体积，也未给出配音速度与同步的具体调参建议，更没给出不同模型的速度对比；Docker 镜像默认 CUDA 12.8.1/cu128，另有 12.6 的替代说明。
 
-## 边界与风险
-
-Apache-2.0。质量边界写在 README 的 Current Limitations 里，值得逐条看：背景噪声和语言相关的对齐模型会影响识别与时间戳，人声分离可能有帮助；数字和符号可能没有可靠词级时间；LLM 输出不符合 JSON 结构时要去 `output/gpt_log/error.json` 查；配音质量和同步取决于翻译、TTS 和语速，调速度不保证自然；本地识别每段只用一个主识别/对齐语言，混合语言不保证每种语言都准确；配音不会自动给每个说话人分配不同声音。
-
-隐私和合规要自己把关。云端 ASR 和 LLM 会把音频、文本发给 provider；声音克隆（GPT-SoVITS 等）需要被克隆者的授权；用 yt-dlp 下载 YouTube 要遵守平台条款和版权。README 未说明最低硬件配置、模型下载体积，也未给出配音速度与同步的具体调参建议，更没给出不同模型的速度对比；Docker 镜像默认 CUDA 12.8.1/cu128，另有 12.6 的替代说明。
-
-编辑判断：它适合愿意配置模型、需要完整字幕流水线的团队；不适合完全不懂 API 和模型配置的人。Intel Mac 的背景声限制和逐段单语言识别，是采用前最容易被忽略的两个坑。
+编辑判断：它适合愿意配置模型、需要完整字幕流水线的团队，不适合完全不懂 API 和模型配置的人。Intel Mac 的背景声限制、逐段单语言识别和不会自动分说话人，是采用前最容易被忽略的三个坑。README 未说明 HTTP API 的鉴权方式，暴露到网络前要自己加保护。
 
 ## 来源
 

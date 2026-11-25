@@ -16,13 +16,21 @@ sources: [github]
 
 PhoneBox 把一台闲置的 Android 手机改造成电脑的常亮副屏和触控台。它由两部分组成：桌面上运行的小型 agent，和手机上运行的全屏应用。两者通过 USB 或 Wi-Fi 通信，面板内容在电脑的浏览器里编辑。README 说它不需要 root、不需要 PhoneBox 账号、也不依赖云服务，支持 Windows、Linux 和 macOS。
 
-它能显示的东西大致分五类。第一类是 PC 监控：CPU、GPU、内存、磁盘、网络和 ping，带图表、GPU 细节和进程控制。第二类是 AI 编码：Claude、Codex、Antigravity 的配额、重置时间和消耗速率预测，本机的 Claude Code、Codex、OpenCode 会话（包括 WSL 里的），以及 GitHub review 与 CI 状态。点击一个会话可以看模型、耗时和 token 细节，还可以选择从手机回答 Codex、Claude Code 或 OpenCode 的权限提示，选项是 Allow、Deny，OpenCode 另有 Always allow。第三类是触控：应用与 URL 快捷方式、组合键、宏，以及通过 Control Deck 控制音频、麦克风、媒体、OBS 和系统设置。第四类是日常信息：Now Playing、网络电台、时钟、天气、日历、便签、清单、番茄钟和计时器。第五类是自动化：webhook 数值与通知、Home Assistant 控制，以及按电脑活动触发的规则。可选的 CodexBar integration 会补充配额来源和成本概览。
+它能显示和操作的东西大致分五类。第一类是 PC 监控：CPU、GPU、内存、磁盘、网络和 ping，带图表、GPU 细节和进程控制。第二类是 AI 编码：Claude、Codex、Antigravity 的配额、重置时间和消耗速率预测，本机的 Claude Code、Codex、OpenCode 会话（包括 WSL 里的），以及 GitHub review 与 CI 状态。点击一个会话可以看模型、耗时和 token 细节，还可以选择从手机回答 Codex、Claude Code 或 OpenCode 的权限提示，选项是 Allow、Deny，OpenCode 另有 Always allow。第三类是触控：应用与 URL 快捷方式、组合键、宏，以及通过 Control Deck 控制音频、麦克风、媒体、OBS 和系统设置。第四类是日常信息：Now Playing、网络电台、时钟、天气、日历、便签、清单、番茄钟和计时器。第五类是自动化：webhook 数值与通知、Home Assistant 控制，以及按电脑活动触发的规则。
 
-给谁用？README 的描述指向想给桌面加一块常亮副屏、同时不介意在电脑上做一点配置的人。和买一块副屏或装一个手机投屏应用相比，PhoneBox 的差别在于它把控件、数据和电脑侧权限放在同一套配对体系里，而不是把整块桌面投到手机上。编辑判断：它更像一个可编程的桌面状态面板，而不是远程桌面工具。
+给谁用？README 的描述指向想给桌面加一块常亮副屏、同时不介意在电脑上做一点配置的人。和买一块副屏或装一个手机投屏应用相比，PhoneBox 的差别在于它把控件、数据和电脑侧权限放在同一套配对体系里，而不是把整块桌面投到手机上。
 
-## 怎么上手
+## 它替掉了什么麻烦
 
-前置条件是一台 Android 5+ 手机（README 建议 Android 6 或更新）和一台受支持的电脑。USB 方式需要数据线和 USB 调试；Wi-Fi 配对两者都不需要。发行版 agent 自带 .NET 运行时，不必另装。README 另外列出了手动下载、Scoop、源码和 winget 清单等安装路径。
+它替掉的是「为了看几眼状态和点几个快捷按钮，要么买第二块屏，要么把整块桌面投到手机上」这件事。README 没有交代出现之前的标准做法；编辑判断：闲置 Android 手机过去常见的归宿是当时钟、相框或投屏终端；投屏类方案把整个桌面镜像过去，屏幕比例、触控和隐私都不理想，而专用状态面板要么买硬件，要么自己写一个只在自己机器上跑得起来的脚本。
+
+它的切入点是「面板内容单独设计，权限留在电脑侧」。README 说桌面 agent 提供设置与数据，手机按 ID 请求预先配置的动作，命令和集成凭据不离开电脑。编辑判断：这把「远程控制电脑」收窄成「按预设动作操作电脑」，减少了把完整控制面暴露出去的风险，代价是每个想加的动作都要先在电脑侧配置。
+
+和同类方案的差别，README 没有列举竞品，也没有做功能对比，只强调无 root、无账号、无云服务。编辑判断：可确认的差异是 131 个 widget、30 个模板、可视化编辑器和 USB/Wi-Fi 两种配对方式。README 未说明它和通用 Android 桌面小组件或 Home Assistant 面板的功能边界。
+
+## 跑起来要几步
+
+三步：装桌面 agent、连手机、在浏览器里排版。前置条件是一台 Android 5+ 手机（README 建议 Android 6 或更新）和一台受支持的电脑。USB 方式需要数据线和 USB 调试；Wi-Fi 配对两者都不需要。发行版 agent 自带 .NET 运行时，不必另装。README 另外列出了手动下载、Scoop、源码和 winget 清单等安装路径。
 
 Windows 10/11 x64 在普通 PowerShell 窗口执行：
 
@@ -42,23 +50,25 @@ curl -fsSL https://raw.githubusercontent.com/ersinkoc/phonebox/main/setup.sh | b
 
 常见卡点有两个。其一是 Windows release agent 尚未签名，SmartScreen 或杀毒软件可能警告或拦截；README 说 SignPath Foundation 已接受项目且测试签名通过，但要等正式证书签发才会签名。其二是安装脚本通过 `irm | iex` 或 `curl | bash` 直接执行远程脚本，README 要求先读脚本。首次配置还要接受手机上的 USB 调试授权。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-连接层把权限留在电脑一侧，这是最值得注意的取舍。桌面设置服务只监听 127.0.0.1:8765；USB 通过 adb reverse 暴露一个独立的 loopback 端口，并使用手机生成、agent 经 adb 读取的密钥做 TLS pinning。可选 Wi-Fi 在 8766 端口使用 HTTPS、固定证书和配对密钥。手机按 ID 请求预先配置的动作，命令和集成凭据不离开电脑。README 还提到，受支持的公共 feed 在手机没有网络时可以经 agent 走 USB 回退。编辑判断：这比把完整控制接口直接暴露到局域网更收敛，代价是首次配对和证书校验的步骤更多。
+复杂度放在「连接与配对」和「面板模型」这两层，数据采集则按平台分包。README 说桌面设置服务只监听 127.0.0.1:8765；USB 通过 adb reverse 暴露一个独立的 loopback 端口，并使用手机生成、agent 经 adb 读取的密钥做 TLS pinning。可选 Wi-Fi 在 8766 端口使用 HTTPS、固定证书和配对密钥。手机按 ID 请求预先配置的动作，命令和集成凭据不离开电脑；受支持的公共 feed 在手机没有网络时可以经 agent 走 USB 回退。编辑判断：这比把完整控制接口直接暴露到局域网更收敛，代价是首次配对和证书校验的步骤更多。
 
-面板采用可视化编辑器加页面模型。README 列出 131 个 widget、30 个模板、多页面、横竖屏布局和 12 × 6 网格，Smart Stack 可在单个槽位里放最多 12 个 widget。Live preview 能带真实数据预览未保存的修改，多个手机可以各自使用不同布局，一台手机也能在配对的电脑之间切换。字体、尺寸、间距、圆角和表面可以在全局、单页或单个 widget 三个层级调整。
+面板采用可视化编辑器加页面模型。README 说共有 131 个 widget、30 个模板、多页面、横竖屏布局和 12 × 6 网格，Smart Stack 可在单个槽位里放最多 12 个 widget。Live preview 能带真实数据预览未保存的修改，多个手机可以各自使用不同布局，一台手机也能在配对的电脑之间切换。字体、尺寸、间距、圆角和表面可以在全局、单页或单个 widget 三个层级调整。
 
-数据采集按平台选用不同后端。Windows 使用系统计数器、nvidia-smi，并可接 LibreHardwareMonitor；Linux 媒体走 playerctl、音量走 wpctl 或 pactl；macOS 媒体走 nowplaying-cli，并以 Spotify 或 Music 作为回退。README 的平台表同时说明这些能力受硬件、已安装工具和权限影响，而不是所有系统都完整支持。agent 用 .NET 10 编写，手机端是 Kotlin 加 WebView，widget 是纯 JavaScript。开发时可以用 Python 3 跑 tools/demo-server.py，在 8790 端口的 panel 和 settings 路径预览模拟数据。
+数据采集按平台选用不同后端。README 的平台表说 Windows 使用系统计数器、nvidia-smi，并可接 LibreHardwareMonitor；Linux 媒体走 playerctl、音量走 wpctl 或 pactl；macOS 媒体走 nowplaying-cli，并以 Spotify 或 Music 作为回退。表里同时说明这些能力受硬件、已安装工具和权限影响，而不是所有系统都完整支持。agent 用 .NET 10 编写，手机端是 Kotlin 加 WebView，widget 是纯 JavaScript。开发时可以用 Python 3 跑 tools/demo-server.py，在 8790 端口的 panel 和 settings 路径预览模拟数据。
 
-## 边界与风险
+代价是两端都要维护。README 说手机应用不在应用商店，Wi-Fi 模式下更新要手动装 APK，桌面 agent 的更新靠重跑脚本。编辑判断：复杂度不在算法，而在配对、证书、平台差异和升级路径。
 
-许可证为 MIT。Windows release agent 目前仍未签名，Android APK 使用项目自己的签名密钥，与 SignPath 无关，README 建议只在受信任的电脑上授权 USB 调试。安装脚本的供应链风险已在上一节说过，不再重复；在不受信任的网络环境中应改为手动下载并核对校验和。
+## 什么时候别用它
+
+它不适合只想插上就用、不愿读脚本和维护配对关系的人，也不适合需要 iOS 或 Windows ARM 支持的场景。许可证为 MIT。Windows release agent 目前仍未签名，Android APK 使用项目自己的签名密钥，与 SignPath 无关，README 建议只在受信任的电脑上授权 USB 调试。安装脚本的供应链风险已在上一节说过；在不受信任的网络环境中应改为手动下载并核对校验和。
 
 平台覆盖有缺口。README 明确说 Windows ARM 和 musl Linux（如 Alpine）没有 release 构建，iOS 版本不存在，手机应用也不上架应用商店。桌面控件依赖宿主机硬件、工具和权限，Control Deck 的进阶功能还有额外平台要求。
 
-社区 add-on 由作者自行维护，PhoneBox 不审查也不分发，而且 add-on 可以通过 PUT /api/settings 修改设置，安装前需要确认其行为。README 列出的两个 add-on 分别会向 Microsoft Store 目录、Steam 图片服务器和天气接口发请求，这属于用户自行选择的出站连接。
+社区 add-on 由作者自行维护，PhoneBox 不审查也不分发，而且 add-on 可以通过 `PUT /api/settings` 修改设置，安装前需要确认其行为。README 列出的两个 add-on 分别会向 Microsoft Store 目录、Steam 图片服务器和天气接口发请求，这属于用户自行选择的出站连接。
 
-隐私方面，PhoneBox 本身没有遥测、分析或账号，但可选 widget 和集成会联系天气、配额、GitHub 等服务，agent 还会检查 GitHub 更新，README 指向 PRIVACY.md 列出出站连接和关闭方式。README 未说明自动化测试的具体覆盖范围，只指向开发文档中的测试命令与发布检查。编辑判断：它适合愿意读脚本、能接受自己维护配对关系的用户；如果只想插上就用，这类本地工具的配置成本可能超出预期。
+隐私方面，PhoneBox 本身没有遥测、分析或账号，但可选 widget 和集成会联系天气、配额、GitHub 等服务，agent 还会检查 GitHub 更新，README 指向 PRIVACY.md 列出出站连接和关闭方式。README 未说明自动化测试的具体覆盖范围，只指向开发文档中的测试命令与发布检查。编辑判断：它适合愿意读脚本、能接受自己维护配对关系的用户。
 
 ## 来源
 

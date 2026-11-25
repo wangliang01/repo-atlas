@@ -20,9 +20,15 @@ HyperFrames 是 HeyGen 开源的一套 HTML 原生视频框架。README 的定�
 
 README 把使用方式分成三条：不写代码的人用 Studio 桌面应用，用自然语言描述或拖入素材来编辑；编码 Agent 通过 skills 使用；Claude、ChatGPT 或 Grok 的聊天连接器处于 beta，其中 ChatGPT 需要 Business、Enterprise 或 Edu 工作区。
 
-和 Remotion 相比，README 说两者都用无头 Chrome 与 FFmpeg 渲染，主要差别在创作模型：Remotion 押注 React 组件，HyperFrames 押注人和 Agent 都容易写的普通 HTML。前者需要 bundler，后者没有构建步骤；前者处理 wall-clock 动画需要小心，后者通过适配器把动画变成可 seek 的帧。代价是生态成熟度不同，Remotion 的云端渲染更成熟，HyperFrames 提供本地与 AWS Lambda 两条路径。
+## 它替掉了什么麻烦
 
-## 怎么上手
+它替掉的是「做一条带动效的视频，只能在时间线软件里手拖，或者写一套 React 工程」的麻烦。README 未说明传统剪辑软件的具体工作流；编辑判断：常见做法是在 After Effects 这类工具里手工搭时间线、导出 MP4，改一句文案就要回到工程里找图层；要批量或自动化，就得写脚本或另建一套渲染服务，视频逻辑和代码逻辑是两份。
+
+README 说 HyperFrames 受 Remotion 启发，两者都用无头 Chrome 与 FFmpeg 渲染，主要差别在创作模型：Remotion 押注 React 组件，HyperFrames 押注人和 Agent 都容易写的普通 HTML。前者需要 bundler，后者没有构建步骤；前者处理 wall-clock 动画需要小心，后者通过适配器把动画变成可 seek 的帧。编辑判断：这替掉的是 React 工程的门槛，把视频降成「一个可预览的 index.html」。
+
+和手工剪辑相比，它替掉的是不确定性。README 说渲染器在无头 Chrome 中逐帧定位，再由 FFmpeg 编码，因此同一输入产生同一视频，适合 CI、回归测试和自动渲染；这和基于 wall-clock 播放再录屏的方案不同。编辑判断：对于要把视频生产放进流水线的团队，这比「每次导出肉眼看一遍」更可靠。
+
+## 跑起来要几步
 
 使用编码 Agent 是 README 推荐的方式，先安装 skills：
 
@@ -48,21 +54,21 @@ npx hyperframes preview      # 浏览器实时预览
 npx hyperframes render       # 渲染为 MP4
 ```
 
-运行要求是 Node.js 22+ 和 FFmpeg。云端渲染用 `hyperframes cloud render`，自建分布式渲染可以部署到 AWS Lambda。若要把仓库完整 clone 下来开发，注意黄金回归基线用 Git LFS 存放，约 240 MB 的 `output.mp4`，需要先安装 Git LFS；只取源码可以设置 `GIT_LFS_SKIP_SMUDGE=1` 跳过。技能装好后，README 建议先读 `/hyperframes`，它包含渲染契约和工作循环。常见卡点是 skills 注册表可能落后 `main` 数小时，`skills add` 解析的是 skills.sh 的 blob，而 `npx hyperframes skills update` 会按与 CLI 匹配的 release tag 安装，后者更适合对齐版本。
+运行要求是 Node.js 22+ 和 FFmpeg。云端渲染用 `hyperframes cloud render`，自建分布式渲染可以部署到 AWS Lambda。若要把仓库完整 clone 下来开发，注意黄金回归基线用 Git LFS 存放，约 240 MB 的 `output.mp4`，需要先安装 Git LFS；只取源码可以设置 `GIT_LFS_SKIP_SMUDGE=1` 跳过。
 
-README 还提供成片分享：`npx hyperframes auth login` 后运行 `npx hyperframes share`，可选择谁能打开审阅链接；`share --update` 把改动变成新版本，`share --manage` 管理网页设置。CLI 与 Studio 共用同一套分享系统，每个工作区有五个免费项目。README 的 Stack 表还把 CLI、Core/Engine/Producer、catalog、skills、浏览器编辑器、Lambda、Studio 和 frame.md 分成不同成熟度，其中浏览器编辑器标注为「可用、仍在演进」。
+README 还提供成片分享：`npx hyperframes auth login` 后运行 `npx hyperframes share`，可选择谁能打开审阅链接；`share --update` 把改动变成新版本，`share --manage` 管理网页设置。常见卡点是 skills 注册表可能落后 `main` 数小时，`skills add` 解析的是 skills.sh 的 blob，而 `npx hyperframes skills update` 会按与 CLI 匹配的 release tag 安装，后者更适合对齐版本。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-合成模型非常薄：一个 `div#stage` 带 `data-composition-id`、`data-start`、`data-width`、`data-height`，每个视频、标题或音频元素带 `data-start`、`data-duration`、`data-track-index`，音频还可带 `data-volume`。动画库把自己注册到 `window.__timelines`，渲染器按时间点 seek 后逐帧截取。因为合成就是普通 `index.html`，没有构建步骤，浏览器里能直接播放和预览，Agent 也只需要写 HTML，不必理解专有工程格式。
+复杂度放在「一层很薄的合成模型」和「一层很厚的工具链」上。README 说合成模型非常薄：一个 `div#stage` 带 `data-composition-id`、`data-start`、`data-width`、`data-height`，每个视频、标题或音频元素带 `data-start`、`data-duration`、`data-track-index`，音频还可带 `data-volume`。动画库把自己注册到 `window.__timelines`，渲染器按时间点 seek 后逐帧截取。编辑判断：因为合成就是普通 `index.html`，没有构建步骤，浏览器里能直接播放和预览，Agent 也只需要写 HTML，不必理解专有工程格式。
 
-确定性来自渲染路径而不是运行时录制。README 说明渲染器在无头 Chrome 中逐帧定位，再由 FFmpeg 编码，因此同一输入产生同一视频，适合 CI、回归测试和自动渲染。这一点与基于 wall-clock 播放再录屏的方案不同。代价是它对页面里的非确定性来源很敏感，而 README 没有说明字体、媒体解码器或 GPU 差异会怎样影响结果。
+确定性来自渲染路径而不是运行时录制。README 说明渲染器在无头 Chrome 中逐帧定位，再由 FFmpeg 编码。编辑判断：代价是它对页面里的非确定性来源很敏感，而 README 没有说明字体、媒体解码器或 GPU 差异会怎样影响结果。
 
-包结构把职责拆成可替换的层次：`@hyperframes/core` 管类型、解析器、生成器、linter、运行时和帧适配器；`@hyperframes/engine` 用 Puppeteer 与 FFmpeg 做可寻址的页面转视频；`@hyperframes/producer` 负责完整捕获、编码和混音流水线；此外还有浏览器编辑器 studio、可嵌入的 `<hyperframes-player>` Web Component、WebGL 着色器转场和 AWS Lambda SDK。围绕框架还发布了 9 个 skills 和约 450 个可安装的现成区块，覆盖转场、字幕、图表、地图和 3D。
+包结构把职责拆成可替换的层次。README 说 `@hyperframes/core` 管类型、解析器、生成器、linter、运行时和帧适配器；`@hyperframes/engine` 用 Puppeteer 与 FFmpeg 做可寻址的页面转视频；`@hyperframes/producer` 负责完整捕获、编码和混音流水线；此外还有浏览器编辑器 studio、可嵌入的 `<hyperframes-player>` Web Component、WebGL 着色器转场和 AWS Lambda SDK。README 还说围绕框架发布了 9 个 skills 和约 450 个可安装的现成区块，覆盖转场、字幕、图表、地图和 3D。
 
-9 个技能的分工也写得很细：`/hyperframes` 是必须先读的渲染契约与工作循环，`/hyperframes-cli` 负责脚手架、检查、预览、渲染和失败恢复，`/hyperframes-registry` 覆盖约 450 个区块，`/media-use` 负责音乐、音效、图像、配音等素材，`/reverse-any-video` 把任意视频重建为可编辑项目，`/style-sampling` 提供五种成熟风格；`/figma`、`/slideshow`、`/remotion-to-hyperframes` 按需安装。frame.md 则把网页设计系统转换成面向镜头的 DESIGN.md 超集，让 Agent 按视频尺度而不是网页尺度构图。编辑判断：这种薄合成加厚工具链的设计，让 Agent 的出错面集中在 HTML 与动画契约上，但也意味着复杂效果要靠 catalog 或自定义适配器补齐。
+README 对 9 个技能的分工写得很细：`/hyperframes` 是必须先读的渲染契约与工作循环，`/hyperframes-cli` 负责脚手架、检查、预览、渲染和失败恢复，`/hyperframes-registry` 覆盖约 450 个区块，`/media-use` 负责音乐、音效、图像、配音等素材，`/reverse-any-video` 把任意视频重建为可编辑项目，`/style-sampling` 提供五种成熟风格；`/figma`、`/slideshow`、`/remotion-to-hyperframes` 按需安装。frame.md 则把网页设计系统转换成面向镜头的 DESIGN.md 超集。编辑判断：这种薄合成加厚工具链的设计，让 Agent 的出错面集中在 HTML 与动画契约上，但也意味着复杂效果要靠 catalog 或自定义适配器补齐。
 
-## 边界与风险
+## 什么时候别用它
 
 开源的是框架，不是 HeyGen 的托管模型。README 中提到的 Studio 免费计划、每月 25 美元的 Pro、积分以及 HeyGen Video 1、Seedance 2.5、Lyria 3 Pro 等模型属于商业服务，和 Apache 2.0 的渲染引擎不是同一件事。云端渲染和 Lambda 渲染也需要额外的云账号、费用和部署配置。
 

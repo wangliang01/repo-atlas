@@ -16,11 +16,19 @@ sources: [github, toutiao]
 
 Taste Skill（`tasteskill 2.5.1`）是一个 Agent Skill，目标是让编码 Agent 做出 figma.com、x.ai 那种专业公司官网，而不是拼一个通用落地页。它把美术方向、版式、素材来源和验收规则写进技能，让 Agent 按固定流程建站，而不是每次自由发挥。
 
-它面向做公司官网、品牌页和营销页的团队，尤其是没有专职设计师、又需要稳定产出的场景。README 说每个构建都使用朴素文案、一套设计系统、桌面端一屏一节、左右内容边缘对齐、真实照片（客户没有时用有许可的替代图）、真实品牌图标和产品 UI、每页一个 hero 入场和一两个"dealt"时刻、克制的微交互，并只在 tech、gaming、software 页面使用 shader 和滚动场景。
+它面向做公司官网、品牌页和营销页的团队，尤其是没有专职设计师、又需要稳定产出的场景。README 说每个构建都使用朴素文案、一套设计系统、桌面端一屏一节、左右内容边缘对齐、真实照片（客户没有时用有许可的替代图）、真实品牌图标和产品 UI、每页一个 hero 入场和一两个「dealt」时刻、克制的微交互，并只在 tech、gaming、software 页面使用 shader 和滚动场景。
 
-它和"让模型生成一个漂亮页面"的差别在于可验收：Skill 自带 checker 和 finish gate，在真实浏览器里按规则检查，没通过就不算完成。
+它和「让模型生成一个漂亮页面」的差别在于可验收：Skill 自带 checker 和 finish gate，在真实浏览器里按规则检查，没通过就不算完成。
 
-## 怎么上手
+## 它替掉了什么麻烦
+
+它替掉的是「让模型每次自由发挥一张漂亮页面」的做法：在此之前，用 Agent 做官网通常靠一段提示词加几轮口头修改，结果是每次重来风格都不同、不同页面之间没有统一设计系统，动效和照片还容易变成「所有页面都加」的通用 AI 风格。README 没有交代项目创立前的完整历史，只给出早期 v2 的样例和 changelog，因此这里关于旧做法的描述是编辑判断，依据是它把「朴素文案、一套设计系统、一屏一节」逐条写成了硬规则。
+
+痛点主要有三条。第一是随机性：同样的需求换一次生成就换一套配色和版式，无法形成可复用的品牌资产，也无法稳定复现。第二是真实性：模型容易编造不存在的店面、街道号或客户照片，把图库素材冒充成客户自己的场景。第三是验收：页面「看起来还行」和「达到品牌站标准」之间没有可执行的判据，返工全凭人眼。Taste Skill 分别用发牌式选型、图库授权规则和浏览器 checker 对应这三点。
+
+和同类方案的差别在约束的落点。README 没有点名任何竞品，也没有对比生成质量；它只说目标是 figma.com 和 x.ai 那个层级，而不是通用落地页。编辑判断：普通提示词包只给风格形容词，设计系统要求人先有一套组件库，Taste Skill 走的是中间路线——把配色、字体、hero 布局和动效范围变成有限选项，再用脚本逐条检查。这让结果更可控，但也把适用范围收窄到公司官网和营销页。
+
+## 跑起来要几步
 
 推荐用 skills CLI 安装：
 
@@ -48,27 +56,27 @@ node scripts/consistency.mjs <url or file> --page <kind>
 
 `--page` 的取值是 `software`、`gaming`、`tech`、`product`、`service`、`place`。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-2.5 的流程是"先分类、再发牌、再验收"。第一步按客户业务分类，然后 `scripts/start.mjs` 发一套配色和 Google Fonts 搭配，`assets/layout/deal.mjs` 从 11 种 hero 布局里发一种（split、centred、product、photo、place、collage、editorial、word、film、statement、triptych）。这一步把"审美选择"变成有限、可测试的选项，降低每次重来的随机性。
+2.5 的流程是「先分类、再发牌、再验收」。第一步按客户业务分类，然后 `scripts/start.mjs` 发一套配色和 Google Fonts 搭配，`assets/layout/deal.mjs` 从 11 种 hero 布局里发一种（split、centred、product、photo、place、collage、editorial、word、film、statement、triptych）。这一步把「审美选择」变成有限、可测试的选项，降低每次重来的随机性。
 
 第二步强制从一套系统起步：`assets/starter.html`、`assets/system.css` 和 `assets/layout/layout.css` 约束桌面 `1440x900` 一屏一节、左右边缘对齐、固定导航和单屏 closing footer。软件和 tech 页面用重写过的 HTML UI 片段和节点图填充 feature card，品牌与界面 SVG 由 `scripts/icons.mjs` 在本地解析；place、shop、酒店等非技术页面则以策展照片、排版和平面色彩为主，来源统一放在可展开的页脚署名里。
 
-第三步是效果的使用边界：shader、滚动场景和程序化 3D 只在 software、tech、gaming 页面出现，且限制在四个 WebGL context 内，手机和 reduced motion 有静态回退；咖啡馆、酒店、商店、工作室和服务页只允许照片和字体驱动的时刻，零 WebGL。这个约束是为了避免"所有页面都加动效"的通用 AI 风格。
+第三步是效果的使用边界：shader、滚动场景和程序化 3D 只在 software、tech、gaming 页面出现，且限制在四个 WebGL context 内，手机和 reduced motion 有静态回退；咖啡馆、酒店、商店、工作室和服务页只允许照片和字体驱动的时刻，零 WebGL。这个约束是为了避免「所有页面都加动效」的通用 AI 风格。
 
 第四步是在真实浏览器里验收。`scripts/consistency.mjs` 在 headless Chrome 的 1440、1024、820、768、390 宽度下渲染，检查空视觉、坏 shader、对比度下降、列错位、section 高度漂移、占位文案、编造的街道号、慢网图片缺口等；`scripts/gate.mjs` 会卡住收尾，直到没有可修的 FAIL，最多三轮。checker 只覆盖 Chromium，README 未说明 Firefox/Safari 的验证。
 
 工具链全部是技能目录里的普通 Node 22+ 脚本，不安装依赖：`start.mjs` 发配色和字体并打印 `<head>` 链接与 `:root` token；`deal.mjs` 发 hero 布局；`photos.mjs` 按行业发照片、控制图片重量并写页脚署名；`icons.mjs` 解析真实品牌和界面图标；`effects.mjs`、`moments.mjs` 发 shader 和时刻；`gate.mjs`、`copy-lint.mjs` 做收尾闸门和文案检查；`perf.mjs`、`shoot.mjs` 看页面重量、速度和截图。
 
-2.5 还把"参考图"变成了素材库和规则，而不是让 Agent 临场找图。README 说照片来自审核过的图库（`assets/photos/photos.json`，含捆绑的 Wikimedia Commons WebP 和 Unsplash），按行业和材质发放；客户没有照片时标为草稿替代图。这减少了"编造一张不存在的店面"的概率，但也意味着页面风格受图库覆盖范围限制。
+2.5 还把「参考图」变成了素材库和规则，而不是让 Agent 临场找图。README 说照片来自审核过的图库（`assets/photos/photos.json`，含捆绑的 Wikimedia Commons WebP 和 Unsplash），按行业和材质发放；客户没有照片时标为草稿替代图。这减少了「编造一张不存在的店面」的概率，但也意味着页面风格受图库覆盖范围限制。
 
-## 边界与风险
+## 什么时候别用它
 
-MIT，商用限制很少。真正的限制在适用面：它假设目标是公司官网或营销页，不是后台、工具型产品或多页应用。README 说已有 React、Vue、Svelte、Astro、Tailwind 项目会在原栈里构建，Next.js brief 会做成静态导出；但如果你的产品需要复杂交互和状态，这套"一屏一节"的规则未必合适。
+它不适合后台、工具型产品或多页应用，因为整套规则假设目标是公司官网或营销页；许可证是 MIT，商用限制很少。README 说已有 React、Vue、Svelte、Astro、Tailwind 项目会在原栈里构建，Next.js brief 会做成静态导出；但如果你的产品需要复杂交互和状态，这套「一屏一节」的规则未必合适。
 
 素材授权要自己确认。照片来自技能审核过的图库（含 Wikimedia Commons 和 Unsplash），README 说只用于行业或材质细节，客户没有照片时明确标为草稿替代图，不会冒充客户的房间、员工或产品，并统一署名。品牌图标和产品 UI 也一样，能否使用取决于你的授权，而不是技能。
 
-工程依赖是硬的：Node 22+、Chrome/Edge/Chromium，Windows 上还要注意路径和链接方式。README 未说明一次建站需要多长时间、对模型能力的要求，也未说明 Google Fonts 是否在运行时联网加载。编辑判断：比"让模型随便生成一个漂亮页面"可控得多，适合营销站和品牌页；但它不是设计师替代品，最终取舍仍要人做。
+工程依赖是硬的：Node 22+、Chrome/Edge/Chromium，Windows 上还要注意路径和链接方式。README 未说明一次建站需要多长时间、对模型能力的要求，也未说明 Google Fonts 是否在运行时联网加载。编辑判断：比「让模型随便生成一个漂亮页面」可控得多，适合营销站和品牌页；但它不是设计师替代品，最终取舍仍要人做。页面风格还会受图库覆盖范围限制，行业越冷门，可用的真实照片越少。
 
 ## 来源
 

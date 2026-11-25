@@ -14,17 +14,25 @@ sources: [github]
 
 ## 它是什么
 
-SolidCraft 是一个用纯 Rust 实现的开源参数化 3D CAD 应用。它要解决的问题很具体：画草图、加约束、按特征时间线拉伸或旋转出实体，改一个尺寸后模型整体重建。README 把它描述为「An open-source parametric 3D CAD application built in pure Rust」，并强调同一套命令可以跑在桌面、浏览器、无头 CLI 和 MCP 服务器里，所以它同时面向机械与产品设计者，以及想把建模接进脚本或 AI Agent 工作流的开发者。
+SolidCraft 是一个用纯 Rust 实现的开源参数化 3D CAD 应用。它要解决的问题很具体：画草图、加约束、按特征时间线拉伸或旋转出实体，改一个尺寸后模型整体重建。README 把它描述为「An open-source parametric 3D CAD application built in pure Rust」，并强调同一套命令可以跑在桌面、浏览器、无头 CLI 和 MCP 服务器里。
 
 由哪些部分组成：桌面应用、浏览器应用、headless CLI（`solidcraft-cli`）和内置的 MCP server，四者共用一个命令注册表；此外还有实验性的 WebAssembly 插件运行时。README 附带的演示是从空白设计开始，用板子的参数画草图、拉伸、圆角、抽壳，再在孔位矩形上阵列 M2.5 支柱、开端口和散热槽、刻字并赋予 PETG 材质，最后把高度从 24 改成 32 毫米、整体重建。
 
-和同类方案的差别，README 只给了一个可核对的指标，没有做功能横评。它用 76 个公共参考零件做校验，其中 75 个的体积、面积、质心和外接盒与解析值或 FreeCAD 计算结果一致，剩余一个是被跟踪的 bug；README 对成熟度的原话是「Early but usable for simple parts」。编辑判断：这说明它把自己定位在「能用、可验证，但还不是成熟商业 CAD」的位置，而不是直接对标 Fusion、Onshape 之类的完整产品——README 只是声明与 Autodesk、Dassault、PTC、Siemens 无关联，商标仅用于描述兼容性。许可为 MIT 或 Apache-2.0，二选一。
+它同时面向机械与产品设计者，以及想把建模接进脚本或 AI Agent 工作流的开发者。README 对成熟度的原话是「Early but usable for simple parts」；用它自己的校验说，76 个公共参考零件里有 75 个的体积、面积、质心和外接盒与解析值或 FreeCAD 计算结果一致，剩余一个是被跟踪的 bug。
 
-## 怎么上手
+## 它替掉了什么麻烦
 
-最直接的方式是从 Releases 下载安装包：Windows 用 MSI，macOS 用通用 DMG（Apple 芯片和 Intel），Linux 用 AppImage 或 `sudo snap install solidcraft`，也可以直接在浏览器里打开 Web 版试用；README 提到 ARM64、32 位、便携 zip、`.deb`、`.rpm`、Flatpak 等其它包在 downloads 页，正文没有逐一展开。README 特别提醒 Windows 安装包目前未签名，SmartScreen 可能拦截，需要点「More info」再「Run anyway」；macOS 应用则已用 Developer ID 签名并通过 Apple 公证。
+它替掉的是「参数化 CAD 只能用商业 GUI，自动化要另写一套 API」的麻烦。README 未说明它出现前的行业工作流；编辑判断：传统做法是在 Fusion、Onshape、SolidWorks 这类工具里手工建模，批量改尺寸靠参数表或二次开发，脚本接口和 GUI 操作往往是两套逻辑，换平台就要重写。
 
-从源码构建需要 Rust 工具链，README 给出的命令是：
+它的切入点是把 UI 操作收敛成一套命令。README 说桌面、CLI、浏览器命令 API 和 MCP 走的是同一个命令注册表，一个建模步骤既能手动点出来，也能被脚本复现，还能被 Agent 调用。编辑判断：这替掉的是「人点一遍、脚本再写一遍」的重复，也让 AI Agent 有了稳定的建模入口，而不必去猜鼠标坐标。
+
+和同类方案的差别，README 只给了一个可核对的指标，没有做功能横评。编辑判断：75/76 的参考零件校验说明它把自己定位在「能用、可验证，但还不是成熟商业 CAD」，而不是直接对标完整产品。README 只是声明与 Autodesk、Dassault、PTC、Siemens 无关联，商标仅用于描述兼容性，并没有说可以平替它们。
+
+## 跑起来要几步
+
+最直接的方式是从 Releases 下载安装包：Windows 用 MSI，macOS 用通用 DMG（Apple 芯片和 Intel），Linux 用 AppImage 或 `sudo snap install solidcraft`，也可以直接在浏览器里打开 Web 版试用；README 提到 ARM64、32 位、便携 zip、`.deb`、`.rpm`、Flatpak 等其它包在 downloads 页，正文没有逐一展开。
+
+README 特别提醒 Windows 安装包目前未签名，SmartScreen 可能拦截，需要点「More info」再「Run anyway」；macOS 应用则已用 Developer ID 签名并通过 Apple 公证。从源码构建需要 Rust 工具链，README 给出的命令是：
 
 ```sh
 cargo run --release -p solidcraft -- --sample
@@ -33,7 +41,9 @@ cargo run --release -p solidcraft-cli -- run examples/bracket.json --out bracket
 cargo xtask ci
 ```
 
-第一条带示例零件启动桌面应用，第二条列出命令注册表，第三条用脚本生成 STEP，第四条跑 fmt、clippy、测试、图标、资源和 wasm。首跑预期看到的是一个可交互的 3D 视图，里面有示例零件的时间线、参数面板和属性面板。常见卡点有两个：一是较旧的 Windows 安装器可能没把 `solidcraft-cli` 放进 PATH，此时要写完整路径，README 给出的默认位置是 `"C:\Program Files\SolidCraft\solidcraft-cli.exe"`；二是 0.11 到 0.14 之间的版本需要手动下载一次，之后才能用应用内更新。
+第一条带示例零件启动桌面应用，第二条列出命令注册表，第三条用脚本生成 STEP，第四条跑 fmt、clippy、测试、图标、资源和 wasm。首跑预期看到的是一个可交互的 3D 视图，里面有示例零件的时间线、参数面板和属性面板。
+
+常见卡点有两个：一是较旧的 Windows 安装器可能没把 `solidcraft-cli` 放进 PATH，此时要写完整路径，README 给出的默认位置是 `"C:\Program Files\SolidCraft\solidcraft-cli.exe"`；二是 0.11 到 0.14 之间的版本需要手动下载一次，之后才能用应用内更新。
 
 想让 Agent 通过 MCP 驱动建模，README 给出的注册命令是：
 
@@ -41,25 +51,27 @@ cargo xtask ci
 claude mcp add solidcraft -- solidcraft-cli mcp
 ```
 
-MCP 服务有两种模式：无头模式自己开设计会话，加 `--connect` 则驱动正在运行的桌面应用，方便用户旁观 Agent 的操作。脚本是一条 JSON 命令列表，用 `solidcraft-cli run` 执行，内容和 UI 实际运行的命令一致。更多构建选项、Windows 交叉编译和浏览器构建在 `docs/building.md` 中，README 未在正文展开。
+MCP 服务有两种模式：无头模式自己开设计会话，加 `--connect` 则驱动正在运行的桌面应用，方便用户旁观 Agent 的操作。脚本是一条 JSON 命令列表，用 `solidcraft-cli run` 执行，内容和 UI 实际运行的命令一致。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-第一层设计是把 UI 操作收敛成命令。桌面、CLI、浏览器命令 API 和 MCP 走的是同一个命令注册表，一个建模步骤既能手动点出来，也能被脚本复现，还能被 Agent 调用，不必为每条通道维护不同实现。这样做的代价是命令层必须覆盖足够多的 UI 行为，README 也承认浏览器执行、自动下载更新、自定义面板和插件自定义参数化特征都还是未来工作。
+复杂度放在「同一套命令要覆盖 UI、脚本和 Agent」上。README 说桌面、CLI、浏览器命令 API 和 MCP 走同一个命令注册表，一个建模步骤既能手动点出来，也能被脚本复现，还能被 Agent 调用，不必为每条通道维护不同实现。编辑判断：代价是命令层必须覆盖足够多的 UI 行为，README 也承认浏览器执行、自动下载更新、自定义面板和插件自定义参数化特征都还是未来工作。
 
-第二层是围绕参数化时间线的特征体系。草图包含直线、圆弧、样条和文字，由项目自研的约束求解器求解，尺寸可以绑定参数和带单位的表达式；特征覆盖拉伸、旋转、扫掠、放样、圆角、倒角、抽壳、拔模、孔、螺纹、阵列、镜像、分割与合并。装配支持关节、运动研究、接触集、干涉检查和质量属性，另有钣金与塑料外壳特征。导出的格式包括 STEP、IGES、3MF、STL、OBJ、glTF 和 URDF，原生设计保存为 `.sc`，早期版本的 `.solidcraft` 文件仍可打开。
+第二层是围绕参数化时间线的特征体系。README 说草图包含直线、圆弧、样条和文字，由项目自研的约束求解器求解，尺寸可以绑定参数和带单位的表达式；特征覆盖拉伸、旋转、扫掠、放样、圆角、倒角、抽壳、拔模、孔、螺纹、阵列、镜像、分割与合并。装配支持关节、运动研究、接触集、干涉检查和质量属性，另有钣金与塑料外壳特征。导出的格式包括 STEP、IGES、3MF、STL、OBJ、glTF 和 URDF，原生设计保存为 `.sc`。
 
-第三层是实验性的 WebAssembly 插件运行时。插件包由一个 `plugin.json` 和一个 `.wasm` 组件组成，接口是 WIT 包 `craft:plugin@0.2.0`；安装、启用或打开设计都不会执行插件代码，必须由用户显式 `plugin.run`。`plugin.inspect` 会返回一个 approval 哈希，绑定 manifest 与组件字节，更新插件后必须重新审查。执行有燃料、内存和时限上限，默认单次 10,000,000 fuel、64 MiB 和 5000 ms，宿主默认上限是 100,000,000,000 fuel 和 128 MiB。编辑在设计的隔离副本上进行，只有成功调用才作为一个 Undo 步骤合并，失败则保留原设计。跨出当前设计的命令被划分为 `file`、`doc`、`app`、`plugin` 四组，manifest 不声明且用户未授权时一律拒绝。
+第三层是实验性的 WebAssembly 插件运行时。README 说插件包由一个 `plugin.json` 和一个 `.wasm` 组件组成，接口是 WIT 包 `craft:plugin@0.2.0`；安装、启用或打开设计都不会执行插件代码，必须由用户显式 `plugin.run`。`plugin.inspect` 会返回一个 approval 哈希，绑定 manifest 与组件字节，更新插件后必须重新审查。执行有燃料、内存和时限上限，默认单次 10,000,000 fuel、64 MiB 和 5000 ms，宿主默认上限是 100,000,000,000 fuel 和 128 MiB。编辑在设计的隔离副本上进行，只有成功调用才作为一个 Undo 步骤合并，失败则保留原设计。
 
-插件授权还有一层运行期细节：standalone CLI 与 headless MCP 使用桌面应用已安装的插件，审批默认只在该次运行有效，加 `--keep-plugin-approvals` 才跨运行保留，`--plugins-dir DIR` 可以为 CI 指定独立的插件与审批目录。宿主上限可以在 GUI 的 Preferences > Plugins 或 CLI 的 `--plugin-limits` JSON 文件里调高，但调高上限不会改变插件自己声明的预算，也不会自动执行或重试失败的调用。guest 内存受 Wasm32 ABI 限制最多 4096 MiB，独立的最大执行时限仍是 30 秒。
+README 还说，跨出当前设计的命令被划分为 `file`、`doc`、`app`、`plugin` 四组，manifest 不声明且用户未授权时一律拒绝；guest 内存受 Wasm32 ABI 限制最多 4096 MiB，独立的最大执行时限仍是 30 秒。编辑判断：这套设计把「插件能做什么」交给 manifest 和用户批准，而不是默认信任，代价是使用前多一步 inspect 和授权。
 
-## 边界与风险
+## 什么时候别用它
 
 README 把「早期」写得很明确：简单零件可用，复杂场景仍需验证。插件接口处于 0.x，次版本可能破坏上一版，命令组的授权界面也尚未提供。平台层面，Windows 构建未签名、macOS 已签名并公证，Linux 包情况按下载页说明；0.11 到 0.14 之间的版本需要手动下载一次，之后才能用应用内更新。
 
 许可上主体是 MIT 或 Apache-2.0，但品牌与界面单独放在 `LICENSE-BRAND` 下：把 UI 套件、图标、主题、设计 token、名称和 logo 用在本项目之外，需要维护者书面许可。README 还声明项目与 Autodesk、Dassault、PTC、Siemens 等厂商无关联，商标只用于描述兼容性。
 
 对准备上生产的团队，有三类信息 README 没有交代：最低操作系统版本与长期支持政策、插件沙箱之外的安全审计结论、跨平台渲染一致性与大规模装配性能的数据。编辑判断：在把它用于生产建模前，应先用自家零件跑一遍与 README 相同的校验流程，并重点验证复杂装配和插件授权路径。
+
+另外，README 未说明桌面与浏览器在文件和性能上的差异，也未给出多人协作或版本管理的方案。编辑判断：如果你的流程依赖云端共享、权限和审计，它目前更像单机工具，而不是团队平台。
 
 ## 来源
 

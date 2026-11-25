@@ -14,13 +14,19 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-Craft Anything 是一个用纯 Rust 写的 clean-room 逆向研究引擎，外加一条“研究—重建—对比”的 Agent 工作流。你给它一个目标（网站、桌面应用、手机应用、游戏或文件），说明想要什么，它先用检查工具研究原版，再让编码 Agent 用你指定的技术栈建一个新项目，最后把结果与原版逐项对比并迭代。README 把流程压成四步：Study → Build → Check → Ready。
+Craft Anything 是一个用纯 Rust 写的 clean-room 逆向研究引擎，外加一条「研究—重建—对比」的 Agent 工作流。你给它一个目标（网站、桌面应用、手机应用、游戏或文件），说明想要什么，它先用检查工具研究原版，再让编码 Agent 用你指定的技术栈建一个新项目，最后把结果与原版逐项对比并迭代。README 把流程压成四步：Study → Build → Check → Ready。
 
-它面向想学习软件实现、做互操作研究、或在合法授权下重建界面与行为的开发者，也适合需要“证据可追溯”的逆向分析。核心是一个 320 个工具的 Rust 引擎（README 说其中 300 个在引擎里，其余来自 AI 与 setup 层），同一套能力同时供桌面应用（egui）、CLI、MCP server 和浏览器里的 WebAssembly 使用。和普通反编译工具或“让 AI 照着截图写一个”的差别在于：默认 clean room，只看可观察行为；所有结论以带置信度、覆盖范围和局限的证据记录返回；检查和构建共用同一个引擎。
+它面向想学习软件实现、做互操作研究、或在合法授权下重建界面与行为的开发者，也适合需要「证据可追溯」的逆向分析。核心是一个 320 个工具的 Rust 引擎（README 说其中 300 个在引擎里，其余来自 AI 与 setup 层），同一套能力同时供桌面应用（egui）、CLI、MCP server 和浏览器里的 WebAssembly 使用。和普通反编译工具或「让 AI 照着截图写一个」的差别在于：默认 clean room，只看可观察行为；所有结论以带置信度、覆盖范围和局限的证据记录返回；检查和构建共用同一个引擎。
 
-## 怎么上手
+## 它替掉了什么麻烦
 
-从源码构建需要 Rust 1.97 或更新（README 说某个依赖要求这个版本，先 `rustup update`）。Debian/Ubuntu 上跑桌面应用还要安装一组系统库：
+它替掉的是「用一堆互不相通的工具手工逆一遍，再凭记忆重写」的流程。README 没有交代这套流程过去的标准做法，也没有给出与同类工具的历史对比；编辑判断：在它之前，要弄清一个软件怎么工作，通常得分别开浏览器开发者工具、反汇编或反编译器、录屏和笔记，结论散落在各工具里，既没有统一的证据格式，也很难证明重建结果和原版一致。推断依据是 README 反复强调「Checked, not guessed」、证据记录带 confidence、coverage 和 limitations，以及检查和构建共用同一个引擎。
+
+它和「让 AI 照着截图写一个」的差别也在这里：默认 clean room 只看访客可见的东西，不读原版代码、文件或页面源码；所有结论以带置信度、覆盖范围和局限的证据记录返回。README 说检查本身不需要 AI，320 个工具同时是 CLI 子命令和 MCP 工具。编辑判断：这把「研究」和「重建」放进同一条可追溯的链，而不是两个各自为政的步骤。
+
+## 跑起来要几步
+
+从源码构建要三步：装 Rust、装系统依赖、编译并跑 `doctor`。README 要求 Rust 1.97 或更新（某个依赖要求这个版本，先 `rustup update`）。Debian/Ubuntu 上跑桌面应用还要安装一组系统库：
 
 ```sh
 sudo apt-get install build-essential libxkbcommon-dev libxkbcommon-x11-0 libwayland-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libgtk-3-dev
@@ -43,29 +49,29 @@ craft-anything-cli rebuild - "A snake game in Rust" --rounds 1
 craft-anything-cli rebuild https://example.com "Make the header blue" --continue-in "<project folder>"
 ```
 
-新项目默认放在 `Documents/Craft Anything`，每个项目目录里有 `craft.json`（请求、目标、状态和历史）、`capture/`（从目标录到的内容）、`app/`（生成的项目）、`checks/`（每次与原版的对比）、`investigation.cany/`（证据）和 `inbox/`（待回答问题）。也可以指定已有文件夹：如果里面已有文件，需要说明它是“应用本体”（就地修改）还是“起始素材”（在其旁边建 `app/`）。
+新项目默认放在 `Documents/Craft Anything`，每个项目目录里有 `craft.json`（请求、目标、状态和历史）、`capture/`（从目标录到的内容）、`app/`（生成的项目）、`checks/`（每次与原版的对比）、`investigation.cany/`（证据）和 `inbox/`（待回答问题）。也可以指定已有文件夹：如果里面已有文件，需要说明它是「应用本体」（就地修改）还是「起始素材」（在其旁边建 `app/`）。
 
-常见卡点：Rust 版本不够会在依赖处报错；Linux 少装系统库会导致桌面端编译失败；没登录编码 Agent 时 `doctor` 会拦住构建。macOS 上单独下载 CLI 可能被 Gatekeeper 拦截，README 给了 `xattr -d com.apple.quarantine` 和从终端下载的绕行步骤。Flatpak 版是沙箱，无法启动本机浏览器，而研究网站需要浏览器，所以 README 建议换用其他包格式。
+README 为 Windows、macOS、Linux 和 FreeBSD 提供了安装包，另有浏览器里的 WebAssembly 查看器。常见卡点：Rust 版本不够会在依赖处报错；Linux 少装系统库会导致桌面端编译失败；没登录编码 Agent 时 `doctor` 会拦住构建。macOS 上单独下载 CLI 可能被 Gatekeeper 拦截，README 给了 `xattr -d com.apple.quarantine` 和从终端下载的绕行步骤。Flatpak 版是沙箱，无法启动本机浏览器，而研究网站需要浏览器，所以 README 建议换用其他包格式。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-clean room 是这套工具最重要的约束。默认模式下，它不读原版的代码、文件或页面源码，只用“访客能看到的东西”：你提供的图片、网站截图、可见文字、测量出的布局、颜色、字体和间距、展开的菜单，以及在你允许时应用窗口的截图。会“看进去”的工具会被拒绝，并提示如何切到 Deep 模式。Deep 模式才启用内置解码器、反汇编器和反编译器读取代码与文件（装了 Ghidra 也会用），读取网站 JavaScript 并观察起始页。
+复杂度放在 clean room 这条约束和它背后的证据链上。默认模式下，它不读原版的代码、文件或页面源码，只用「访客能看到的东西」：你提供的图片、网站截图、可见文字、测量出的布局、颜色、字体和间距、展开的菜单，以及在你允许时应用窗口的截图。会「看进去」的工具会被拒绝，并提示如何切到 Deep 模式。Deep 模式才启用内置解码器、反汇编器和反编译器读取代码与文件（装了 Ghidra 也会用），读取网站 JavaScript 并观察起始页。
 
-README 特意澄清：clean room 是“工具提供什么、拒绝什么”的规则，不是操作系统沙箱，也不会隔离你的电脑；你运行的编码 Agent 仍然以你的身份行动，能读写执行什么取决于它自己的权限。哪些 Agent 自带工具能被拒绝，因 Agent 而异。这个区分很关键，避免把“不读原版源码”误当成安全隔离。
+README 特意澄清：clean room 是「工具提供什么、拒绝什么」的规则，不是操作系统沙箱，也不会隔离你的电脑；你运行的编码 Agent 仍然以你的身份行动，能读写执行什么取决于它自己的权限。哪些 Agent 自带工具能被拒绝，因 Agent 而异。这个区分很关键，避免把「不读原版源码」误当成安全隔离。
 
-检查和证据是同一条链。构建结果会被拿去和原版对比：网站按三种屏幕宽度检查，游戏用自身的自测，应用则实际运行；返回的是带 confidence、coverage 和 limitations 的证据记录，大结果先给摘要，再用 `core_evidence_browse` 分页。README 说每个工具同时是 CLI 子命令和 MCP 工具，所以 Agent 不用打开桌面应用也能研究和重建。代价是整套系统较重：工具多、证据多、项目目录也多，学习曲线明显高于单一反编译器。
+检查和证据是同一条链。构建结果会被拿去和原版对比：网站按三种屏幕宽度检查，游戏用自身的自测，应用则实际运行；返回的是带 confidence、coverage 和 limitations 的证据记录，大结果先给摘要，再用 `core_evidence_browse` 分页。README 说每个工具同时是 CLI 子命令和 MCP 工具，所以 Agent 不用打开桌面应用也能研究和重建。README 说检查不需要 AI；编辑判断：模型只负责判断和描述，取证由工具完成，这是证据可追溯的前提。
 
-AI 接入走“你自己的 Agent”路线：README 首选 Claude Code，运行你本机未修改的 `claude`，Craft Anything 不接触你的账号；GitHub Copilot、Grok、Kimi 通过 ACP 接入，其中 Kimi 尚未实机运行，Codex 适配器存在但尚未在真实安装上验证。另有 Anthropic、OpenAI、OpenRouter、xAI 和本地 OpenAI 兼容服务用于问答与分析。
+AI 接入走「你自己的 Agent」路线：README 首选 Claude Code，运行你本机未修改的 `claude`，Craft Anything 不接触你的账号；GitHub Copilot、Grok、Kimi 通过 ACP 接入，其中 Kimi 尚未实机运行，Codex 适配器存在但尚未在真实安装上验证。另有 Anthropic、OpenAI、OpenRouter、xAI 和本地 OpenAI 兼容服务用于问答与分析。
 
-## 边界与风险
+## 什么时候别用它
 
-许可证是 MIT 或 Apache-2.0 双许可；内置字体、图标、图片各自保留许可；ArtCraft 名称、字标和 logo 是商标，不在代码许可范围内，修改版必须移除。
+编辑判断：不能接受 early alpha 的不完整功能、或无法承担逆向法律与依赖执行风险的团队，不适合现在用它。状态是 early alpha，这是最实际的风险。README 自己列了完成度：桌面端、CLI、MCP server、以 Claude Code 为 builder 的网站/应用/游戏流程、三宽度网站检查、Unity/Unreal/Godot 游戏重建、Deep 模式加 Ghidra 可用；但用 API key 和其他编码 Agent 构建「已写未实测」，应用和游戏的行为检查只是部分完成，少数引擎工具只对着替代样本测过。
 
-状态是 early alpha，这是最实际的风险。README 自己列了完成度：桌面端、CLI、MCP server、以 Claude Code 为 builder 的网站/应用/游戏流程、三宽度网站检查、Unity/Unreal/Godot 游戏重建、Deep 模式加 Ghidra 可用；但用 API key 和其他编码 Agent 构建“已写未实测”，应用和游戏的行为检查只是部分完成，少数引擎工具只对着替代样本测过。
+法律边界需要自己把握。README 要求只对你拥有或获准检查的软件使用，并声明它不绕过 DRM、登录或反作弊；重建只复现布局、样式和行为，Agent 被要求不要复制 logo、照片或文字，除非你确认有权使用。编辑判断：clean room 能降低「直接抄源码」的风险，但不等于合法，商用前仍应找法律意见。
 
-法律边界需要自己把握。README 要求只对你拥有或获准检查的软件使用，并声明它不绕过 DRM、登录或反作弊；重建只复现布局、样式和行为，Agent 被要求不要复制 logo、照片或文字，除非你确认有权使用。编辑判断：clean room 能降低“直接抄源码”的风险，但不等于合法，商用前仍应找法律意见。
+还有一条容易被忽略：安装依赖会执行代码。npm 的 install scripts、Rust 构建脚本、Python 源码包的 setup 都会在你机器上运行。Craft Anything 会在首次遇到某类命令（如 `npm`、`cargo`）时询问，一旦选择「always allow」，后续同类命令就不再问；README 建议只对信任依赖的项目这么做，或用 `npm install --ignore-scripts`。
 
-还有一条容易被忽略：安装依赖会执行代码。npm 的 install scripts、Rust 构建脚本、Python 源码包的 setup 都会在你机器上运行。Craft Anything 会在首次遇到某类命令（如 `npm`、`cargo`）时询问，一旦选择“always allow”，后续同类命令就不再问；README 建议只对信任依赖的项目这么做，或用 `npm install --ignore-scripts`。README 没有给出最低内存和 CPU 要求，也没说明托管版何时可用，只写了 “Next: the managed tier”。
+整套系统较重，工具多、证据多、项目目录也多，学习曲线明显高于单一反编译器；README 没有给出最低内存和 CPU 要求，也没说明托管版何时可用，只写了「Next: the managed tier」。许可证是 MIT 或 Apache-2.0 双许可；内置字体、图标、图片各自保留许可；ArtCraft 名称、字标和 logo 是商标，不在代码许可范围内，修改版必须移除。
 
 ## 来源
 

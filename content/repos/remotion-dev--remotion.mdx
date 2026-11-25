@@ -15,43 +15,43 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-Remotion 是一个用 React 组件和 Web 技术制作视频的框架，核心主张是“把视频当作代码来拥有”。README 把它拆成三种用法：让 Agent 把想法变成视频、像普通剪辑器一样交互编辑、用 Web 技术编程生成。它面向的不只是做单条片子的人，还包括要建设计系统、批量渲染成千上万条视频、或把视频能力嵌进应用的团队。
+Remotion 是一个用 React 组件和 Web 技术制作视频的框架，核心主张是「把视频当作代码来拥有」。README 把它拆成三种用法：让 Agent 把想法变成视频、像普通剪辑器一样交互编辑、用 Web 技术编程生成。它面向的不只是做单条片子的人，还包括要建设计系统、批量渲染成千上万条视频、或把视频能力嵌进应用的团队。
 
-和传统剪辑软件相比，它的差别在可编程和可复用：视频的源文件是代码，理论上能进版本库、做参数化模板、按数据批量产出。和“输入提示词等成片”的 AI 视频工具相比，README 没有提到内置生成模型；它提供的是渲染和编排的底座，画面来自你的 React 代码和你接入的 Agent。README 未说明它与其他视频框架的性能或功能对比。
+## 它替掉了什么麻烦
 
-## 怎么上手
+它替掉的是「视频只能靠剪辑软件或一次性脚本产出」的限制。README 没有交代 Remotion 出现前的行业做法，也没有给出与同类工具的历史对比；编辑判断：从它反复强调的三个场景看，痛点集中在可重复性和可编程性——为组织维护一套动画资产、按数据批量渲染成千上万条、把视频能力嵌进产品，这些在传统剪辑流程里都要靠人重复操作，难以进版本库或按参数生成。推断依据是 README 把「own your video as code」写成核心主张，并把 Design systems、Batch rendering、Applications 单列。
 
-前置条件只有一条：本机已安装 Node.js。README 没有写明最低 Node 版本，只说要先有 Node.js；没有的话去看官方安装页。装好后在终端执行：
+和同类方案的差别，README 只说明它提供渲染和编排的底座，没有提到内置生成模型；画面来自你的 React 代码和你接入的 Agent。编辑判断：与「输入提示词等成片」的 AI 视频工具相比，它不负责生成内容；与专业剪辑软件相比，它把时间轴和画面变成可复用、可参数化的代码，代价是要写 React。README 未说明它与其他视频框架的性能或功能对比。
+
+## 跑起来要几步
+
+最少一步：装好 Node.js 后执行 `npx create-video@latest`。README 没有写明最低 Node 版本，只说要先有 Node.js；没有的话去看官方安装页，README 未给出替代安装方式。命令如下：
 
 ```console
 npx create-video@latest
 ```
 
-这会创建一个 Remotion 视频项目，之后按文档里“Your first video”的步骤写第一支视频。README 提到文档有 1,200 多页，覆盖安装、模板、Elements、Effects、Transitions、音效、字幕、字体、调色、图形，以及渲染和 Player。
+这会创建一个 Remotion 视频项目，之后按文档里「Your first video」的步骤写第一支视频。README 提到文档有 1,200 多页，覆盖安装、模板、Elements、Effects、Transitions、音效、字幕、字体、调色、图形，以及渲染和 Player。
 
-想用 Agent 辅助，README 指向 “Agent Skills” 文档；想要现成的项目骨架，可以看 Templates。预期结果是得到一个可继续按文档添加视频的 Remotion 项目；具体预览命令、渲染命令和输出格式，README 没有写，需要查文档。
+想用 Agent 辅助，README 指向「Agent Skills」文档；想要现成的项目骨架，可以看 Templates。预期结果是得到一个可继续按文档添加视频的 Remotion 项目；具体预览命令、渲染命令和输出格式，README 没有写，需要查文档。README 的 Quick start 只给了这一条命令，没有列出初始目录结构或依赖清单。
 
-常见卡点：
+常见卡点：README 只要求「已有 Node.js」，没有给出 Node 版本、操作系统或浏览器依赖，环境不匹配时要自己排查；渲染选项分散在 Node.js APIs、Lambda、Vercel Sandbox 和客户端四种路径，各自的前置条件和费用 README 未说明，需要按「Comparison of options」自行比较；商用前必须先读许可证，这不是装完就能无条件使用的普通 MIT 项目。
 
-- README 只要求“已有 Node.js”，没有给出 Node 版本、操作系统或浏览器依赖，环境不匹配时要自己排查。
-- 渲染选项分散在 Node.js API、Lambda、Vercel Sandbox 和客户端四种路径，各自的前置条件和费用 README 未说明，需要按 “Comparison of options” 自行比较。
-- 商用前必须先读许可证，这不是装完就能无条件使用的普通 MIT 项目。
+## 它把复杂度放在哪
 
-## 值得注意的设计
+复杂度放在「一份工程、多种用法、多条渲染路径」的组织上。README 把三种使用方式并列：Agentically 适合把脚本、素材和渲染交给编码 Agent 串起来；interactively 让编辑和动画像普通剪辑器一样所见即所得；programmatically 则把 Web 技术直接当视频的表达层。README 没有解释三者是否共用同一套项目结构，编辑判断：从入口设计看，它希望同一份工程既可由人交互修改，也可由代码批量渲染。
 
-README 把三种使用方式并列：**Agentically** 适合把脚本、素材和渲染交给编码 Agent 串起来；**interactively** 让编辑和动画像普通剪辑器一样所见即所得；**programmatically** 则把 Web 技术直接当视频的表达层。README 没有解释三者是否共用同一套项目结构，编辑判断：从入口设计看，它希望同一份工程既可由人交互修改，也可由代码批量渲染。
+Video Automation 一节列出三个主要场景：为组织建立动画资产库（Design systems）、在自己的基础设施上渲染数百万条视频（Batch rendering）、发布简单工具或复杂视频编辑器（Applications）。编辑判断：这三点说明它的架构重点在「可重复、可参数化、可托管」，而不是单条片子的精细剪辑。
 
-Video Automation 一节列出三个主要场景：为组织建立动画资产库（Design systems）、在自己的基础设施上渲染数百万条视频（Batch rendering）、发布简单工具或复杂视频编辑器（Applications）。编辑判断：这三点说明它的架构重点在“可重复、可参数化、可托管”，而不是单条片子的精细剪辑。
+渲染路径也被列为多个选项：Node.js APIs、AWS Lambda、Vercel Sandbox 和 client-side rendering，并单独提供对比文档。编辑判断：这说明官方不打算绑定一种部署方式，把选择权交给使用者。
 
-README 把渲染路径列为多个选项：Node.js APIs、AWS Lambda、Vercel Sandbox 和 client-side rendering，并单独提供对比文档。编辑判断：这说明官方不打算绑定一种部署方式。代价是选择成本转移给使用者：并发、冷启动、成本和产物一致性都要自己权衡，README 未给出默认推荐。
+应用层还有 Player、Editor Starter 和 Mediabunny，SDK 标注为「coming soon」。README 对 Player 和 Editor Starter 只给链接，没有展开各自的能力边界。编辑判断：这意味着「把视频编辑器嵌进自己的产品」是明确方向，但 SDK 尚未完成，现阶段应把 Player 和 Editor Starter 当作可用组件，而不是稳定的平台 API。README 说文档是主要入口，但没有说明这些 API 的版本稳定性和弃用策略。
 
-应用层还有 Player、Editor Starter 和 Mediabunny，SDK 标注为 “coming soon”。README 对 Player 和 Editor Starter 只给链接，没有展开各自的能力边界。编辑判断：这意味着“把视频编辑器嵌进自己的产品”是明确方向，但 SDK 尚未完成，现阶段应把 Player 和 Editor Starter 当作可用组件，而不是稳定的平台 API。
+## 什么时候别用它
 
-## 边界与风险
+编辑判断：需要按开源项目默认方式商用、或不愿先读特殊许可证的团队，不适合直接用它。许可证是最大的使用边界：README 明确写 Remotion 使用特殊许可证，「某些情况下需要获得公司 license」，并要求阅读 `LICENSE.md`；README 未说明哪些营收规模、团队人数或使用场景触发付费，也没有给出价格表。在立项和商用前应直接读许可证原文或联系作者确认，不能按开源项目默认处理。
 
-许可证是最大的使用边界。README 明确写 Remotion 使用特殊许可证，“某些情况下需要获得公司 license”，并要求阅读 `LICENSE.md`。GitHub 元数据把许可证标为 NOASSERTION，无法从元数据判断具体条款。README 未说明哪些营收规模、团队人数或使用场景触发付费，编辑判断：在立项和商用前应直接读许可证原文或联系作者确认，不能按开源项目默认处理。
-
-技术依赖方面，README 只确认需要 Node.js，没有说明渲染是否依赖 Chromium、需要多少内存、支持哪些编解码格式，也没有给出批量渲染的吞吐数据。云端渲染（Lambda、Vercel）的费用和配额同样未说明。编辑判断：学习成本也真实存在，会用 React 不等于会做视频，时间轴、合成和音画同步仍需理解；复杂剪辑的直观程度不如专业 NLE。
+技术依赖方面，README 只确认需要 Node.js，没有说明渲染是否依赖 Chromium、需要多少内存、支持哪些编解码格式，也没有给出批量渲染的吞吐数据。云端渲染（Lambda、Vercel）的费用和配额同样未说明。部署方面，README 未给出默认推荐；编辑判断：并发、冷启动、成本和产物一致性都要自己权衡。README 还列出 Store 与 Experts 入口，但没有说明模板、素材或专家服务的计价与授权。编辑判断：学习成本也真实存在，会用 React 不等于会做视频，时间轴、合成和音画同步仍需理解；复杂剪辑的直观程度不如专业 NLE。
 
 它也不负责内容生成和素材授权。README 说可以让 Agent 把想法变成视频，但没有提到内置模型或素材库；你用的 Agent、图片、音乐和字体各自有许可证和费用。编辑判断：它适合愿意用代码换可复用性的团队，以及需要程序化批量出片的业务；不适合只想快速手剪一条片子、或希望开箱即用生成成片的个人。
 

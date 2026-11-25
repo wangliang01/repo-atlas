@@ -19,7 +19,15 @@ Superpowers 是一套给编码 Agent 用的软件开发方法论，由一组可�
 
 它适合已经在用 Claude Code、Codex、Cursor、Gemini CLI 等工具，但希望把开发过程固定成可审计流程的团队或个人。和单纯收集提示词相比，Superpowers 的差别在于它把「先澄清、再计划、再执行、再评审」做成了互相衔接的 skill，并靠启动注入保证默认生效。项目由 Jesse Vincent 和 Prime Radiant 团队维护，README 另列了面向企业的商业支持入口 sales@primeradiant.com。README 也说明同一套 skills 被设计成跨 harness 复用，具体差异只体现在安装入口和 hook 支持上。
 
-## 怎么上手
+## 它替掉了什么麻烦
+
+它替掉的是「把 Agent 当聊天框、想到哪写到哪」的用法：README 开篇就假设了默认行为——Agent 看到你在做东西时会直接跳进写代码，Superpowers 要它先退一步，问清你到底想做什么。这套流程之外的历史，README 没有细讲，只附了一篇最初的发布公告；因此这里关于旧做法的描述是编辑判断，依据是它把「先澄清、再计划、再执行、再评审」逐条做成强制 skill，说明这些步骤在默认 Agent 里并不可靠。
+
+痛点可以归成三条。第一是需求漂移：没有规格和分块确认，Agent 容易在错误方向上写很久，返工时才发现理解错了。第二是测试缺位：提示词里写「请写测试」并不保证 Agent 真按红绿重构执行，测试常常是补在实现之后的。第三是不可审计：计划、评审和收尾都留在对话里，团队无法判断某个改动是否按流程走过。Superpowers 用 brainstorming、writing-plans 和两阶段评审把这三条变成有产物的步骤。
+
+和同类方案的差别在「默认生效」。README 说这些 skill 会自动触发，不是建议，靠的是会话启动时注入 `using-superpowers` 引导。编辑判断：提示词合集把选择权交给用户，记得用才用；Superpowers 把流程前置成默认行为，代价是前期对话和评审开销固定存在，小改动也会被拉进同一套节奏。
+
+## 跑起来要几步
 
 安装方式按 harness 区分，用多个 Agent 就要分别安装。Claude Code 可以直接从 Anthropic 官方插件市场装：
 
@@ -40,7 +48,7 @@ Claude Code 用户也可以在官方插件目录 claude.com/plugins/superpowers 
 
 几个 harness 需要额外动作。Muse 安装后要执行 `muse plugins approve superpowers` 并重启会话，让 SessionStart hook 生效；验证方式是开新会话输入 `Let's make a react todo list`，安装正常时会在写代码前自动触发 brainstorming。Hermes 安装后也要重启活动会话。README 说更新方式依赖 harness，但通常会自动更新。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
 第一个设计是启动时注入。`using-superpowers` skill 的说明会促使模型在会话开始就加载整套技能，Claude Code、Codex、Cursor、Gemini、Pi 等 harness 通过 `SessionStart` hook 注入，Pi 还会在上下文压缩后再次注入。这样不依赖用户每次手动提醒，skill 是默认生效而不是可选插件。
 
@@ -50,13 +58,13 @@ Claude Code 用户也可以在官方插件目录 claude.com/plugins/superpowers 
 
 第四个设计是流程带自诊断。`diagnosing-superpowers` 会读取会话记录，用行级证据说明某个 skill 为什么误触发或漏触发，并能打包脱敏后的报告。`writing-skills` 则规定新增 skill 要按测试方法论验证，说明这套东西本身也被当成需要测试的软件。README 还把 dispatching-parallel-agents 放在协作类里，用于需要并发多个子 Agent 的场景，说明流程并不强制串行。README 的 Philosophy 把原则归纳为测试先行、系统化优于即兴、以简单为优先、用证据代替声明。
 
-## 边界与风险
+## 什么时候别用它
 
-贡献政策比较严格。维护者通常不接受新增 skill 的贡献，对现有 skill 的修改必须同时适配所有支持的编码 Agent；别人已提交 issue 的问题，除非维护者明确要求，否则不接受由 Agent 代写的修复 PR。贡献流程要求从 dev 分支开工作分支、按 writing-skills 验证、完整填写 PR 模板，包括由人用自己的话写的 summary。这意味着使用者更适合消费现成流程，而不是把它当成随意扩展的技能市场。
+不想接受强制澄清与评审流程的团队不适合用它；贡献政策也比较严格。维护者通常不接受新增 skill 的贡献，对现有 skill 的修改必须同时适配所有支持的编码 Agent；别人已提交 issue 的问题，除非维护者明确要求，否则不接受由 Agent 代写的修复 PR。贡献流程要求从 dev 分支开工作分支、按 writing-skills 验证、完整填写 PR 模板，包括由人用自己的话写的 summary。使用者更适合消费现成流程，而不是把它当成随意扩展的技能市场。
 
 不同 harness 的能力差异会影响体验。README 提到 Hermes 没有上下文压缩后的 hook，超长会话在第一次压缩后可能丢失引导，需要重新开会话。其他 harness 的更新方式也不统一，README 只说通常会自动更新。README 未说明各 harness 的最低版本要求，也没有给出统一的兼容矩阵，只逐个列出安装命令；README 也未说明 skill 数量随版本如何变化，也未给出每个 skill 的 token 成本，只提到会话行为异常时可能烧掉比预期更多的 token。编辑判断：这意味着跨工具团队需要自己验证行为是否一致，并自行估算流程开销。
 
-遥测有一个可关闭的入口。brainstorming 的可选可视化伴侣会从 Prime Radiant 网站加载 logo，请求里包含 Superpowers 版本，但不包含项目、提示词或 Agent 信息。设置 `SUPERPOWERS_DISABLE_TELEMETRY` 为任意真值即可关闭，也会尊重 Claude Code 的 `DISABLE_TELEMETRY` 和 `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`。项目采用 MIT 许可证。README 提到技能行为测试用 superpowers-evals 的 drill harness，插件基础设施测试在 tests/ 下用 `run-*.sh` 或 `npm test` 运行，但没有给出覆盖率数字；编辑判断：流程本身会显著增加前期对话和评审开销，小改动是否值得走完整流程需要使用者自己权衡。
+遥测有一个可关闭的入口。brainstorming 的可选可视化伴侣会从 Prime Radiant 网站加载 logo，请求里包含 Superpowers 版本，但不包含项目、提示词或 Agent 信息。设置 `SUPERPOWERS_DISABLE_TELEMETRY` 为任意真值即可关闭，也会尊重 Claude Code 的 `DISABLE_TELEMETRY` 和 `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`。项目采用 MIT 许可证。README 提到技能行为测试用 superpowers-evals 的 drill harness，插件基础设施测试在 tests/ 下运行，但没有给出覆盖率数字；编辑判断：流程本身会显著增加前期对话和评审开销，小改动是否值得走完整流程需要使用者自己权衡。
 
 ## 来源
 

@@ -15,13 +15,25 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-Archify 是一个面向编码 Agent 的 Skill，把一段描述、一个计划、一个问题或一个代码仓库变成可交互的单页 HTML：可以是架构图、流程图、时序图、数据流、生命周期、ERD、类图、树、时间线或瀑布图，也可以是一页“解释器（explainer）”。README 的定位很直接：把任何你想理解、规划或分享的东西变成可探索的视觉。
+Archify 是一个面向编码 Agent 的 Skill，把一段描述、一个计划、一个问题或一个代码仓库变成可交互的单页 HTML：可以是架构图、流程图、时序图、数据流、生命周期、ERD、类图、树、时间线或瀑布图，也可以是一页「解释器（explainer）」。README 的定位很直接：把任何你想理解、规划或分享的东西变成可探索的视觉。
 
-它面向用 Cursor、Claude Code、Codex、OpenCode 等 Agent 写设计文档、做评审、讲 PR 或写事故复盘的开发者。核心组成包括 Skill 本身、一个渲染器、内置的校验与布局规则、带类型的 JSON IR、一个零依赖 CLI（`archify/bin/archify.mjs`），以及内置的 Code Analysis 模块。和 Mermaid 或通用绘图工具相比，它的差别不在“能画几种图”，而在生成方式：布局与层级由 Agent 判断，产物经过 schema、布局、HTML/SVG、路由和标签避让等校验，交互只复用作者写下的拓扑，不假装知道运行时影响。
+它面向用 Cursor、Claude Code、Codex、OpenCode 等 Agent 写设计文档、做评审、讲 PR 或写事故复盘的开发者。核心组成包括 Skill 本身、一个渲染器、内置的校验与布局规则、带类型的 JSON IR、一个零依赖 CLI（`archify/bin/archify.mjs`），以及内置的 Code Analysis 模块。
 
-## 怎么上手
+和 Mermaid 或通用绘图工具相比，README 说它「不是通用绘图编辑器，也不是 Mermaid 主题」，差别不在「能画几种图」，而在生成方式：布局与层级由 Agent 判断，产物经过 schema、布局、HTML/SVG、路由和标签避让等校验，交互只复用作者写下的拓扑，不假装知道运行时影响。
 
-安装方式以 Agent 为主。把下面这句发给 Agent，让它读 `llms.txt` 自行安装：
+README 还给出社区信号：曾登上 GitHub Trending 周榜全语言第一，并被 QbitAI 报道。
+
+## 它替掉了什么麻烦
+
+它替掉的是「架构图要么手工拖，要么交给自动布局，两种都和代码/叙述脱节」这件事。README 没有交代出现之前的标准做法；编辑判断：过去画一张架构图，通常是在 Figma、draw.io 或 Excalidraw 里手工摆节点，费时且改一次代码就要重画；或者用 Mermaid 之类的文本绘图，从源码生成结构，但布局是机械的，谁该突出、哪条是主路径、哪些细节该收进卡片，工具不做判断。
+
+它的切入点是让 Agent 承担布局判断。README 说 Agent 选择层级、间距、路由和强调，共享自动端点会确定性地散开，而不是把箭头堆在一个中点。编辑判断：这把「画图」换成了「描述意图 + 校验」，省下的是摆放时间，新增的是提示词质量和校验成本。
+
+和同类方案的差别，README 明确划了两条：不做通用自动布局，不做 Mermaid 主题；同时提供 typed JSON IR、原子校验和可交互 HTML。编辑判断：可确认的差异是产物经过多层校验、失败带维修单、交互只复用作者写下的关系；至于它画得是否比手工图更好看，README 未给对照评测，无法判断。README 未说明它与 Mermaid 的转换或互操作方案，并把自动解析 Mermaid 列为范围外。
+
+## 跑起来要几步
+
+三种起步方式：让 Agent 自装、非交互安装、或只试用。README 最推荐把下面这句发给 Agent，让它读 `llms.txt` 自行安装：
 
 ```text
 Install Archify for me by reading https://raw.githubusercontent.com/tt-a1i/archify/main/llms.txt
@@ -33,7 +45,9 @@ Install Archify for me by reading https://raw.githubusercontent.com/tt-a1i/archi
 npx -y skills@latest add https://archify.si --skill archify --agent cursor --global --copy --yes
 ```
 
-只想试用可运行 `npx skills use tt-a1i/archify@archify --agent codex`。要 PR 讲解，再装可选的 `archify-pr`。装好后直接说 “Use Archify to diagram …”，不需要现成仓库；要“有源码依据”的架构图，就让 Agent 读仓库并指定组件数量、主路径、外部依赖和信任边界。第一次的产物是一个自包含 HTML，双击即可打开，支持聚焦节点、上下游追踪、路径、角色对比、演示模式和明暗主题；四种视觉风格，可导 PNG、WebP、JPG 长图或打印 PDF。
+只想试用可运行 `npx skills use tt-a1i/archify@archify --agent codex`。要 PR 讲解，再装可选的 `archify-pr`。装好后直接说「Use Archify to diagram …」，不需要现成仓库；要「有源码依据」的架构图，就让 Agent 读仓库并指定组件数量、主路径、外部依赖和信任边界。
+
+第一次的产物是一个自包含 HTML，双击即可打开，支持聚焦节点、上下游追踪、路径、角色对比、演示模式和明暗主题；四种视觉风格，可导 PNG、WebP、JPG 长图或打印 PDF。README 说查看产物不需要安装 Archify，把 HTML 发给别人，交互也跟着走。
 
 仓库内的 CLI 可以这样自检和试跑：
 
@@ -44,25 +58,29 @@ node bin/archify.mjs demo /tmp/archify-demo
 node bin/archify.mjs guide "Show CI/CD checks, approval, deploy, and rollback"
 ```
 
-常见卡点：Claude.ai 里上传 `archify.zip` 依赖沙箱内能跑 Node.js，能力会受限；Project Knowledge 只能走“提示词驱动的架构回退”；更新检查会发起网络请求，可用 `ARCHIFY_UPDATE_CHECK_DISABLED=1` 关闭。README 没有给出主 Skill 对 Node 版本的具体下限，也没有说明生成质量如何度量。
+常见卡点有三个。Claude.ai 里上传 `archify.zip` 依赖沙箱内能跑 Node.js，能力会受限；Project Knowledge 只能走「提示词驱动的架构回退」；更新检查会发起网络请求，可用 `ARCHIFY_UPDATE_CHECK_DISABLED=1` 关闭。README 没有给出主 Skill 对 Node 版本的具体下限，也没有说明生成质量如何度量。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-生成链路是“带类型的 JSON IR → 校验 → 渲染 → 交付”。每个渲染模式都有 schema 和可复现的源文件；交付前要在同目录生成候选文件并检查，只有全部通过才原子替换目标，失败则保留上一版可用产物。可选的 preview 只监听随机的 `127.0.0.1` 端口，监视一个 JSON 文件，只有通过全部校验的版本才刷新，失败时继续显示 last-good。这个设计把“好看的失败页面”挡在交付之外，代价是迭代时必须按规则改源文件，不能随手拖拽。
+复杂度放在「带类型的 JSON IR → 校验 → 渲染 → 交付」这条链，以及一套不让模型自由发挥的修复协议里。README 说每个渲染模式都有 schema 和可复现的源文件；交付前要在同目录生成候选文件并检查，只有全部通过才原子替换目标，失败则保留上一版可用产物。可选的 preview 只监听随机的 `127.0.0.1` 端口，监视一个 JSON 文件，只有通过全部校验的版本才刷新，失败时继续显示 last-good。这个设计把「好看的失败页面」挡在交付之外，代价是迭代时必须按规则改源文件，不能随手拖拽。
 
-失败会带“维修单”。`validate --json` 和 `deliver --json` 返回稳定的规则码、具体对象、测量证据，以及只包含受支持修复动作的 `diagnostics[]`；README 要求只按这些 `supportedFixes` 修，且 Skill 内只允许两轮修正，视觉审查另算。这比“模型看着报错猜一次”更可控，但也限制了自由发挥。
+失败会带「维修单」。README 说 `validate --json` 和 `deliver --json` 返回稳定的规则码、具体对象、测量证据，以及只包含受支持修复动作的 `diagnostics[]`；README 要求只按这些 `supportedFixes` 修，且 Skill 内只允许两轮修正，视觉审查另算。这比「模型看着报错猜一次」更可控，但也限制了自由发挥。
 
-“诚实交互”是另一条原则。focus、上下游、路径、角色对比和 story 都只复用作者写下的节点与关系，不推断运行时影响；Timeline 和 Waterfall 示例用的是示意数据，README 明确说只有来自日志或 trace 的时间才能当真。Code Analysis 会读仓库，支持 JS/TS、Python、Java、Go、Rust、C/C++，给出依赖环、耦合、复杂度热点和分层违规，并链接到源码，还能把问题数标到架构图组件上；仓库摘录钉在某个 commit 上，来源编号可点。这些约束适合评审材料，但不等于系统真相。
+「诚实交互」是另一条原则。README 说 focus、上下游、路径、角色对比和 story 都只复用作者写下的节点与关系，不推断运行时影响；Timeline 和 Waterfall 示例用的是示意数据，只有来自日志或 trace 的时间才能当真。Code Analysis 会读仓库，支持 JS/TS、Python、Java、Go、Rust、C/C++，给出依赖环、耦合、复杂度热点和分层违规，并链接到源码，还能把问题数标到架构图组件上；仓库摘录钉在某个 commit 上，来源编号可点。这些约束适合评审材料，但不等于系统真相。
 
-十种图类型各有必填信息，例如 ERD 要求每列的类型和主/外/唯一键，Architecture 的 `deployment-ownership` 配置在缺少归属、区域、私有数据库范围或跨域连接时会 fail closed。架构变更还能用 `compare` 生成带机器回执的 Before/Delta/After 对比。范围也划得很清楚：自动解析 Mermaid、通用自动布局、托管分享和所见即所得编辑都不在计划内。
+十种图类型各有必填信息。README 说 ERD 要求每列的类型和主/外/唯一键，Architecture 的 `deployment-ownership` 配置在缺少归属、区域、私有数据库范围或跨域连接时会 fail closed。架构变更还能用 `compare` 生成带机器回执的 Before/Delta/After 对比。范围也划得很清楚：自动解析 Mermaid、通用自动布局、托管分享和所见即所得编辑都不在计划内。
 
-## 边界与风险
+此外还有 explainer 页与 Story 模式。README 说 explainer 先给结论，再为每个问题一栏，可带表格、步骤、图表、代码和已验证的图；Story 模式可把图编成带字幕的演示并导出视频。编辑判断：这让它从「画图工具」扩到了「沟通材料生成器」，但也意味着需要判断哪些内容该进图、哪些该留在文字里。
 
-许可证是 Apache-2.0，历史 MIT 授权继续有效；第三方组件保留各自许可，软件许可不改变你创作内容的所有权，也不授予 Archify 商标使用权。README 还特别区分官方与第三方：`archify.si` 提供项目信息、示例和安装指引，第三方在线服务与付费计划的定价、数据处理和支持由各自提供方负责，名字或域名相似不代表官方关联。
+## 什么时候别用它
 
-更新检查是一个需要知情的网络行为：它会 GET 固定的稳定版 manifest 来显示可选提醒，从不下载或安装更新；成功检查约 24 小时一次，活跃使用下失败会按 6 小时、24 小时重试；服务器只看到普通 HTTP 元数据（IP 和时间），不接收版本、Agent、项目数据、提示词、账号或设备 ID，也不接收 ETag。介意的话设置环境变量关闭。
+它不适合当唯一文档，也不适合把生成的架构结论直接当系统真相。许可证是 Apache-2.0，历史 MIT 授权继续有效；第三方组件保留各自许可，软件许可不改变你创作内容的所有权，也不授予 Archify 商标使用权。README 还特别区分官方与第三方：`archify.si` 提供项目信息、示例和安装指引，第三方在线服务与付费计划的定价、数据处理和支持由各自负责，名字或域名相似不代表官方关联。
 
-其余风险更多是使用边界。README 没有说明生成架构图的准确性基准，也没有承诺大仓库的规模上限；校验保证的是内部一致和渲染正确，不是“架构判断为真”。编辑判断：它很适合做评审、PR 讲解和解释页，能显著降低沟通成本；但不适合当唯一文档，生成内容里的架构结论和来源仍需人核对，复杂系统一张图也装不下。
+更新检查是一个需要知情的网络行为。README 说它会 GET 固定的稳定版 manifest 来显示可选提醒，从不下载或安装更新；成功检查约 24 小时一次，活跃使用下失败会按 6 小时、24 小时重试；服务器只看到普通 HTTP 元数据（IP 和时间），不接收版本、Agent、项目数据、提示词、账号或设备 ID，也不接收 ETag。介意的话设置环境变量关闭。
+
+其余风险更多是使用边界。README 没有说明生成架构图的准确性基准，也没有承诺大仓库的规模上限；校验保证的是内部一致和渲染正确，不是「架构判断为真」。编辑判断：它很适合做评审、PR 讲解和解释页，能显著降低沟通成本；但生成内容里的架构结论和来源仍需人核对，复杂系统一张图也装不下。
+
+平台方面，README 说主 Skill 支持 Cursor、Claude Code、Codex CLI 和 OpenCode；Claude.ai 受沙箱 Node 能力限制，Project Knowledge 只有提示词回退。它明确不做托管分享和 WYSIWYG，所以需要多人实时协作编辑的团队不适合用它。README 未说明生成质量如何度量，也未说明大仓库分析的时间上限。
 
 ## 来源
 

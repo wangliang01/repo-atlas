@@ -14,13 +14,19 @@ sources: [github, toutiao]
 
 ## 它是什么
 
-`ub-mode` 是一个给编码 Agent 用的 Skill，目标不是教它某个框架，而是强制一套软件工程纪律：写代码或改代码时先让功能跑起来，再让实现变正确。README 说它的规则“松散基于” @poteto 的 `poteto-mode` / `pstack`，做了删减，并配上确定性的质量门工具。
+`ub-mode` 是一个给编码 Agent 用的 Skill，目标不是教它某个框架，而是强制一套软件工程纪律：写代码或改代码时先让功能跑起来，再让实现变正确。README 说它的规则「松散基于」@poteto 的 `poteto-mode` / `pstack`，做了删减，并配上确定性的质量门工具。
 
-它面向已经在用 Claude Code、Cursor、Grok 等 Agent，并且希望把“先做对、再做干净”变成可执行约束的人。核心只有一份 `SKILL.md`，把规则分成三段：First Make it Work（先能用）、Then Make it Right（再变正确）、Practice（日常习惯）。和一般“让 Agent 写得更规范”的提示词相比，它的差别是把部分要求落到可计算的门槛上，例如 CRAP 分数、重复度和变异测试，而不是只靠模型自觉。
+它面向已经在用 Claude Code、Cursor、Grok 等 Agent，并且希望把「先做对、再做干净」变成可执行约束的人。核心只有一份 `SKILL.md`，把规则分成三段：First Make it Work（先能用）、Then Make it Right（再变正确）、Practice（日常习惯）。和一般「让 Agent 写得更规范」的提示词相比，它的差别是把部分要求落到可计算的门槛上，例如 CRAP 分数、重复度和变异测试，而不是只靠模型自觉。
 
-与 `poteto-mode` / `pstack` 的关系是删减和改写，不是直接包含。README 没有说明具体删掉了哪些规则，因此无法仅凭它判断两套 Skill 的行为差异，只能以各自的 `SKILL.md` 为准。就 README 提供的信息看，它更像一份约束清单，而不是可独立运行的工具。
+## 它替掉了什么麻烦
 
-## 怎么上手
+它替掉的是「只靠提示词提醒 Agent 写得规范」这件事。README 没有交代 ub-mode 出现前的做法；编辑判断：常见方式是在 system prompt 或规则文件里写几句「写测试、别复制粘贴」，强度取决于模型是否记得，也没有可计算的判据。
+
+README 说它把规则和确定性的质量门工具配对，列出 CRAP、重复度、变异测试的阈值：每个函数的 CRAP 分数要小于 10，相似度大于等于 0.8 的重复块要消除，变异测试要覆盖未覆盖代码、杀死存活变异体、删除死代码。编辑判断：这把这些要求从「口头纪律」变成了可被工具判定的门槛，至少失败时是确定的。
+
+和 `poteto-mode` / `pstack` 的关系是删减和改写，不是直接包含。README 没有说明具体删掉了哪些规则，因此无法仅凭它判断两套 Skill 的行为差异，只能以各自的 `SKILL.md` 为准。就 README 提供的信息看，它更像一份约束清单，而不是可独立运行的工具。
+
+## 跑起来要几步
 
 安装没有脚本：把 `SKILL.md` 复制到对应 Agent 的技能目录，再调用 `/ub-mode`。README 给的例子包括：
 
@@ -28,27 +34,27 @@ sources: [github, toutiao]
 - `~/.claude/skills/ub-mode/SKILL.md`
 - `~/.cursor/skills/ub-mode/SKILL.md`
 
-第一次使用时，最直接的验证是让它改一个小功能或修一个小 bug，观察它是否先写测试、是否在动手前质疑前提、是否把工作拆成可验证的小步。README 没有提供“预期输出”或演示，具体行为取决于所用 Agent 对 Skill 的加载方式；也没有说明需要哪个版本的 Agent、是否支持 Codex 等其他 harness，这些属于 README 未说明。技能目录本身也因 Agent 而异，README 只给了三个示例；如果所用 harness 没有“技能目录”这个概念，这个 Skill 不能直接生效。质量门工具是独立仓库，README 没有给出安装步骤和调用方式，只说明 ub-mode 依赖它们。
+第一次使用时，最直接的验证是让它改一个小功能或修一个小 bug，观察它是否先写测试、是否在动手前质疑前提、是否把工作拆成可验证的小步。README 没有提供「预期输出」或演示，具体行为取决于所用 Agent 对 Skill 的加载方式；也没有说明需要哪个版本的 Agent、是否支持 Codex 等其他 harness，这些属于 README 未说明。技能目录本身也因 Agent 而异，README 只给了三个示例；如果所用 harness 没有「技能目录」这个概念，这个 Skill 不能直接生效。质量门工具是独立仓库，README 没有给出安装步骤和调用方式，只说明 ub-mode 依赖它们。如果 Skill 没有被正确加载，Agent 不会自动进入这套流程，所以第一步是确认 `/ub-mode` 能触发。
 
-## 值得注意的设计
+## 它把复杂度放在哪
 
-规则被组织成“先做对，再做干净”的两段式，这个顺序本身就是设计判断。第一段包含 Laziness Protocol、Foundational Thinking、TDD、Redesign From First Principles、Attack the Premise、Subtract Before You Add、Outcome-Oriented Execution、Build the Lever，以及一组架构纪律：Model the Domain、Boundary Discipline、Type System Discipline、Make Operations Idempotent、Separate Before Serializing Shared State。它的意图是阻止 Agent 一上来就堆实现，先确认问题、领域模型和边界。
+复杂度放在「三段式规则顺序」和「外部质量门」的配合上。规则被组织成「先做对，再做干净」的两段式，这个顺序本身就是设计判断。第一段包含 Laziness Protocol、Foundational Thinking、TDD、Redesign From First Principles、Attack the Premise、Subtract Before You Add、Outcome-Oriented Execution、Build the Lever，以及一组架构纪律：Model the Domain、Boundary Discipline、Type System Discipline、Make Operations Idempotent、Separate Before Serializing Shared State。它的意图是阻止 Agent 一上来就堆实现，先确认问题、领域模型和边界。
 
-第二段把“代码变好”拆成可检查的动作：Fix Root Causes、Sequence Work into Verifiable Units、Test Behavior (Not Implementation)，然后接三个外部质量门。`crapper` 计算每个函数的圈复杂度、测试覆盖率和 CRAP 分数，要求 `CRAP < 10`；`dryer` 检测结构性重复，要求相似度 `>= 0.8` 的重复块被消除；`mutator` 跑变异测试，要求覆盖未覆盖代码、杀死存活变异体、删除死代码；`uml-viewer` 把组件、覆盖率、CRAP、变异分数和依赖方向画出来。最后是 Refactoring。
+第二段把「代码变好」拆成可检查的动作：Fix Root Causes、Sequence Work into Verifiable Units、Test Behavior (Not Implementation)，然后接三个外部质量门。`crapper` 计算每个函数的圈复杂度、测试覆盖率和 CRAP 分数，要求 `CRAP < 10`；`dryer` 检测结构性重复，要求相似度 `>= 0.8` 的重复块被消除；`mutator` 跑变异测试，要求覆盖未覆盖代码、杀死存活变异体、删除死代码；`uml-viewer` 把组件、覆盖率、CRAP、变异分数和依赖方向画出来。最后是 Refactoring。
 
 第三段是 Practice：Keep a Log、Guard the Context Window、Worktree Cleanup，以及按顺序做小的 commit 和 push。这一段看起来琐碎，但针对的是 Agent 常见的长会话失忆、工作区残留和一次性大提交。
 
-README 没有说明 ub-mode 如何调用这些工具：是 Agent 在会话里手动执行命令，还是由 Skill 内置脚本触发；也没有说明质量门失败时如何阻断提交。工具本身有明确阈值，但“谁来跑、什么时候跑、结果如何反馈给 Agent”需要读 `SKILL.md` 才能确认。
+README 没有说明 ub-mode 如何调用这些工具：是 Agent 在会话里手动执行命令，还是由 Skill 内置脚本触发；也没有说明质量门失败时如何阻断提交。工具本身有明确阈值，但「谁来跑、什么时候跑、结果如何反馈给 Agent」需要读 `SKILL.md` 才能确认。
 
-代价也很明显：这套规则要求 Agent 有测试、有覆盖率、有变异测试，并且愿意按小步推进；对没有测试基础设施的项目，先补测试的成本可能高于功能本身。规则数量多，模型是否能稳定执行取决于 Skill 的篇幅和 harness 的遵循能力；README 只列了规则名，没有解释每条规则的判据和示例，这些内容是否在 `SKILL.md` 里更完整，README 未说明。
+## 什么时候别用它
 
-## 边界与风险
+没有测试基础设施、又不愿先补测试的项目，不适合直接套用。这套规则要求 Agent 有测试、有覆盖率、有变异测试，并且愿意按小步推进；对没有测试基础设施的项目，先补测试的成本可能高于功能本身。规则数量多，模型是否能稳定执行取决于 Skill 的篇幅和 harness 的遵循能力；README 只列了规则名，没有解释每条规则的判据和示例，这些内容是否在 `SKILL.md` 里更完整，README 未说明。
 
-README 没有许可证章节；仓库元数据把许可证标为 MIT，但采用前仍应查看仓库的 LICENSE 文件确认，不能只凭 README 推断授权。
+README 未说明许可证；采用前应查看仓库的 LICENSE 文件确认，不能只凭 README 推断授权。
 
 质量门工具是外部依赖，README 指向 `unclebob/crapper`、`unclebob/dryer`、`unclebob/mutator`、`unclebob/uml-viewer` 四个仓库，但没有说明它们的安装方式、语言和平台支持、运行成本，以及和 ub-mode 的集成方式。CRAP、重复度、变异测试都有明确阈值，但阈值是否可配置、是否适合你的项目、变异测试要跑多久，需要自己评估；团队若已有自己的覆盖率或复杂度标准，可能得直接改 `SKILL.md`。
 
-规则本身也可能与团队流程冲突：强制 TDD、先质疑前提、按可验证单元推进，会改变 Agent 的工作节奏；如果团队没有测试文化，Agent 可能形式上写测试却不验证行为。README 也承认规则只是松散基于他人体系，并非完整方法论。编辑判断：适合想给 Agent 加工程约束、且项目已有测试基础的团队；先在一个小仓库试，观察它是否真的改善代码，而不是把规则当口号。不适合大型遗留项目直接套用，也不适合期待“装上就自动变干净”的人。
+规则本身也可能与团队流程冲突：强制 TDD、先质疑前提、按可验证单元推进，会改变 Agent 的工作节奏；如果团队没有测试文化，Agent 可能形式上写测试却不验证行为。规则之间若有冲突，README 未说明优先级；README 也没有给出质量门的通过率或验收标准，团队要自己定义。README 也承认规则只是松散基于他人体系，并非完整方法论。编辑判断：适合想给 Agent 加工程约束、且项目已有测试基础的团队；先在一个小仓库试，观察它是否真的改善代码，而不是把规则当口号。不适合大型遗留项目直接套用，也不适合期待「装上就自动变干净」的人。
 
 ## 来源
 
