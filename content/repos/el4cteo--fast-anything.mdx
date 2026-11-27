@@ -1,0 +1,74 @@
+---
+repo: "EL4CTEO/fast-anything"
+title: "别把整个项目重写成 Rust，只搬最慢的那 5%"
+summary: "fast-anything 先给应用做性能剖析，找出最耗时且适合移植的函数，再让编码 Agent 只把这些函数改写成 Rust，并用真实调用回放验证结果一致后才启用。"
+banner: "https://raw.githubusercontent.com/EL4CTEO/fast-anything/main/docs/assets/demo.gif"
+domains: ["编码与开发", "运维与基础设施"]
+forms: ["CLI", "MCP 服务"]
+identities: ["后端", "AI"]
+peers: []
+verdict: recommend
+license: "MIT"
+featuredAt: 2026-11-28
+readmeSha: "6e551c443804d10a0efbd03b54ba0e037b83d10f"
+readmeFetchedAt: "2026-11-28"
+sources: [github]
+---
+
+## 它是什么
+
+fast-anything 是一个“定点加速”工具。它的口号是“别用 Rust 重写全部，只重写慢的那 5%”：先运行你的应用做性能剖析，找出最耗时且适合移植的函数，再让编码 Agent 把这几个函数改写成 Rust，用真实录制到的调用逐条验证结果一致，最后才切换启用。
+
+它不是单一语言的编译器，而是一套命令工作流。README 列出的命令包括 `scan`（剖析并按耗时和可移植性排序）、`port`（录制真实调用并生成一个函数的 Rust crate 和 `TASK.md`）、`verify`（构建移植并回放所有录制调用）、`enable` / `disable`（切换 Rust 版或原版）、`bench`（对比整应用耗时，并带 A/A 噪声对照）、`report`（输出 markdown 和 SVG 卡片）以及 `status` / `doctor`。
+
+它支持的语言面很宽：Python 3.10+、JavaScript / TypeScript（Node 22+、bun、deno）、Ruby 3.3+、Java 22+、Kotlin/JVM、Go 1.22+、PHP 8.1+、C / C++、.NET 8+ 和 R 4.0+。README 说 Python 和 JS/TS 用原生绑定，其它语言通过一个 C 入口调用；可移植的是顶层、确定性、只处理普通数据（数字、字符串、列表、映射、数组）的函数，不能移植的会由 `scan` 说明原因。
+
+## 它替掉了什么麻烦
+
+它替掉的是“一个功能太慢，于是整站换语言重写”的大爆炸式优化。README 没有写项目创立的具体历史，因此这里关于旧做法的描述是编辑判断，依据是它把动作拆成扫描、单函数移植、回放验证、启停和基准测试，而不是一次性替换整个代码库。
+
+痛点有三条。第一是不知道该优化哪儿：README 说应用大部分运行时间集中在少数函数里，`scan` 会按耗时和可移植性排序，而不是凭直觉猜。第二是改写容易出错：`port` 会录制真实调用，`verify` 最多用 500 个真实调用加边界情况验证，边界情况包括 NaN、±infinity、-0.0、空值、非 ASCII 和更大输入，答案由原实现提供。第三是改完不知道该不该留：`bench` 对比整个应用，带 A/A 噪声对照；README 明确说单次调用更慢的移植不会启用。
+
+和“直接用 Rust 重写服务”相比，它试图把风险限制在一个函数上，并提供 `FAST_ANYTHING_DISABLE=1` 随时回到原实现。和“手写性能剖析脚本”相比，它把编码 Agent、回放验证和启停流程做成一套命令。README 没有点名同类竞品，也没有和其它优化工具做对比测试，因此这里不能说它比 profiler 或手动优化普遍更优。
+
+## 跑起来要几步
+
+安装是一条命令：
+
+```sh
+npm i -g @el4cteo/fast-anything
+```
+
+也可以用 `cargo install fast-anything`。命令名是 `fast-anything`；扫描只需要你的应用运行时，真正移植才需要 Rust 工具链（rustup）。不确定环境是否齐全时先跑 `fast-anything doctor`。
+
+最简用法是把平时启动应用的命令交给它：
+
+```sh
+fast-anything go --agent claude -- python app.py
+```
+
+`--agent` 接受 `claude`、`codex` 或任何从 stdin 读提示词的命令；应用命令也可以换成 `node app.ts`、`go run .`、`gradle run`、`dotnet run` 等。想分步做时，先 `scan -- <cmd>` 看排名，再 `port [id]` 生成单个函数的移植任务，接着 `verify`，通过后才 `enable`；不满意可以 `disable`，最后用 `bench` 和 `report` 留下证据。
+
+服务器和 GUI 程序可以用 `fast-anything scan --duration 30 -- <cmd>` 扫 30 秒，`--calibrate` 用来测剖析器自身开销，`--explain` 只检查配置不运行应用，每个命令都支持 `--json`。README 的示例结果写在 i5-10500、Windows 11 上（C/C++ 用 GitHub Actions Linux runner）：Python 模糊去重从 4.91 秒降到 42 毫秒，TypeScript 从 3.11 秒降到 155 毫秒；这些是项目自述数据，不是本仓库复现的测试。
+
+## 它把复杂度放在哪
+
+第一层复杂度是“找谁”。`scan` 不只是按耗时排序，还考虑可移植性：只支持顶层、确定性、输入和输出都是普通数据的函数。`README` 说它会解释为什么其它函数暂时不能搬，这意味着工具把语言互操作的边界前置到了扫描阶段，而不是等到生成代码后才失败。
+
+第二层复杂度是“证明没改坏”。README 说每 5 个调用里有 1 个不给 Agent 看，用来防止移植函数只针对样本做特殊处理；所有用例都匹配后才会启用。这个设计把重点从“Agent 写了看起来对的代码”转到“在录制输入上行为一致”。但它证明的是样本上的等价，不是数学意义上的全量等价，边界用例也仍由工具预设，而不是由业务方自定义。
+
+第三层复杂度是“怎么接回去”。Python 和 JS/TS 用原生绑定，其它语言通过单个 C 入口调用；工具尽量移植最外层循环，让应用只跨一次 Rust 边界，而不是每个函数调用都跨。README 用 Java 示例说明这个取舍：函数本身快 11 倍，但整体应用只快 3 倍，因为剩余时间花在 JVM 启动上。这提醒读者：局部函数加速不等于端到端加速。
+
+Android 是单独路径。README 说 Android 应用在 ART 上运行，所以用 adb 在设备上用 simpleperf 剖析，需要 debuggable 或 profileable 构建；它只做排名，不移植 Android 代码，也不把 ART 耗时和主机耗时比较。
+
+## 什么时候别用它
+
+它不适合 IO 密集、启动时间主导或高度动态的应用。README 自己的 Java 示例就是证据：函数快 11 倍，整体只快 3 倍。它也不适合依赖副作用、外部服务、非确定性状态或复杂对象结构的函数，因为 README 明确只支持顶层、确定性、普通数据输入的函数；不支持的东西 `scan` 会说明原因。
+
+验证成本不能忽略。每个移植都要录制真实调用、跑 `verify`、再做整应用 `bench`；README 没有给出大型项目的扫描和回放耗时，也没有说多函数同时启用时如何处理相互作用。编辑判断：适合有清晰热点、能重放真实输入、且愿意保留回滚开关的服务或脚本；不适合“先搬了再说”的团队。
+
+许可证是 MIT，可以商用。README 没有承诺所有语言同等成熟，也没有给出 Windows 以外桌面平台的完整测试矩阵；Android 明确只做排名。低成本验证办法是：选一个小的 CPU 密集脚本，跑 `scan` 看排名是否合理，再 `port` 一个函数、跑 `verify` 和 `bench`，确认输出一致且整体确实变快后才考虑扩大范围。
+
+## 来源
+
+GitHub：[EL4CTEO/fast-anything](https://github.com/EL4CTEO/fast-anything)（README sha 6e551c443804）

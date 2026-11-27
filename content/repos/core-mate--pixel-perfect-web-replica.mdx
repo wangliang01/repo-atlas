@@ -1,0 +1,80 @@
+---
+repo: "Core-Mate/Pixel-Perfect-Web-Replica"
+title: "把公开网页搬到本地，连改品牌要换哪些素材都列好"
+summary: "一个给 Codex 和 Claude Code 用的网页复刻技能：抓取公开同源资源、在本地静态服务里跑起来、做桌面和手机截图比对，并生成可替换品牌资源清单。"
+banner: "https://raw.githubusercontent.com/Core-Mate/Pixel-Perfect-Web-Replica/main/docs/assets/demo.gif"
+domains: ["设计与创意", "编码与开发"]
+forms: ["Skill", "CLI"]
+identities: ["前端", "设计"]
+peers: []
+verdict: watch
+license: "MIT"
+featuredAt: 2026-11-28
+readmeSha: "596e2a48a8998cec673f0752e709e4192f6b09b9"
+readmeFetchedAt: "2026-11-28"
+sources: [github]
+---
+
+## 它是什么
+
+Pixel-Perfect-Web-Replica 是一个 AI 技能，用来把公开网页复刻成“本地可编辑、尽量像素级一致”的副本。README 的用法很直接：粘贴一个 URL，让 Codex 或 Claude Code 抓取浏览器能访问的同源 HTML、CSS、JS、图片、视频、字体、favicon 和 manifest 资源，在本地把页面跑起来，再对照桌面和手机截图修差异。
+
+它不只负责“下载网页”。产物目录里除了 `index.html` 和抓下来的资源，还有 `resources.json`、`resource-inventory.json` 和 `REPLACEABLE_RESOURCES.md`。最后这份清单专门列出换品牌时要动的东西：logo、favicon、manifest 图标、字体和品牌素材、hero 媒体、应用截图、视频、Open Graph 图片、CTA 链接、法律条款链接和文案块。
+
+它和普通“保存网页”或 `wget` 的差别在流程。README 列了一张对比表：浏览器保存和 `wget` 只覆盖部分资源镜像，不提供 Agent 引导的视觉 QA、桌面与手机截图对比、可替换资源清单、面向换品牌的输出和安全边界；这些都由这个技能补上。它面向的是研究公开落地页、搭建重设计前的本地沙箱、迁移视觉参考和测试前端 Agent 的场景。
+
+## 它替掉了什么麻烦
+
+它替掉的是“看一眼别人网页，然后凭印象自己重写”的做法。README 没有讲这个项目的起源，所以这里关于旧做法的描述是编辑判断，依据是它把复刻拆成了可重复的步骤：先固定目标 URL 和输出目录，保存原始请求头、HTML、截图和资源清单，再镜像同源静态资源，用静态服务器运行，最后逐项修视觉差异。
+
+痛点有三条。第一是路径和资源残缺：直接保存的网页常见问题是根相对路径失效、CSS 资源漏抓、字体损坏、视频裁切不对和手机端溢出；README 明确把这些列为要修的项目。第二是没有验收标准：技能要求对比原始页和本地页在桌面与手机尺寸下的截图，并把剩余差异写进报告，而不是“看起来差不多”就结束。第三是复用困难：复刻完成后，`REPLACEABLE_RESOURCES.md` 告诉你哪些是品牌资产，方便后续换标或重构。
+
+和 `wget` 相比，它不是单纯的下载器，而是“下载脚本 + QA 清单 + Agent 指令”的组合；和浏览器“另存为”相比，它强调本地静态服务器而不是 `file://`，因为后者和真实浏览器行为差得更远。README 没有给出自动化截图比对算法的细节，所以不要把“visual QA”理解成一键像素diff；它更像是给 Agent 一套可执行的检查流程。
+
+## 跑起来要几步
+
+可以先安装技能，再让 Agent 执行。README 给出同时装到 Codex 和 Claude Code 的命令：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Core-Mate/Pixel-Perfect-Web-Replica/main/scripts/install.sh | bash
+```
+
+也可以只装其中一个，在命令末尾加 `bash -s codex` 或 `bash -s claude`。用 skills CLI 的话是：
+
+```bash
+npx skills@latest add Core-Mate/Pixel-Perfect-Web-Replica
+```
+
+安装后可以直接对 Agent 提要求，README 的示例提示词是：“用 pixel-perfect-web-replica 把 https://example.com 镜像到本地，抓取公开资源，跑在静态服务器上，验证桌面和手机截图，并列出可替换的品牌资源。”
+
+如果只想试镜像脚本，也可以绕过 Agent：
+
+```bash
+python3 scripts/mirror_public_page.py https://example.com ./replica-output
+cd replica-output
+python3 -m http.server 8088
+```
+
+预期产物是一个包含 `index.html`、抓取的资源、`resources.json`、`resource-inventory.json` 和 `REPLACEABLE_RESOURCES.md` 的目录。README 未说明 Python 版本要求、目标站点使用 SPA 或动态接口时如何处理；它明确限定的是“公开、浏览器可访问的同源静态资源”，因此遇到登录态、跨域 API 或复杂前端渲染时，结果可能不完整。
+
+## 它把复杂度放在哪
+
+核心复杂度在“像”和“可改”之间。README 说它要保留布局、排版、媒体裁切、根相对路径、滚动行为和手机渲染，这意味着 Agent 不能只把 HTML 下载下来，还要在本地重放这些条件。它选择用 `python3 -m http.server` 起静态服务，就是为了避开 `file://` 带来的行为差异。
+
+第二层复杂度在证据链。工作流先保存原始页的 headers、HTML、截图和资源列表，再做镜像，然后在桌面和手机尺寸下对比。这样做的好处是“哪里不一样”有据可查，坏处是步骤多，且 README 没提供自动评分或阈值；最终判断仍由 Agent 和人来做得失。
+
+第三层复杂度在换品牌。生成 `REPLACEABLE_RESOURCES.md` 的出发点不是复刻本身，而是后续改造：要把别人的站点变成自己的前端起点，必须先知道哪些图片、字体、图标、文案和链接带着原站身份。README 强调发布衍生页面前要替换受版权或商标保护的资源并核实授权。这个清单降低了漏改品牌的概率，但不能代替法律审查。
+
+仓库结构也反映了这条流水线：`SKILL.md` 是主指令，`scripts/mirror_public_page.py` 负责镜像，`references/replica-qa.md` 和 `references/quality-checklist.md` 负责视觉检查，`examples/prompts.md` 提供提示词示例，`docs/installation*.md` 提供安装说明。
+
+## 什么时候别用它
+
+它不适合需要登录、付费墙、反爬机制、robots 限制、签名 URL、私有 API 或访问控制的页面；README 的安全边界明确禁止绕过这些限制。它也不适合直接拿复刻页发布：原站的图片、字体、文案和商标未必可自由使用，发布前必须替换并确认授权。许可证本身是 MIT，但这只覆盖工具代码，不覆盖你抓取来的内容。
+
+它不适合把“像素级”当成法律或商业承诺。README 的用词是 fidelity as the goal，并列出了桌面和手机截图对比、修字体和路径等问题；它没有承诺对任意动态网站都能得到完全一致的结果，也没有给出覆盖率或成功率数据。编辑判断：这个技能更适合本地学习、重设计前的研究、给前端 Agent 做视觉保真测试，而不是批量复制别人的站点。
+
+工程前提也很朴素但要满足：README 的脚本示例明确调用 `python3`，安装脚本用 `curl | bash`，静态预览用 `python3 -m http.server`。README 未说明 Windows 原生环境下的安装细节，也未说明如何处理 CDN 跨域资源或 SPA 路由；遇到这类站点时，先做低成本验证——只镜像一个公开静态页，检查字体、图片、手机布局和清单输出是否完整，再决定是否投入更大目标。
+
+## 来源
+
+GitHub：[Core-Mate/Pixel-Perfect-Web-Replica](https://github.com/Core-Mate/Pixel-Perfect-Web-Replica)（README sha 596e2a48a899）

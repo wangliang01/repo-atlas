@@ -1,0 +1,70 @@
+---
+repo: "ATH-MaaS/Pixelle-Video"
+title: "输入一个主题，自动拼出一条短视频"
+summary: "Pixelle-Video 把文案、配图、语音、背景音乐和视频合成串成一条流水线，输入一个主题就能生成短视频，也能逐项换模型、模板和工作流。"
+banner: "https://raw.githubusercontent.com/ATH-MaaS/Pixelle-Video/main/resources/webui.png"
+domains: ["视频与音频", "写作与内容"]
+forms: ["Web 应用", "自托管服务"]
+identities: ["自媒体", "AI"]
+peers: ["MoneyPrinterTurbo", "NarratoAI"]
+verdict: watch
+license: "Apache-2.0"
+featuredAt: 2026-11-28
+readmeSha: "e097c2c0d921813902a203dcd9a3d8ee30a16300"
+readmeFetchedAt: "2026-11-28"
+sources: [github]
+---
+
+## 它是什么
+
+Pixelle-Video 是一个 AI 全自动短视频引擎：你给它一个主题，它依次完成文案、配图或视频、语音、背景音乐和最终合成，输出一条可直接看的视频。README 反复强调的目标人群是没有剪辑经验的用户——它把“做一条视频”压缩成“输入一个主题，点一下生成”。
+
+它不只是“一键玩具”。Web 界面分成系统配置、内容输入、语音设置、视觉设置和生成结果几块，用户可以选择模型、模板、尺寸和背景音乐，也可以直接写固定文案跳过 AI 写稿。README 说它支持竖屏、横屏等尺寸，提供多种视觉模板，并列出数字人口播、图生视频、动作迁移三个扩展模块。
+
+它和同类工具的差别在于把原子能力做成可替换零件。README 说图像和视频既能走本地 ComfyUI 工作流、RunningHub 云端工作流，也能直连 DashScope、OpenAI、ARK、Seedream、Seedance、Kling 等模型 API；语音可选 Edge-TTS、Index-TTS，大语言模型可选通义千问、GPT、DeepSeek、Ollama。换句话说，它提供的是一条装配线，而不是把某一家模型写死。
+
+## 它替掉了什么麻烦
+
+它替掉的是一条短视频要跨过的好几道门槛：先写脚本，再找画面，再配音，再卡节奏，最后用剪辑软件拼起来。README 没有写项目诞生前的具体历史，因此这里关于“旧做法”的描述是编辑判断，依据是它把上述步骤直接写进了产品的主流程，并把“零剪辑经验”当成卖点。
+
+痛点有三层。第一是工具链散：写稿、生图、配音、剪辑原本要换好几个界面，还要自己对齐分镜时长；Pixelle-Video 把这些步骤收进一个 WebUI，并在生成时显示“分镜 3/5 - 生成插图”这类实时进度。第二是素材来源不稳定：项目同时支持本地工作流、云端工作流和直连 API，README 还列了 Ollama 加 ComfyUI 的免费方案和只用 API 的云端方案。第三是可控性：用户可以选择 AI 写稿或固定文案、试听语音、预览模板风格，不满意时按 README 建议换模型、改提示词前缀或切模板。
+
+和同类项目相比，README 明确列出 MoneyPrinterTurbo、NarratoAI、MoneyPrinterPlus、Pixelle-MCP 和 ComfyKit 作为参考项目，但没有给出逐项功能对比或质量评测，所以这里不能宣称“比谁更强”。编辑判断：它更像是把多种模型入口和模板系统收拢成一个中文友好的工作台；真正决定成片质量的仍然是模型、提示词和模板选择。
+
+## 跑起来要几步
+
+Windows 用户最简单：README 推荐下载 Windows 一键整合包，解压后双击 `start.bat`，浏览器会自动打开 `http://localhost:8501`。整合包声明已经包含 Python、uv、ffmpeg 等依赖，首次使用只需在“系统配置”里填 API 密钥。这里要注意仓库归属：README 里的下载链接指向 `AIDC-AI/Pixelle-Video` 的 releases，但当前仓库是 `ATH-MaaS/Pixelle-Video`，链接是否一致需要自己核对。
+
+源码安装适合 macOS、Linux 或需要自定义的用户。先装 `uv` 和 `ffmpeg`，用 `uv --version` 与 `ffmpeg -version` 验证，然后执行：
+
+```bash
+git clone https://github.com/AIDC-AI/Pixelle-Video.git
+cd Pixelle-Video
+uv run streamlit run web/app.py
+```
+
+浏览器同样打开 `http://localhost:8501`。首次使用要展开“系统配置”：填 LLM 的 API Key、Base URL 和模型；如果用 ComfyUI，填本地服务地址，默认是 `http://127.0.0.1:8188`；如果用 RunningHub，填 API Key；如果选择 `api/...` 工作流，还要填对应图像或视频供应商的密钥。保存配置后，在左侧输入主题或固定文案、选择 BGM，中间设置 TTS、参考音频、图像工作流、尺寸、提示词前缀和视频模板，最后在右栏点“生成视频”。产物保存在 `output/` 文件夹。
+
+README 给出的预期是：一次生成通常几分钟内完成，具体取决于分镜数量、网络和模型速度。常见卡点集中在配置层——TTS 要不要用声音克隆、工作流选 `selfhost` 还是 `RunningHub` 或 `api/...`、图像尺寸是否超过模型限制，README 都分别给了说明。
+
+## 它把复杂度放在哪
+
+核心复杂度不在剪辑界面，而在“把一句话拆成可生成的镜头，再把不同模型接到同一条流水线上”。README 给出的流程是：文案生成 → 配图规划 → 逐帧处理 → 视频合成。系统配置、视觉设置和语音设置本质上是给这条流程的每个工位指定供应商和参数。
+
+第一层抽象是工作流。图像生成可以选 ComfyUI 工作流、RunningHub 工作流或 `api/...` 直连模型；README 说懂 ComfyUI 的人可以把自己的工作流放进 `workflows/` 文件夹；视频模板按命名区分 `static_*.html`、`image_*.html` 和 `video_*.html`，对应纯文字样式、AI 图片背景和 AI 视频背景。这样，同一条流水线可以接不同模型，代价是用户要理解工作流、模板和供应商配置之间的关系。
+
+第二层抽象是调用策略。README 说 API 视频生成支持按模型能力显示分辨率、比例、时长、水印和原生音频等参数，支持网络下载重试与内容审核失败后的提示词中性化重试；在“自定义素材”工作流中，API 视频片段会尽量按旁白音频时长生成，并用相邻片段信息提升连贯性。这些细节说明项目在处理模型输出的不确定性，但 README 没有展开具体实现或失败率。
+
+第三层是扩展模块。数字人口播、图生视频、动作迁移被放在扩展展示里，README 的更新记录提到它们分别在 2026 年 1 月加入，并新增了 RunningHub 并行调用、`固定脚本` 的段落/行/句子分割方式、历史记录页和批量任务。复杂度因此是逐步叠上去的：基础流水线保持“一句话生成”，更细的控制留给工作流和扩展模块。
+
+## 什么时候别用它
+
+它不适合追求精确剪辑、品牌级成片或稳定商业交付的场景。README 给的是快速生成和参数调节，没有承诺帧级编辑、字幕时间轴或多人协作；它列出的参考项目也是同类自动化工具，不是专业剪辑器。许可证是 Apache 2.0，商用本身没有明显限制，但生成内容仍受你调用的模型和素材条款约束。
+
+成本和隐私要自己算。README 给出了三档费用方案：Ollama 加 ComfyUI 可以免费；通义千问加本地 ComfyUI 成本极低；OpenAI 加 RunningHub 无需本地环境但费用较高。也就是说，真正花钱的是背后模型，不是这个软件本身。生成可能需要上传主题、文案、参考音频或图片到云端供应商，如果素材敏感，应优先选择本地方案并自行核对网络请求。
+
+README 没说明硬件最低配置、并发任务上限、不同模型的输出质量差异，也没有给出任何客观质量评测；“通常几分钟”只是它自己的 FAQ 说法。编辑判断：适合做知识科普、自媒体短片和快速原型，尤其是中文用户；不适合把成片质量完全托付给一键生成，仍要准备挑模型、改提示词和反复试模板的时间。
+
+## 来源
+
+GitHub：[ATH-MaaS/Pixelle-Video](https://github.com/ATH-MaaS/Pixelle-Video)（README sha e097c2c0d921）

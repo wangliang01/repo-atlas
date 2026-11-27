@@ -1,87 +1,79 @@
 ---
 repo: "gamedev-skills/awesome-gamedev-agent-skills"
-title: "给游戏开发 Agent 的 79 个引擎专用 Skill"
-summary: "覆盖 Godot、Unity、Unreal、Roblox、three.js、Phaser 等 12 个引擎的 79 个游戏开发 Skill，并用路由器按你的引擎和任务自动加载 2–3 个。"
-domains: ["设计与创意", "编码与开发"]
-forms: ["Skill", "数据集"]
-identities: ["前端", "设计"]
+title: "让编码 Agent 按引擎和任务自动挑游戏开发技能"
+summary: "给 AI 编码 Agent 装上 79 个游戏开发技能和路由器：从项目文件识别引擎，再按任务只加载相关的两三个技能，覆盖 Godot、Unity、Unreal 等 12 个引擎。"
+banner: "https://raw.githubusercontent.com/gamedev-skills/awesome-gamedev-agent-skills/main/docs/assets/awesome-gamedev-agent-skills-banner.png"
+domains: ["编码与开发", "学习与研究"]
+forms: ["Skill", "SDK 与库"]
+identities: ["前端", "AI"]
 peers: []
 verdict: recommend
-featuredAt: 2026-11-25
+license: "Apache-2.0"
+featuredAt: 2026-11-28
 readmeSha: "1aa34fbb81b7e95dfbd3bb9773ac611680fff27a"
-readmeFetchedAt: "2026-11-25"
-sources: [github, toutiao]
+readmeFetchedAt: "2026-11-28"
+sources: [github]
 ---
 
 ## 它是什么
 
-awesome-gamedev-agent-skills 是一套给 AI 编码 Agent 的游戏开发能力包：79 个 Skill 覆盖 12 个引擎，外加一个路由器。你描述要做什么，路由器先识别引擎和任务，只加载匹配的 2 到 3 个 Skill，然后 Agent 才写代码。README 的定位是「用你已经在用的引擎做游戏」，不是另起一套框架。
+awesome-gamedev-agent-skills 是一组给 AI 编码 Agent 用的游戏开发技能，外加一个负责选择技能的路由器。README 说它有 79 个技能和 12 个引擎：你用大白话描述要做什么，路由器从项目文件里认出引擎，再只加载相关的两三个技能，Agent 才开始写代码。
 
-给谁用？已经在用 Godot、Unity、Unreal、Roblox 或 Web 引擎做游戏，想让 Agent 少犯引擎 API 错误的人；也适合 game jam 和原型阶段，需要快速拿到可运行骨架的独立开发者。
+它覆盖的引擎包括 Godot、Unity、Unreal、Ebitengine、Phaser、PixiJS、three.js、Bevy、pygame、LÖVE、Defold 和 Roblox。技能按四类组织：引擎基础（如 GDScript、Unity 输入系统、Unreal 蓝图）、跨学科主题（如存档、AI、着色器、关卡设计、性能优化）、游戏类型模板（如平台跳跃、Roguelike、RPG、塔防、解谜）和工作流（如 Game Jam、快速原型、Steam 与 itch 发布、游戏文档）。
 
-核心组成分四层：引擎技能（Godot 16 个、Unity 9 个、Unreal 6 个、Ebitengine 1 个、Web 引擎 6 个、其他引擎 12 个）、跨引擎的学科技能 15 个（AI、程序化生成、存档、音频、着色器、手感等）、类型模板 9 个（平台跳跃、Roguelike、RPG 等）、工作流 5 个（game jam、快速原型、Steam/itch 发布、游戏文档），再加一个路由器。README 说所有技能都是标准 `SKILL.md` 文件夹，同一份文件在 Claude Code、Cursor、Windsurf、Cline、Codex、Gemini CLI、GitHub Copilot、Kiro 等客户端里原生加载。
-
-和零散提示词集合的差别是路由和版本固定。README 说每个 Skill 都按官方引擎文档编写，并钉到具体版本（Godot 4.7.2、Unity 6.3 LTS、Unreal 5.8、Phaser 4.2.1、three.js r187 等，检查日期 2026-11-11）。
+它的关键主张不是“技能多”，而是“不用自己挑技能”。README 举例说，“给 Godot 角色加二段跳”会自动加载 `godot-2d-movement` 和 `platformer`，不会把另外 77 个技能一起塞进上下文。技能文件是 Agent Skills 标准的普通 `SKILL.md` 目录，可以直接被 Claude Code、Cursor、Windsurf、Cline、Codex、Gemini CLI、GitHub Copilot 等工具读取，不需要转换。
 
 ## 它替掉了什么麻烦
 
-它替掉的是「把引擎文档整段塞给 Agent，或者自己从几十个 Skill 里挑该用哪个」这件事。README 没有交代出现之前的标准做法；编辑判断：过去让编码 Agent 写游戏代码，通常靠通用提示词、把相关文档贴进上下文，或者让模型凭记忆写 API，结果常见的是版本过期、Godot 3 和 4 的写法混用、Unity 与 Unreal 的概念串台；而如果已经有一堆 Skill，用户还得自己判断当前任务该加载哪几个。
+它替掉的是“给 Agent 一段万能游戏开发提示词，然后每次重新解释引擎细节”的做法。README 没有写项目成立前的具体故事，所以这里关于旧做法的判断是编辑判断，依据是它把引擎、学科、类型和工作流拆成独立技能，并专门做一个路由器来决定加载顺序：先引擎基础，再任务概念，最后类型模板。
 
-它的切入点是把「选技能」交给路由器。README 说路由器从项目文件识别引擎——`project.godot` 是 Godot，`*.uproject` 是 Unreal，认不出来就直接问——再从请求里识别任务（概念、类型或发布步骤），按「引擎基础 → 概念 → 类型胶水」的顺序加载。引擎选择是排他的，只选一个；学科、类型和工作流在上面叠加。
+痛点主要有三条。第一是上下文过大：README 提醒，如果 Agent 已装很多技能，描述可能被截断，反而不利于选择；它建议只装路由器加目标引擎的技能包，或调大技能列表预算。第二是引擎版本漂移：README 说技能按官方引擎文档编写并锁定版本，检查日期是 2026-11-11，包括 Godot 4.7.2、Unity 6.3 LTS、Unreal 5.8、Phaser 4.2.1 和 three.js r187。第三是产出不可验证：部分技能带 headless 编译或测试检查，例如 Godot 脚本测试和场景路径检查、Unity 命令行编译测试、Unreal 命令行构建。
 
-和同类方案的差别，README 强调三件事：跨 12 个引擎、按官方文档钉版本、把评测方法和限制公开。编辑判断：这三点里最实际的是版本固定，它直接针对「Agent 写出上一个大版本的 API」这个高频问题；但 README 没有列举其他游戏开发 Skill 合集，也没有做横向对比。README 未说明这些 Skill 与引擎官方示例或社区教程的覆盖差异。
+它和“单个引擎技能包”的差别是覆盖范围和评估记录。README 给出 366 个盲测提示，称在需要技能的 request 中有 98.7% 加载了正确技能，并说 12 个引擎中有 10 个的代码示例在真实工具链上跑过或编译过。README 没有点名同类竞品，也没有给出逐个引擎的成功率，因此这些数字只能当作项目自述，不能当成独立评测。
 
 ## 跑起来要几步
 
-两步：装包，然后直接说任务。README 给的通用命令是：
+最省事的安装方式是一条命令，它会检测你正在用的编码 Agent，把路由器和 79 个技能装到对应位置：
 
 ```bash
 npx skills add gamedev-skills/awesome-gamedev-agent-skills
 ```
 
-它需要 Node.js 22.20 或更高。先预览可以加 `--list`，装到所有项目加 `-g`，指定 Agent 用 `-a cursor`、`-a claude-code`、`-a gemini-cli` 等。Claude Code 也可以走插件市场：
+前置条件是 Node.js 22.20 或更新版本。加 `--list` 可以先预览，`-g` 装到全局，或用 `-a <agent>` 指定工具，例如 `-a cursor`、`-a claude-code`、`-a gemini-cli`。README 还给出 Claude Code 插件装法：
 
 ```bash
 claude plugin marketplace add gamedev-skills/awesome-gamedev-agent-skills
 claude plugin install gamedev@awesome-gamedev-agent-skills
 ```
 
-只做一个引擎时，README 建议装「路由器 + 该引擎」的精简包：
+如果只做一个引擎，建议装小包：
 
 ```bash
 claude plugin install router@awesome-gamedev-agent-skills
 claude plugin install godot@awesome-gamedev-agent-skills
 ```
 
-引擎包还有 `unity`、`unreal`、`ebitengine`、`web-engines`、`other-engines`。手动安装就是把 `<name>/` 文件夹放进对应目录：Claude Code 是 `.claude/skills/`，Codex/Gemini/Copilot 是 `.agents/skills/`，Cursor 是 `.cursor/skills/`。
+第二行也可以换成 `unity`、`unreal`、`ebitengine`、`web-engines` 或 `other-engines`。装好后不用记技能名，直接对 Agent 说“给我的 Godot 角色加二段跳”或“帮我做一个存档系统”即可。
 
-装好后直接说任务，例如「add a double jump to my Godot player」。预期结果是路由器加载 `godot-2d-movement` 和 `platformer`，Agent 拿到版本匹配的引擎约定和代码骨架，而不是把 79 个技能全部塞进上下文。
-
-常见卡点：装太多 Skill 会挤占描述预算。README 说 Agent 会在一个大小限制内列出每个 Skill 的描述，超出后部分描述会被截断，反而让路由器选不准；Claude Code 的限制是上下文窗口的 1%，可以用 `skillListingBudgetFraction` 调高，或用 `SLASH_COMMAND_TOOL_CHAR_BUDGET` 设字符数。另一个卡点是版本固定：引擎升级后 Skill 可能滞后，README 指向 `docs/VERSION-SUPPORT.md`。
+预期结果是：Agent 先识别引擎和任务，再加载匹配的技能。README 说明路由器通过 `project.godot`、`*.uproject` 这类项目文件判断引擎，判断不出来时会直接问你。常见卡点是技能太多导致描述被截断；README 给出的处理办法是少装技能，或调高 `skillListingBudgetFraction` / `SLASH_COMMAND_TOOL_CHAR_BUDGET`。
 
 ## 它把复杂度放在哪
 
-复杂度放在路由器的判定规则、四层技能分工和版本固定这三处。路由器是整个项目的核心抽象。它做三件事：从项目文件识别引擎；从请求里识别任务；按「引擎基础 → 概念 → 类型胶水」的顺序加载匹配技能，并在你换话题时重新路由。README 说完整的引擎指纹和任务到技能的映射都在 `router/SKILL.md` 里，引擎排他、其余三层叠加。
+复杂度集中在路由和技能质量两处。路由器要回答两个问题：这是哪个引擎，这是什么任务。README 说引擎选择是互斥的，一次只选一个；学科、游戏类型和工作流可以叠加。这样“Godot + 平台跳跃 + 存档”能组合，但不会同时加载 Godot 和 Unity 的基础技能。
 
-第二层设计是技能分层。引擎技能教 API 和约定，学科技能教跨引擎的做法，类型技能只负责组合、不重新教基础，工作流技能管发布和项目管理。这种分工避免同一个知识点在多个 Skill 里重复，也让路由可以按需组合。README 明确说类型模板「never re-teach primitives」。
+技能本身按 Agent Skills 标准写成 `SKILL.md`：先是元数据，再是 Agent 按需读取的 Markdown 操作手册。README 说同一份文件可以在多个 Agent 工具里原生加载，仓库里不需要维护编辑器专属规则。代价是技能写作质量高度依赖维护者：每个技能都要遵循 `docs/SKILL-FORMAT.md`，提交前跑 `python scripts/validate-skills.py`，通过验证器和评分标准才合并。
 
-第三层是版本固定和验证。README 说代码示例在 12 个引擎中的 10 个上跑过或编译过，366 个盲测提示里 98.7% 的请求加载了正确 Skill。项目还把结果、方法和限制放在 `evals/RESULTS.md`，版本支持放在 `docs/VERSION-SUPPORT.md`。编辑判断：把评测方法公开比只给一个成功率更可信，但仍是项目自评；98.7% 衡量的是路由命中，不是生成代码的正确率。
+第二层复杂度是版本与验证。README 把每个引擎锁到具体版本，并说明 12 个引擎中 10 个的代码示例跑过或编译过；盲测用来衡量“是否加载正确技能”，不是衡量“生成代码是否无 bug”。这两件事要分开看：项目能证明路由选择做得不错，但不能据此保证每个技能里的代码都适用于你的项目版本。
 
-美术资产工作流是另一个差异点。README 说 `create-game-assets` 不是一次性生成图片，而是先锁定视觉目标、按家族生成、确定性地归一化输出，再放进游戏里检查，并用「art direction, not one-off generations」概括。编辑判断：这类流程仍需美术判断，README 也没有说明它覆盖哪些引擎的导入方式。
-
-代价是路由和分层都依赖描述质量。README 说 agents 列出所有技能描述时有预算上限，超出会截断；装全套 79 个技能反而可能让路由器选不准。编辑判断：这套设计更适合「一个项目主用一个引擎」，而不是在同一台机器上频繁切换多个引擎。
+第三层是素材生产流程。`create-game-assets` 技能不只生成一张图，而是先锁定视觉目标，再建立成组资源，进行确定性归一化，并在游戏里检查。README 把它称为“art direction, not one-off generations”。这类流程适合需要统一美术风格的小团队，但配置和检查成本显然比一次性生图更高。
 
 ## 什么时候别用它
 
-它不适合把 Agent 生成代码当成免审查交付的人，也不适合做通用软件工程或主机平台深度打包的团队。许可证是 Apache-2.0，README 指向 `NOTICE` 说明归属和商标。商用前按 Apache-2.0 的要求保留版权与 NOTICE 声明。
+它不适合不用 AI 编码 Agent 的开发者，也不适合只想看一份游戏开发资料目录的人；这些技能是给 Agent 按需读取的指令，不是给人从头读到尾的教程。想学引擎 API 的读者仍需回到官方文档；README 自己也说技能基于官方文档编写，而不是替代文档。
 
-评测数据来自项目自己。98.7% 是「加载了正确 Skill」的比例，不等于生成的代码一定正确；「10/12 个引擎跑过或编译过」也说明还有两个引擎没有真实工具链验证。README 没有给出独立第三方复现。编辑判断：把命中率当路由质量的参考，不要当代码正确率。
+版本适配是硬约束。README 列出的版本检查日期是 2026-11-11，且只覆盖 12 个引擎；如果你的引擎版本更旧、更新或是冷门分支，技能里的 API 和命令可能不适用。README 没有说明遇到新版本时自动更新技能的机制，也没有承诺持续支持所有引擎版本。
 
-编辑判断：版本固定是双刃剑。钉到 Godot 4.7.2、Unity 6.3 LTS、Unreal 5.8 等具体版本，能减少 API 过期错误，但引擎升级后需要维护者跟进；README 未说明更新频率和旧版本支持策略。
-
-上下文预算也是实际约束。技能越多，描述列表越长，超出限制后部分描述会被截断，路由器就更难选准；README 给了调整参数，但需要用户自己判断装全套还是精简包。README 未说明每个 Skill 的 token 消耗或模型要求。
-
-覆盖范围有边界。它面向 12 个引擎的游戏开发，不是通用软件工程；素材生成仍需美术判断，发布工作流覆盖 SteamPipe 和 itch/butler 的上传，README 没有展开法务、评级和商店运营。README 未说明对主机平台、移动端打包深度或自定义引擎的支持。编辑判断：如果项目已经深度定制引擎或使用私有构建链，这些按公开版本编写的约定可能不适用，应先在只读任务上验证。
+许可证是 Apache-2.0，README 附有 NOTICE 和商标说明。README 没说明生成代码的版权归属，也没说明收费 Agent 工具里使用这些技能是否有额外限制。编辑判断：它最合适已经在用 Claude Code、Cursor、Codex 等工具做游戏的开发者，尤其是需要跨引擎切换的团队；如果你只做单引擎且已有稳定代码规范，全量安装反而会增加上下文噪音，按 README 建议只装路由器加自己的引擎更划算。
 
 ## 来源
 
