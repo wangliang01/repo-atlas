@@ -187,6 +187,14 @@ test("首次上榜台账：每条都有 firstSeen，history.json 覆盖全部条
   }
 });
 
+test("同步脚本：统计全部收藏仓库，不做 30 条精选裁剪", () => {
+  const script = read("scripts/sync-ai-picks.mjs");
+  assert.ok(script.includes("getAllRepoDetails"), "脚本没有从详情页读取收藏全集");
+  assert.ok(script.includes("stats for"), "脚本没有声明只做统计");
+  assert.equal(script.includes("selectPicks"), false, "脚本仍在挑选上榜项目");
+  assert.equal(script.includes("LIMIT = 30"), false, "脚本仍写死 30 条");
+});
+
 test("定时任务：一天 4 次，且只提交精选路径", () => {
   assert.ok(has("scripts/picks-cron.mjs"), "缺定时任务入口");
   assert.ok(has("scripts/picks-cron.cmd"), "缺 Windows 计划任务用的 cmd 包装");
