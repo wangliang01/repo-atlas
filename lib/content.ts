@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import matter from "gray-matter";
 import { NOTE_KIND_LABEL } from "./labels.ts";
+import { getAllRepoDetails } from "./repo-detail.ts";
 import {
   NOTE_KINDS,
   noteFrontmatter,
@@ -80,6 +81,7 @@ export function getLatestUpdate(): Date {
   // 精选同步也算更新：只算笔记的话，日期会比精选旧
   const synced = getPicksSnapshot()?.syncedAt.getTime();
   if (synced) dates.push(synced);
+  for (const detail of getAllRepoDetails()) dates.push(detail.data.featuredAt.getTime());
   return dates.length > 0 ? new Date(Math.max(...dates)) : new Date();
 }
 
@@ -87,7 +89,7 @@ export function getLatestUpdate(): Date {
 export function getSiteCounts(): { notes: number; picks: number; updatedAt: Date } {
   return {
     notes: getAllNotes().length,
-    picks: getPicksSnapshot()?.entries.length ?? 0,
+    picks: getAllRepoDetails().length,
     updatedAt: getLatestUpdate(),
   };
 }

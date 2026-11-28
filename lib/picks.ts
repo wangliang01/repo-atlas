@@ -5,10 +5,19 @@ import { ALL_DOMAINS, DOMAINS, IDENTITIES } from "./categories.ts";
 // 不设固定阈值：这批仓库动辄几百上千星/天，阈值要么全中要么全不中。
 export const RISING_TOP = 10;
 
-export type PickLike = Pick<PickEntry, "repo" | "stars" | "starsPerDay" | "topics" | "description">;
+export type PickLike = Pick<PickEntry, "repo" | "description"> & {
+  stars?: number;
+  starsPerDay?: number;
+  topics?: string[];
+};
 
 export function risingRepos(entries: PickLike[]): Set<string> {
-  const top = [...entries].sort((a, b) => b.starsPerDay - a.starsPerDay).slice(0, RISING_TOP);
+  const ranked = entries.filter(
+    (entry): entry is PickLike & { starsPerDay: number } => typeof entry.starsPerDay === "number",
+  );
+  const top = [...ranked]
+    .sort((a, b) => b.starsPerDay - a.starsPerDay || a.repo.localeCompare(b.repo))
+    .slice(0, RISING_TOP);
   return new Set(top.map((entry) => entry.repo));
 }
 
@@ -68,23 +77,31 @@ function pickFacet(
   ];
 }
 
-// 三个轴正交：用途与身份各自筛选，涨得快是叠加在上面的布尔开关
-export type PickFilter = { domain: string; identity: string; risingOnly: boolean };
+// 三个轴正交：用途与身份各自筛选，涨得快和最早优先是叠加在上面的排序开关
+export type PickFilter = {
+  domain: string;
+  identity: string;
+  risingOnly?: boolean;
+  ascending?: boolean;
+};
 
-export const DEFAULT_FILTER: PickFilter = { domain: ALL_DOMAINS, identity: ALL_DOMAINS, risingOnly: false };
+export const DEFAULT_FILTER: PickFilter = {
+  domain: ALL_DOMAINS,
+  identity: ALL_DOMAINS,
+  risingOnly: false,
+  ascending: false,
+};
 
 export function filterPicks<T extends PickLike>(
   entries: T[],
   filter: PickFilter,
   details: DetailSource,
 ): T[] {
-  const { domain, identity, risingOnly } = filter;
-  const rising = risingOnly ? risingRepos(entries) : null;
+  const { domain, identity } = filter;
 
   return entries.filter((entry) => {
     if (domain !== ALL_DOMAINS && !domainsOf(entry, details).includes(domain)) return false;
     if (identity !== ALL_DOMAINS && !identitiesOf(entry, details).includes(identity)) return false;
-    if (rising && !rising.has(entry.repo)) return false;
     return true;
   });
 }

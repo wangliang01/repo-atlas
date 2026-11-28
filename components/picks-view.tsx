@@ -21,11 +21,23 @@ import {
 } from "@/lib/picks";
 import type { PickEntry } from "@/lib/schema";
 
-/** 一屏先放 12 条，剩下的滚到底再追加。26 条时正好两屏半 */
+/** 滚动兜底时一次补 12 条；静态首屏直接写全集 */
 const PAGE_SIZE = 12;
 
+type CollectionEntry = Pick<
+  PickEntry,
+  "name" | "repo" | "owner" | "description" | "firstSeen" | "pushedAt"
+> & {
+  avatar?: string;
+  stars?: number;
+  starsPerDay?: number;
+  language?: string;
+  why?: string;
+  featuredAt: Date;
+};
+
 type PicksViewProps = {
-  entries: PickEntry[];
+  entries: CollectionEntry[];
   /** 这份快照的同步日期，用来判断谁是新上榜 */
   syncedAt: Date;
   /** repo（小写）→ 站内详情页信息 */
@@ -33,24 +45,42 @@ type PicksViewProps = {
 };
 
 export function PicksView({ entries, syncedAt, details }: PicksViewProps) {
-  const [filter, setFilter] = useState<PickFilter>(DEFAULT_FILTER);
-  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [filter, setFilter] = useState<PickFilter>({ ...DEFAULT_FILTER, ascending: false });
+  // 静态导出时首屏就写入全部收藏，搜索引擎和禁用 JS 的读者也能看到完整列表。
+  const [limit, setLimit] = useState(entries.length);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const domains = pickDomains(entries, details);
   const identities = pickIdentities(entries, details);
-  const visible = filterPicks(entries, filter, details);
   const rising = risingRepos(entries);
-  const risingCount = rising.size;
+  const risingCount = entries.filter((entry) => rising.has(entry.repo)).length;
 
-  const today = entries.filter((entry) => sameDay(entry.firstSeen, syncedAt)).map((entry) => entry.repo);
+  // 收藏库按收录时间展示，不按 GitHub 榜单的 trendScore；趋势只作为右侧统计提示。
+  const orderedEntries = [...entries].sort((a, b) => {
+    if (filter.ascending) {
+      return a.featuredAt.getTime() - b.featuredAt.getTime() || a.repo.localeCompare(b.repo);
+    }
+    return b.featuredAt.getTime() - a.featuredAt.getTime() || a.repo.localeCompare(b.repo);
+  });
+  // “只看涨得快”现在只把快的项目排到前面，不再把收藏库裁成 10 个。
+  const focusedEntries = filter.risingOnly
+    ? [
+        ...orderedEntries.filter((entry) => rising.has(entry.repo)),
+        ...orderedEntries.filter((entry) => !rising.has(entry.repo)),
+      ]
+    : orderedEntries;
+  const visible = filterPicks(focusedEntries, { ...filter, risingOnly: false }, details);
+
+  const today = entries
+    .filter((entry) => entry.firstSeen && sameDay(entry.firstSeen, syncedAt))
+    .map((entry) => entry.repo);
   // 建台账的第一天所有条目都是「新」，全标等于没标
   const fresh = new Set(today.length > 0 && today.length < entries.length ? today : []);
 
   // 换筛选条件就回到第一屏，否则会带着上一次翻的页数
   useEffect(() => {
-    setLimit(PAGE_SIZE);
-  }, [filter.domain, filter.identity, filter.risingOnly]);
+    setLimit(visible.length);
+  }, [filter.domain, filter.identity, filter.risingOnly, filter.ascending, visible.length]);
 
   // 单一高亮：两组分类互斥，选身份就清掉用途——同时按两层筛会把「全部」里的
   // 数字组合成读者脑补不出来的交集，数据也常常少到像出了错
@@ -64,7 +94,7 @@ export function PicksView({ entries, syncedAt, details }: PicksViewProps) {
   // 列表就是首页最顶部的内容，滚到 0 即列表顶。
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, [filter.domain, filter.identity, filter.risingOnly]);
+  }, [filter.domain, filter.identity, filter.risingOnly, filter.ascending]);
 
   useEffect(() => {
     const node = sentinelRef.current;
@@ -123,9 +153,23 @@ export function PicksView({ entries, syncedAt, details }: PicksViewProps) {
               : "text-ink/70 hover:text-ink"
           }`}
         >
-          只看涨得快
+          涨得快优先
           <span className="text-micro tabular-nums text-muted">{risingCount}</span>
           {filter.risingOnly ? (
+            <span aria-hidden className="absolute inset-x-0 -bottom-px h-0.5 bg-accent" />
+          ) : null}
+        </button>
+
+        <button
+          type="button"
+          aria-pressed={filter.ascending}
+          onClick={() => setFilter((current) => ({ ...current, ascending: !current.ascending }))}
+          className={`relative py-3 text-small transition-colors duration-150 ${
+            filter.ascending ? "font-medium text-accent-ink" : "text-ink/70 hover:text-ink"
+          }`}
+        >
+          最早优先
+          {filter.ascending ? (
             <span aria-hidden className="absolute inset-x-0 -bottom-px h-0.5 bg-accent" />
           ) : null}
         </button>

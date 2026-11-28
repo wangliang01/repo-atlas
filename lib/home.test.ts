@@ -13,9 +13,11 @@ test("日期格式为 YYYY.MM.DD，月日补零", async () => {
   assert.match(src, /padStart\(2, "0"\)/, "月/日没有补零");
 });
 
-test("首页只剩精选：身份卡、站点口号、最近在写、笔记区块都撤掉", () => {
+test("首页是收藏库：身份卡、站点口号、最近在写、笔记区块都撤掉", () => {
   const page = read("app/page.tsx");
-  assert.ok(page.includes("<PicksView"), "首页没有精选 feed");
+  assert.ok(page.includes("<PicksView"), "首页没有收藏库 feed");
+  assert.equal((page.match(/我收藏的 GitHub 项目/g) ?? []).length, 1, "收藏库标题不在 sr-only h1 里");
+  assert.ok(page.includes("getAllRepoDetails"), "首页没有用全部详情页当收藏全集");
   for (const gone of [
     "<IdentityCard",
     "<RepoRow",
@@ -26,11 +28,6 @@ test("首页只剩精选：身份卡、站点口号、最近在写、笔记区�
     "IdentityCard",
     "REPOS",
   ]) {
-    // 标题只允许出现在 sr-only 的 h1 里，不能回到可见的 slogan 区块
-    if (gone === "最近值得看的 AI 项目") {
-      assert.equal((page.match(/最近值得看的 AI 项目/g) ?? []).length, 1, "口号回到了可见区域");
-      continue;
-    }
     assert.equal(page.includes(gone), false, `首页不该再有 ${gone}`);
   }
   assert.equal(has("components/identity-card.tsx"), false, "身份卡组件还在");

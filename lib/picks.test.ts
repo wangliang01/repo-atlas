@@ -90,7 +90,7 @@ test("涨得快：取 stars/天 最高的前 10 个，不是固定阈值", () =>
   assert.equal(rising.has(entries[RISING_TOP].repo), false);
 });
 
-test("双轴过滤：领域和涨得快正交", () => {
+test("涨得快只排序、不裁剪：用途筛选仍正常", () => {
   const entries = [
     ...Array.from({ length: 6 }, (_, i) => like({ repo: `agent/${i}`, starsPerDay: 100 - i })),
     ...Array.from({ length: 6 }, (_, i) => like({ repo: `mcp/${i}`, starsPerDay: 94 - i })),
@@ -102,11 +102,11 @@ test("双轴过滤：领域和涨得快正交", () => {
     filterPicks(entries, { domain, identity: ALL_DOMAINS, risingOnly }, details).length;
 
   assert.equal(count(ALL_DOMAINS, false), 12);
-  assert.equal(count(ALL_DOMAINS, true), 10);
+  assert.equal(count(ALL_DOMAINS, true), 12);
   assert.equal(count("编码与开发", false), 6);
   assert.equal(count("编码与开发", true), 6);
   assert.equal(count("办公与效率", false), 6);
-  assert.equal(count("办公与效率", true), 4);
+  assert.equal(count("办公与效率", true), 6);
 });
 
 test("不认识的领域返回空，不会退化成全部", () => {
@@ -203,9 +203,9 @@ test("定时任务：一天 4 次，且只提交精选路径", () => {
   assert.ok(workflow.includes("contents: write"), "CI 没有写权限，推不上去");
 });
 
-test("无限滚动：先渲染一屏，滚动再追加", () => {
+test("无限滚动：初始渲染全集，兜底按钮按页追加", () => {
   const view = read("components/picks-view.tsx");
-  assert.ok(view.includes("PAGE_SIZE"), "没有分页大小");
+  assert.ok(view.includes("useState(entries.length)"), "首页初始没有渲染全部收藏");
   assert.ok(view.includes("IntersectionObserver"), "没有滚动监听");
   assert.ok(view.includes("slice(0, limit)"), "列表没有按页截断");
   assert.ok(view.includes("加载更多"), "缺手动兜底入口");

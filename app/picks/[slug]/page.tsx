@@ -11,7 +11,7 @@ import { formatDate } from "@/lib/date";
 import { formatStars } from "@/lib/format";
 import { preprocessCode } from "@/lib/highlight";
 import { extractHeadings } from "@/lib/mdx";
-import { detailInfoMap, getAllRepoDetails, getRepoDetail } from "@/lib/repo-detail";
+import { getAllRepoDetails, getRepoDetail } from "@/lib/repo-detail";
 import type { RepoDetailFrontmatter } from "@/lib/schema";
 
 type PageProps = { params: Promise<{ slug: string }> };
@@ -32,27 +32,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: `${detail.data.title} | Repo Atlas`, description: detail.data.summary };
 }
 
-/** 同领域里挑星数最高的 4 个当相关推荐；领域数据来自各自的详情页 */
+/** 同领域里挑星数最高的 4 个当相关推荐；候选来自全部收藏，star 只从统计快照补 */
 function relatedPicks(repo: string, domains: RepoDetailFrontmatter["domains"]): PickAsideInfo[] {
-  const details = detailInfoMap();
+  const stats = new Map(
+    (getPicksSnapshot()?.entries ?? []).map((entry) => [entry.repo.toLowerCase(), entry]),
+  );
   const wanted = new Set<string>(domains);
-  return (getPicksSnapshot()?.entries ?? [])
-    .filter((entry) => {
-      if (entry.repo === repo) return false;
-      const detail = details[entry.repo.toLowerCase()];
-      return detail?.domains.some((domain) => wanted.has(domain)) ?? false;
-    })
-    .sort((a, b) => b.stars - a.stars)
+  return getAllRepoDetails()
+    .filter((detail) => detail.data.repo.toLowerCase() !== repo.toLowerCase())
+    .filter((detail) => detail.data.domains.some((domain) => wanted.has(domain)))
+    .sort((a, b) => (stats.get(b.data.repo.toLowerCase())?.stars ?? 0) - (stats.get(a.data.repo.toLowerCase())?.stars ?? 0))
     .slice(0, 4)
-    .map((entry) => {
-      const detail = details[entry.repo.toLowerCase()];
-      return {
-        slug: detail!.slug,
-        name: entry.name,
-        stars: entry.stars,
-        summary: detail!.summary,
-      };
-    });
+    .map((detail) => ({
+      slug: detail.slug,
+      name: detail.data.repo.split("/")[1] ?? detail.data.repo,
+      stars: stats.get(detail.data.repo.toLowerCase())?.stars,
+      summary: detail.data.summary,
+    }));
 }
 
 export default async function RepoDetailPage({ params }: PageProps) {
@@ -64,7 +60,9 @@ export default async function RepoDetailPage({ params }: PageProps) {
   const source = await preprocessCode(body);
   // 「来源」留在正文，但目录只列五问：它是书目条目，不该占内容节的一格
   const headings = extractHeadings(body).filter((heading) => heading.text !== "来源");
-  const entry = getPicksSnapshot()?.entries.find((item) => item.repo === data.repo);
+  const entry = [...(getPicksSnapshot()?.entries ?? [])].reverse().find(
+    (item) => item.repo.toLowerCase() === data.repo.toLowerCase(),
+  );
 
   return (
     <div className="wrap grid grid-cols-1 gap-4 py-4 md:py-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start xl:gap-5">

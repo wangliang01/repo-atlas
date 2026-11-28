@@ -5,8 +5,19 @@ import { formatStars } from "@/lib/format";
 import { formatPerDay } from "@/lib/picks";
 import type { PickEntry } from "@/lib/schema";
 
+type PickRowEntry = Pick<
+  PickEntry,
+  "name" | "repo" | "owner" | "description" | "firstSeen" | "pushedAt"
+> & {
+  avatar?: string;
+  stars?: number;
+  starsPerDay?: number;
+  language?: string;
+  why?: string;
+};
+
 type PickRowProps = {
-  entry: PickEntry;
+  entry: PickRowEntry;
   /** 这一批里 stars/天 排前 10 */
   hot: boolean;
   /** 今天第一次上榜 */
@@ -131,10 +142,10 @@ export function PickRow({
 
         <div className="shrink-0 text-right">
           <span className="block text-body font-semibold leading-6 tabular-nums text-ink">
-            {formatStars(entry.stars)}
+            {entry.stars === undefined ? "—" : formatStars(entry.stars)}
           </span>
           {/* 同一列不能一行写「stars」一行写涨速，两种东西并排会看错 */}
-          {hot ? (
+          {hot && entry.starsPerDay !== undefined ? (
             <span className="block text-micro tabular-nums text-accent-ink">
               {formatPerDay(entry.starsPerDay)}
             </span>

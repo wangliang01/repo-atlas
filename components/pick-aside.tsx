@@ -9,7 +9,7 @@ import type { RepoDetailFrontmatter } from "@/lib/schema";
 export type PickAsideInfo = {
   slug: string;
   name: string;
-  stars: number;
+  stars?: number;
   summary: string;
 };
 
@@ -153,7 +153,9 @@ export function PickAside({ data, entry, headings, related }: PickAsideProps) {
                   </span>
                   <span className="mt-0.5 flex items-center gap-2 text-micro text-muted">
                     <span className="truncate">{item.summary}</span>
-                    <span className="shrink-0 tabular-nums">★ {formatStars(item.stars)}</span>
+                    <span className="shrink-0 tabular-nums">
+                      {item.stars === undefined ? "—" : `★ ${formatStars(item.stars)}`}
+                    </span>
                   </span>
                 </Link>
               </li>
